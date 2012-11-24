@@ -14,6 +14,8 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 // DONE: Having got this far, at least make headshot vs body shot configurable.
 //       I suppose we could have two different scales.
 
+// TODO HELP!  bExtraCheckForPlayerSpawn (implemented in AlwaysKeep) could be improved!
+
 // TODO: Try to become first mutator if not already.  (To avoid other mutators seeing some damage twice, or bad momentum values.)
 
 // TODO: Boost should work equally on team-mates (no damage) as it would against an enemy (with damage).  Another reason to calc ScaleDamage => ScaleMomemtum.
@@ -22,20 +24,32 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // TODO: To be neat, destroy self not other when new copy added.  If mutator is destroyed, remove all FWBArmors.  When adding new mutator, give FWBArmors to all players.
 
-// Debugging:
+// TODO: FWBArmor might try to skip all armor calls on the first pass, by breaking the armor chain?  It might need to be the first inventory item to achieve that.
+
+// BUG: Getting stuck on stage 2 on the first of a series of 'zapped' damage from a bot.
+
+// BUG: Warnings will be emitted if an admin enter godmode, because his armor is never processed (Pawn.TakeDamage() skips the call to Inventory.ReduceDamage()).
+
+#define DEV
 
 // #define DEBUG(X); if (bLogging) { Log("[FixWeaponDamage] "$(X)); } if (bLiveReports) { BroadcastMessage("[FWD] "$(X)); }
 #define DEBUG(X) if (bLogging) { Log("[FixWeaponDamage] "$(X)); }
 #define REPORT(W,X) if (bLogging || bLiveReports) { Report(W,X); }
 // #define DEBUG(X); 
 
+#define InflictedMaker ">"
+#define ReceivedMarker "<"
+
 var config bool bEnabled;
 var config bool bLogging;
 var config bool bAdvertise; // Tell players that the mod is on!
-var config bool bLiveReports;
-var config bool bReportAllDamage; // Shows in live reports all damage, not only damage which was altered.
 var config bool bExtraCheckForPlayerSpawn; // Needed for some versions of Siege, when ModifyPlayer is not called.
-var config bool bUseMagicMethod; // Whether or not to use the gnarly double-call technique.  Since it is needed, it will be switched on automatically if bScaleSniperByDistance is.  WARNING: Do not disable it at the moment; there is a bug that it cannot tell the difference between sniper/mini/enforcer shots, sniper/ripper headshots (because we are currently using InstigatedBy method).
+var config bool bUseMagicMethod; // Whether or not to use the gnarly double-call technique.  Since it is needed, it will be switched on automatically if bScaleSniperByDistance is.
+// WARNING BUG: Do not disable bUseMagicMethod; it cannot tell the difference between sniper/mini/enforcer shots, or sniper/ripper headshots (because it does not have InstigatedBy).  Also it cannot affect momentum.
+var config bool bAnyoneMayToggleReporting;
+var config bool bLiveReports;
+var config bool bReportDamageReceived; // Shows in live reports all damage, not only damage which was altered.
+var config bool bReportUnchangedDamage; // Shows in live reports all damage, not only damage which was altered.
 
 var config bool bKeepHeadshotsInAllModes;
 var config float SniperHeadshotDamageScale;
@@ -47,7 +61,7 @@ var config float SniperHalflifeRange;
 // var config float SniperPowerRange;
 // var config float SniperMidRange;    // TODO: This should define where power is one-quarter.  The shape should correspond somewhat to the danger from other weapons across that range.
 // var config float SniperMaxRange;
-var config int SniperMinDamage;     // This currently only applies when adjusting with bScaleSniperByDistance.
+var config int SniperMinDamage;     // This currently only applies when adjusting with bScaleSniperByDistance.  Setting to 0 may produce a BUG! (no armor absorption on second call).
 var config bool bFixCrouchingBug;   // For ZeroPingPlus103
 
 var config float RocketDamageScale;
@@ -65,6 +79,7 @@ var config float RipperPrimaryDamageScale;
 var config float RipperSecondaryDamageScale;
 var config float RipperHeadshotDamageScale;
 var config float MeleeWeaponDamageScale;
+var config float UnknownWeaponDamageScale;
 
 var config bool bAdjustBoost;
 var config bool bOnlyAdjustBoostDownwards;
@@ -85,7 +100,9 @@ var int NewDamage;
 function PostBeginPlay() {
 	Level.Game.RegisterDamageMutator(Self);
 	Level.Game.RegisterMessageMutator(Self);
+#ifndef DEV
 	SaveConfig(); // Just easier for admin to create file / missing vars
+#endif
 }
 
 function ModifyPlayer(Pawn Other) {
@@ -180,7 +197,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 				return; // No point walking the chain now - we have just done it!
 			} else if (Stage == 3) {
 				Stage = 0;
-				//// OK it's all over.  We just need to 
+				//// OK it's all over.  We just need to output the momentum that armor could not.
 				//// The current value for Momentum might be bogus.
 				//// Anyway, we return the one stored for us by AdjustDamageAndMomentum().
 				Momentum = NewMomentum;
@@ -197,8 +214,25 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 				}
 				*/
 			} else {
-				// This is a critical bug which I want to hear about if it occurs.  If admins still want to use the mod even if its occurring, they can suppress it.
-				Log("BUG! Stage="$ Stage $" in FixWeaponBalance.MutatorTakeDamage()!");
+				if (Stage==0 && ActualDamage==0) {
+					// This is likely NOT a bug.  Inventory.ReduceDamage never calls ArmorAbsorbDamage if the ReduceAmount=0, so we would expect to still be on Stage 0!
+					// There seems little point in us calling AdjustDamageAndMomentum on a 0 damage, except perhaps to report damage was processed.  Let's do that directly instead.
+					if (bReportUnchangedDamage) {
+						REPORT(InstigatedBy,InflictedMaker $" Normal '"$ DamageType $"': "$ ActualDamage $ " [zero] on "$ GHN(Victim));
+						if (bReportDamageReceived) {
+							REPORT(Victim,ReceivedMarker $" normal '"$ DamageType $"': "$ ActualDamage $ " [zero] from "$ GHN(InstigatedBy));
+						}
+					}
+				} else {
+					// This is a critical bug which I want to hear about if it occurs, so we always log.  If admins still want to use the mod even if its occurring, they must suppress it.
+					// Log("
+					REPORT(None,"BUG! Stage="$ Stage $" in FixWeaponBalance.MutatorTakeDamage()!  Doing fallback reduction.");
+					// If we are on Stage 2, there is a concern that the damage we are receiving may have been scaled up by bHardcoreMode a second time during the second call to TakeDamage above.
+					// Let's at least apply what we can to the health damage being dealt?
+					// It's unlikely we are applying this again, after the armor did, if so the armor would have set Stage 3.
+					ActualDamage = AdjustDamageAndMomentum(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType,true);
+					Momentum = NewMomentum;
+				}
 			}
 
 		}
@@ -209,7 +243,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 }
 
 // Stores outputs NewDamage and NewMomentum.
-function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType) {
+function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType, optional bool bReportNoArmor) {
 
 	local bool bSniperShot,bHeadshot; // bSniperShot also counts of Enforcer.
 	local bool bHardcore,isShockPrimary,isEnforcer,isMinigun;
@@ -398,11 +432,12 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 	} else if (DamageType == 'slashed') { // chainsaw
 		NewDamage *= MeleeWeaponDamageScale;
 	} else if (DamageType == 'RedeemerDeath') {
-		// Do nothing
-	} else if (DamageType == 'Fell' || DamageType == None) {
+		// Do nothing (I saw None when falling into a death zone)
+	} else if (DamageType == 'Fell' || DamageType == 'None') {
 		// Do nothing
 	} else {
 		REPORT(InstigatedBy,"Did not recognise DamageType '"$DamageType$"'");
+		NewDamage *= UnknownWeaponDamageScale;
 	}
 
 	if (bAdjustBoost && NewDamage != ActualDamage && ActualDamage!=0) {
@@ -414,12 +449,14 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 
 	// Only build report if we are logging or live reporting, and it changed,
 	// or if we are live reporting and set to report all (even non-changes).
-	if ( ( (bLiveReports || bLogging) && NewDamage != ActualDamage ) || (bLiveReports && bReportAllDamage) ) {
+	if ( ( (bLiveReports || bLogging) && NewDamage != ActualDamage ) || (bLiveReports && bReportUnchangedDamage) ) {
 		// We report all the things we detected, so we can see if any of them were missed or detected wrong.
+		ReportStr = "";
+		if (bReportNoArmor) {
+			ReportStr = ReportStr $ " [NOARMOR!]";
+		}
 		if (bDidCrouchReduction) {
-			ReportStr = " [CROUCH]";
-		} else {
-			ReportStr = "";
+			ReportStr = ReportStr $ " [CROUCH]";
 		}
 		if (bSniperShot) {
 			ReportStr = ReportStr $ " [sniper]";
@@ -436,12 +473,17 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 		if (isMinigun) {
 			ReportStr = ReportStr $ " [minigun]";
 		}
+		#define DistStr " d=" $ Int(distance)
 		if (NewDamage == ActualDamage) {
-			REPORT(InstigatedBy,"Inflicted Normal '"$ DamageType $"': "$ ActualDamage $ ReportStr $ " on "$ GHN(Victim));
-			REPORT(Victim,"Received Normal '"$ DamageType $"': "$ ActualDamage $ ReportStr $ " from "$ GHN(InstigatedBy));
+			REPORT(InstigatedBy,InflictedMaker $" Normal '"$ DamageType $"': "$ ActualDamage $ ReportStr $ " on "$ GHN(Victim) $ DistStr);
+			if (bReportDamageReceived) {
+				REPORT(Victim,ReceivedMarker $" normal '"$ DamageType $"': "$ ActualDamage $ ReportStr $ " from "$ GHN(InstigatedBy) $ DistStr);
+			}
 		} else {
-			REPORT(InstigatedBy,"Inflicted Adjusted '"$ DamageType $"': "$ ActualDamage $" -> "$ NewDamage $ ReportStr $ " on "$ GHN(Victim));
-			REPORT(Victim,"Received Adjusted '"$ DamageType $"': "$ ActualDamage $" -> "$ NewDamage $ ReportStr $ " from "$ GHN(InstigatedBy));
+			REPORT(InstigatedBy,InflictedMaker $" Adjusted '"$ DamageType $"': "$ ActualDamage $" -> "$ NewDamage $ ReportStr $ " on "$ GHN(Victim) $ DistStr);
+			if (bReportDamageReceived) {
+				REPORT(Victim,ReceivedMarker $" adjusted '"$ DamageType $"': "$ ActualDamage $" -> "$ NewDamage $ ReportStr $ " from "$ GHN(InstigatedBy) $ DistStr);
+			}
 		}
 	}
 
@@ -520,6 +562,17 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		return True;
 	}
 
+	// Admin can easily turn this on for testing, but it won't be saved for next map
+	if (Sender.bAdmin || bAnyoneMayToggleReporting) {
+		if (command ~= "REPORT" || command ~= "FWBREPORT") {
+			bLiveReports = !bLiveReports;
+			if (bLiveReports)
+				BroadcastMessage(Sender.getHumanName()$" has ENABLED FixWeaponBalance reporting with \"mutate report\".");
+			if (!bLiveReports)
+				BroadcastMessage(Sender.getHumanName()$" has DISABLED FixWeaponBalance reporting with \"mutate report\".");
+		}
+	}
+
 	if (!Sender.bAdmin) {
 		return False;
 	}
@@ -529,15 +582,6 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		Sender.ClientMessage("FixWeaponBalance.bEnabled = "$bEnabled);
 		Sender.ClientMessage("FixWeaponBalance commands: fwb | report | status");
 		return True;
-	}
-
-	// Admin can easily turn this on for testing, but it won't be saved for next map
-	if (command ~= "REPORT" || command ~= "FWBREPORT") {
-		bLiveReports = !bLiveReports;
-		if (bLiveReports)
-			BroadcastMessage(Sender.getHumanName()$" has ENABLED FixWeaponBalance reporting with \"mutate report\".");
-		if (!bLiveReports)
-			BroadcastMessage(Sender.getHumanName()$" has DISABLED FixWeaponBalance reporting with \"mutate report\".");
 	}
 
 	if (command ~= "FWB") {
@@ -574,10 +618,15 @@ function SendStatusTo(Pawn Sender) {
 	Send("  SniperHeadshotMaxDamage = "$SniperHeadshotMaxDamage);
 	Send("  SniperBodyshotMaxDamage = "$SniperBodyshotMaxDamage);
 	Send("  bScaleSniperByDistance = "$bScaleSniperByDistance);
-	Send("    SniperHalflifeRange = "$SniperHalflifeRange);
-	// Send("    SniperPowerRange = "$SniperPowerRange);
-	// Send("    SniperMaxRange = "$SniperMaxRange);
-	Send("    SniperMinDamage = "$SniperMinDamage);
+	if (bScaleSniperByDistance) {
+		Send("    SniperHalflifeRange = "$SniperHalflifeRange);
+		// Send("    SniperPowerRange = "$SniperPowerRange);
+		// Send("    SniperMaxRange = "$SniperMaxRange);
+		Send("    SniperMinDamage = "$SniperMinDamage);
+		// Provided the MaxDamage matches that which the mutator normally gives, this should show us the range in which the max is applied, beyond which the damage begins to fall.
+		// PowerRange = HalfRange * log (1/Scale) / log 0.5
+		Send("    Expected SniperPowerRange = "$ Int(SniperHalflifeRange * loge(1/SniperHeadshotDamageScale) / loge(0.5)));
+	}
 	Send("  bFixCrouchingBug = "$bFixCrouchingBug);
 	Send("  RocketDamageScale = "$PercentageChangeStr(RocketDamageScale));
 	Send("  RocketGrenadeDamageScale = "$PercentageChangeStr(RocketGrenadeDamageScale));
@@ -615,16 +664,30 @@ function String PercentageChangeStr(float proportion) {
 
 defaultproperties {
 	bEnabled=True
-	bLogging=False
-	bLiveReports=False
 	bAdvertise=True
-	bReportAllDamage=False
 	bExtraCheckForPlayerSpawn=True
+	bLiveReports=False
+#ifdef DEV
+	bLogging=True
+	bReportUnchangedDamage=True
+	bAnyoneMayToggleReporting=True
+#else
+	bLogging=False
+	bReportUnchangedDamage=False
+	bAnyoneMayToggleReporting=False
+#endif
 
 	bKeepHeadshotsInAllModes=False
 	// We scale up sniper to compensate for bScaleSniperByDistance.
 	// With scale 1.2 and half-life 1024 this creates PowerRange 269:
 	// 150 * 1.2 * (0.5 ** (269.0 / 1024.0)) = 150.035260381906
+	// 150 * Scale * (0.5 ^ (PowerRange / HalfRange)) = 150
+	//       Scale * (0.5 ^ (PowerRange / HalfRange)) = 1
+	//                                          Scale = 1 / (0.5 ^ (PowerRange / HalfRange))
+	//               (0.5 ^ (PowerRange / HalfRange)) = 1/Scale
+	//           log (0.5 ^ (PowerRange / HalfRange)) = log 1/Scale
+	//               (PowerRange/HalfRange) * log 0.5 = log 1/Scale
+	//                                     PowerRange = HalfRange * log (1/Scale) / log 0.5
 	SniperHeadshotDamageScale=1.3
 	SniperBodyshotDamageScale=1.3
 	SniperHeadshotMaxDamage=150
@@ -634,7 +697,11 @@ defaultproperties {
 	// SniperPowerRange=256
 	// SniperMidRange=2048
 	// SniperMaxRange=9216
+#ifdef DEV
 	SniperMinDamage=1
+#else
+	SniperMinDamage=12
+#endif
 	bFixCrouchingBug=False
 
 	RocketDamageScale=1.00
@@ -652,6 +719,7 @@ defaultproperties {
 	RipperSecondaryDamageScale=1.00
 	RipperHeadshotDamageScale=1.00
 	MeleeWeaponDamageScale=1.00
+	UnknownWeaponDamageScale=1.0
 
 	bAdjustBoost=True
 	bOnlyAdjustBoostDownwards=True
