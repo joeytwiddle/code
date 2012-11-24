@@ -18,6 +18,10 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // TODO: Boost should work equally on team-mates (no damage) as it would against an enemy (with damage).
 
+// Why half-life may have precedent: http://images49.fotki.com/v1556/photos/3/363331/1447715/300FPSEnergyChart-vi.jpg
+
+// TODO: To be neat, destroy self not other when new copy added.  If mutator is destroyed, remove all FWBArmors.  When adding new mutator, give FWBArmors to all players.
+
 // Debugging:
 
 // #define DEBUG(X); if (bLogging) { Log("[FixWeaponDamage] "$(X)); } if (bLiveReports) { BroadcastMessage("[FWD] "$(X)); }
@@ -27,18 +31,23 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 var config bool bEnabled;
 var config bool bLogging;
-var config bool bAdvertise;
-var bool bLiveReports;
-var config bool bReportAllDamage;
+var config bool bAdvertise; // Tell players that the mod is on!
+var config bool bLiveReports;
+var config bool bReportAllDamage; // Shows in live reports all damage, not only damage which was altered.
+var config bool bExtraCheckForPlayerSpawn; // Needed for some versions of Siege, when ModifyPlayer is not called.
+var config bool bUseMagicMethod; // Whether or not to use the gnarly double-call technique.  Since it is needed, it will be switched on automatically if bScaleSniperByDistance is.  WARNING: Do not disable it at the moment; there is a bug that it cannot tell the difference between sniper/mini/enforcer shots, sniper/ripper headshots (because we are currently using InstigatedBy method).
 
 var config bool bKeepHeadshotsInAllModes;
-var config float SniperDamageScale;
-var config int SniperMaxDamage;
+var config float SniperHeadshotDamageScale;
+var config float SniperBodyshotDamageScale;
+var config int SniperHeadshotMaxDamage;
+var config int SniperBodyshotMaxDamage;
 var config bool bScaleSniperByDistance;
-var config float SniperPowerRange;
-var config float SniperMidRange;    // TODO: This should define where power is one-quarter.  The shape should correspond somewhat to the danger from other weapons across that range.
-var config float SniperMaxRange;
-var config int SniperMinDamage;
+var config float SniperHalflifeRange;
+// var config float SniperPowerRange;
+// var config float SniperMidRange;    // TODO: This should define where power is one-quarter.  The shape should correspond somewhat to the danger from other weapons across that range.
+// var config float SniperMaxRange;
+var config int SniperMinDamage;     // This currently only applies when adjusting with bScaleSniperByDistance.
 var config bool bFixCrouchingBug;   // For ZeroPingPlus103
 
 var config float RocketDamageScale;
@@ -52,7 +61,7 @@ var config float FlakPrimaryDamageScale;
 var config float FlakSecondaryDamageScale;
 var config float PulseDamageScale;
 var config float PulsebeamDamageScale;
-var config float RipperDamageScale;
+var config float RipperPrimaryDamageScale;
 var config float RipperSecondaryDamageScale;
 var config float RipperHeadshotDamageScale;
 var config float MeleeWeaponDamageScale;
@@ -76,7 +85,7 @@ var int NewDamage;
 function PostBeginPlay() {
 	Level.Game.RegisterDamageMutator(Self);
 	Level.Game.RegisterMessageMutator(Self);
-	SaveConfig(); // Just easier for admin to create file / missing vars
+	// SaveConfig(); // Just easier for admin to create file / missing vars
 }
 
 function ModifyPlayer(Pawn Other) {
@@ -90,12 +99,18 @@ function ModifyPlayer(Pawn Other) {
 // We check harder here, to ensure they get it.
 function bool AlwaysKeep(Actor Other) {
 	local Pawn p;
-	if (Other.IsA('Enforcer')) {
+	// We want bUseMagicMethod to be enabled soon, if bScaleSniperByDistance is.
+	if (bScaleSniperByDistance) {
+		bUseMagicMethod = True;
+	}
+	// Check only happens when player is being given an Enforcer.  Hopefully that is enough.
+	// CONSIDER: Make that optional or make the inventory type configurable, for modes without enforcer but with a similarly broken ModifyPlayer()?
+	if (bEnabled && bExtraCheckForPlayerSpawn && Other.IsA('Enforcer')) {
 		Log("Someone is being given an enforcer.  Dunno who.");
 		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 			if ((p.bIsPlayer && !p.IsA('Spectator')) || p.IsA('Bot')) {
 				GiveMagicArmorToPlayer(p);
-				if (PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
+				if (bAdvertise && PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
 					if (bScaleSniperByDistance) {
 						PlayerPawn(Other).ClientMessage("The sniper rifle is now a close-range weapon.  See !status for details.");
 					} else {
@@ -149,33 +164,43 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 	if (bEnabled /*&& PlayerPawn(InstigatedBy)!=None*/) {
 
-		if (Stage == 1) {
-			Stage = 2;
-			LastInstigator = InstigatedBy;
-			LastMomentum = Momentum;
-			Victim.TakeDamage(InDamage,InstigatedBy,HitLocation,Momentum,DamageType);
-			Momentum = vect(0,0,0); // We have just added the desired momentum, so return momentum 0 so we don't add it again!
-			return; // No point walking the chain now - we have just done it!
-		} else if (Stage == 3) {
-			Stage = 0;
-			//// OK it's all over.  We just need to 
-			//// The current value for Momentum might be bogus.
-			//// Anyway, we return the one stored for us by ModifyDamage().
-			Momentum = NewMomentum;
-			// Instead of NewMomentum vector we could have passed around ScaleMomentum.
-			// if (VSize(LastMomentum - Momentum)>0.000001) {
-			// 	REPORT(InstigatedBy,"Momentum got lost Last="$ VSize(LastMomentum) $" Bogus="$ VSize(Momentum));
-			// }
-			/* Seems to  be working fine; check/log disabled
-			if (VSize(LastMomentum - NewMomentum)>0.000001) {
-				#define momChange Int(VSize(LastMomentum)) $" to "$ Int(VSize(NewMomentum))
-				REPORT(InstigatedBy,"Adjusted momentum "$ momChange);
-				// This confirmed the right numbers were getting through:
-				// " InDamage="$InDamage$" NewDamage="$NewDamage);
-			}
-			*/
+		if (!bUseMagicMethod) {
+			// Do nothing
+			// We would really like to affect out Momentum, but this is not possible.
+			// The NewMomentum stored by AdjustDamageAndMomentum() is useless because it was fed (0,0,0)!
+			// TODO: If it stored a NewMomentumScale for us, we could apply that here.
 		} else {
-			Log("BUG! Stage="$ Stage $" in FixWeaponBalance.MutatorTakeDamage()!");
+
+			if (Stage == 1) {
+				Stage = 2;
+				LastInstigator = InstigatedBy;
+				LastMomentum = Momentum;
+				Victim.TakeDamage(InDamage,InstigatedBy,HitLocation,Momentum,DamageType);
+				Momentum = vect(0,0,0); // We have just added the desired momentum, so return momentum 0 so we don't add it again!
+				return; // No point walking the chain now - we have just done it!
+			} else if (Stage == 3) {
+				Stage = 0;
+				//// OK it's all over.  We just need to 
+				//// The current value for Momentum might be bogus.
+				//// Anyway, we return the one stored for us by AdjustDamageAndMomentum().
+				Momentum = NewMomentum;
+				// Instead of NewMomentum vector we could have passed around ScaleMomentum.
+				// if (VSize(LastMomentum - Momentum)>0.000001) {
+				// 	REPORT(InstigatedBy,"Momentum got lost Last="$ VSize(LastMomentum) $" Bogus="$ VSize(Momentum));
+				// }
+				/* Seems to  be working fine; check/log disabled
+				if (VSize(LastMomentum - NewMomentum)>0.000001) {
+					#define momChange Int(VSize(LastMomentum)) $" to "$ Int(VSize(NewMomentum))
+					REPORT(InstigatedBy,"Adjusted momentum "$ momChange);
+					// This confirmed the right numbers were getting through:
+					// " InDamage="$InDamage$" NewDamage="$NewDamage);
+				}
+				*/
+			} else {
+				// This is a critical bug which I want to hear about if it occurs.  If admins still want to use the mod even if its occurring, they can suppress it.
+				Log("BUG! Stage="$ Stage $" in FixWeaponBalance.MutatorTakeDamage()!");
+			}
+
 		}
 
 	}
@@ -184,30 +209,38 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 }
 
 // Stores outputs NewDamage and NewMomentum.
-function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType) {
+function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType) {
 
 	local bool bSniperShot,bHeadshot; // bSniperShot also counts of Enforcer.
-	local bool bHardcore,isShockPrimary,isEnforcer;
+	local bool bHardcore,isShockPrimary,isEnforcer,isMinigun;
 	local bool bDidCrouchReduction;
 	local float distance;
 	local String ReportStr;
 
+	if (!bEnabled) {
+		NewDamage = ActualDamage;
+		NewMomentum = Momentum;
+		return NewDamage;
+	}
+
 	bHardcore = DeathMatchPlus(Level.Game).bHardcoreMode;
 
 	bHeadshot = (DamageType=='decapitated');
+	// Can be true for Ripper or Sniper
 
 	bSniperShot = False;
 	// Is this a sniper hit?
 	// Note that mini and enforcer also produce DamageType 'shot' and ripper also gives 'decapitated'.
-	// BUG: Checking instigator's weapon could identify a ripper headshot ('decapitated') or mini or enforcer ('shot') as a sniper shot, if the player changed to sniper before it hit!
-	/*
+	// BUG: Checking instigator's weapon could identify a ripper headshot ('decapitated') or maybe even minigun as a sniper shot, IF the player changed their weapon to sniper before it hits!
+	// BUG: Will fail to detect sniper-like weapons which don't extend the original class.
 	if (DamageType == 'shot' || DamageType == 'decapitated') {
 		if (InstigatedBy!=None && SniperRifle(InstigatedBy.Weapon) != None) {
 			bSniperShot = True;
 		}
 	}
-	*/
 	// Alternative: Detect from damage values.
+	// BUG: Too many values!  With ZPP103 in hardcore games we get bodyhits sometimes 35 or 17, or 45 in non-hardcore siege.
+	/*
 	if (DamageType == 'decapitated') {
 		if (bHardcore) {
 			if (ActualDamage == 150) {
@@ -225,17 +258,20 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 			}
 		} else {
 			// I saw 45 for a bodyhit in siege.  Where does 58 come from?
+			// It also sometimes gives 35 or 17!!
 			if (ActualDamage == 58 || ActualDamage == 45) {
 				bSniperShot = True; // detected a body hit
 			}
 		}
 	}
+	*/
 
-	if (DamageType != InDamageType) {
+	// Checking against the In* vars stored by armor is only possible when magic method is on.
+	if (bUseMagicMethod && DamageType != InDamageType) {
 		REPORT(InstigatedBy,"DamageType changed from "$InDamageType$" to "$DamageType);
 	}
 	//// Fine if we are scaling any weapons up.
-	// if (ActualDamage >= InDamage) {
+	// if (bUseMagicMethod && ActualDamage >= InDamage) {
 		// REPORT(InstigatedBy,"ActualDamage > InDamage! "$ InDamage $" < "$ ActualDamage);
 	// }
 
@@ -251,8 +287,9 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 					bDidCrouchReduction = True;
 				}
 			} else {
-				if (ActualDamage > 58) {
-					ActualDamage = 58;
+				// Why did we have 58 here?!
+				if (ActualDamage > 45) {
+					ActualDamage = 45;
 					bDidCrouchReduction = True;
 				}
 			}
@@ -260,13 +297,16 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 		}
 
 		// Always scale damage for sniper rifle?
-		NewDamage = ActualDamage * SniperDamageScale;
+		if (bHeadshot) {
+			NewDamage = ActualDamage * SniperHeadshotDamageScale;
+		} else {
+			NewDamage = ActualDamage * SniperBodyshotDamageScale;
+		}
 
 		if (bScaleSniperByDistance && InstigatedBy!=None) {
-			/*
 			distance = VSize(Victim.Location - InstigatedBy.Location);
-			scale = (0.5) ^ (distance / SniperHalflifeDistance);
-			*/
+			NewDamage = NewDamage * ( 0.5 ** (distance/SniperHalflifeRange) );
+			/*
 			if (distance < SniperPowerRange) {
 				// Do nothing: leave strength unaffected
 			} else if (distance > SniperMaxRange) {
@@ -283,13 +323,14 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 					NewDamage = float(NewDamage) * (1.0 - thruMax) / 4.0 + float(SniperMinDamage) * thruMax + 0.5;
 					// +0.5 rounds float result to nearest int (NewDamage must be int!)
 				}
-				if (NewDamage < SniperMinDamage) {
-					NewDamage = SniperMinDamage;
-				}
-				// SniperMinDamage may have been set even though ActualDamage was 0 (all absorbed by belt)!
-				if (ActualDamage == 0) {
-					NewDamage = 0;
-				}
+			}
+			*/
+			if (NewDamage < SniperMinDamage) {
+				NewDamage = SniperMinDamage;
+			}
+			// But if we were given 0, let's ensure we return 0.  (Redundant really.)
+			if (ActualDamage == 0) {
+				NewDamage = 0;
 			}
 		}
 
@@ -298,8 +339,14 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 			NewDamage = 100;
 		}
 
-		if (NewDamage > SniperMaxDamage) {
-			NewDamage = SniperMaxDamage;
+		if (bHeadshot) {
+			if (NewDamage > SniperHeadshotMaxDamage) {
+				NewDamage = SniperHeadshotMaxDamage;
+			}
+		} else {
+			if (NewDamage > SniperBodyshotMaxDamage) {
+				NewDamage = SniperBodyshotMaxDamage;
+			}
 		}
 
 	// WARNING: Some of the damage dealt may have already been partially absorbed by armour, making the == comparisons we make later inaccurate - they may fail to scale up/down damage on a weapon they should have.  In case of inaccuracies, they will fall to the final else case, so at least the damage scale there will be applied.
@@ -311,16 +358,19 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 	} else if (DamageType == 'Corroded') {
 		NewDamage *= BioDamageScale;
 	} else if (DamageType == 'shot') {
+		// Not sniper, but could be enforcer OR minigun.
 		// isEnforcer = (bHardcore && ActualDamage==25 || !bHardcore && ActualDamage==10);
 		isEnforcer = InstigatedBy!=None && Enforcer(InstigatedBy.Weapon)!=None;
 		if (isEnforcer) {
 			NewDamage *= EnforcerDamageScale;
 		} else {
+			isMinigun = True;
 			// Presumably now Minigun2(InstigatedBy.Weapon)!=None
 			// Or coule be sniper (if somehow we failed to recognise sniper above)
 			NewDamage *= MinigunDamageScale;
 		}
 	} else if (DamageType == 'jolted') {
+		// Could be primary OR shockball collision OR nearby combo.
 		// Quite unlikely, but this check might flag a combo of just the right strength as a primary.
 		isShockPrimary = (bHardcore && ActualDamage==60) || (!bHardcore && ActualDamage==40);
 		if (isShockPrimary) {
@@ -338,7 +388,7 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 	} else if (DamageType == 'zapped') {
 		NewDamage *= PulsebeamDamageScale;
 	} else if (DamageType == 'shredded') {
-		NewDamage *= RipperDamageScale;
+		NewDamage *= RipperPrimaryDamageScale;
 	} else if (DamageType == 'RipperAltDeath') {
 		NewDamage *= RipperSecondaryDamageScale;
 	} else if (DamageType == 'decapitated') {
@@ -360,20 +410,36 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 		}
 	}
 
-	if (NewDamage != ActualDamage || bLiveReports && bReportAllDamage) {
+	// Only build report if we are logging or live reporting, and it changed,
+	// or if we are live reporting and set to report all (even non-changes).
+	if ( ( (bLiveReports || bLogging) && NewDamage != ActualDamage ) || (bLiveReports && bReportAllDamage) ) {
+		// We report all the things we detected, so we can see if any of them were missed or detected wrong.
 		if (bDidCrouchReduction) {
-			ReportStr = " [crouch]";
+			ReportStr = " [CROUCH]";
 		} else {
 			ReportStr = "";
 		}
 		if (bSniperShot) {
 			ReportStr = ReportStr $ " [sniper]";
 		}
+		if (bHeadshot) {
+			ReportStr = ReportStr $ " [headshot]";
+		}
+		if (isEnforcer) {
+			ReportStr = ReportStr $ " [enforcer]";
+		}
+		if (isShockPrimary) {
+			ReportStr = ReportStr $ " [primary]";
+		}
+		if (isMinigun) {
+			ReportStr = ReportStr $ " [minigun]";
+		}
 		if (NewDamage == ActualDamage) {
-			REPORT(InstigatedBy,"Normal '"$DamageType$"': "$ActualDamage $ ReportStr);
+			REPORT(InstigatedBy,"Inflicted Normal '"$ DamageType $"': "$ ActualDamage $ ReportStr $ " on "$ GHN(Victim));
+			REPORT(Victim,"Received Normal '"$ DamageType $"': "$ ActualDamage $ ReportStr $ " from "$ GHN(InstigatedBy));
 		} else {
-			REPORT(InstigatedBy,"Inflicted '"$DamageType$"': "$ActualDamage$" -> "$NewDamage $ ReportStr);
-			REPORT(Victim,"Received '"$DamageType$"': "$ActualDamage$" -> "$NewDamage $ ReportStr);
+			REPORT(InstigatedBy,"Inflicted Adjusted '"$ DamageType $"': "$ ActualDamage $" -> "$ NewDamage $ ReportStr $ " on "$ GHN(Victim));
+			REPORT(Victim,"Received Adjusted '"$ DamageType $"': "$ ActualDamage $" -> "$ NewDamage $ ReportStr $ " from "$ GHN(InstigatedBy));
 		}
 	}
 
@@ -392,8 +458,12 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 // Don't call me direct.  Call REPORT instead, to avoid constructing strings which will never be used.
 function Report(Pawn Target, String Msg) {
 	DEBUG("("$ GHN(Target) $") "$ Msg);
-	if (bLiveReports && PlayerPawn(Target)!=None) {
-		Target.ClientMessage(Msg);
+	if (bLiveReports) {
+		if (Target == None) {
+			BroadcastMessage("[NoInstigator] "$ Msg);
+		} else if (PlayerPawn(Target)!=None) {
+			Target.ClientMessage(Msg);
+		}
 	}
 }
 
@@ -497,11 +567,14 @@ function SendStatusTo(Pawn Sender) {
 	Send("  Logging = "$bLogging);
 	Send("  Reporting = "$bLiveReports);
 	Send("  bKeepHeadshotsInAllModes = "$bKeepHeadshotsInAllModes);
-	Send("  SniperDamageScale = "$PercentageChangeStr(SniperDamageScale));
-	Send("  SniperMaxDamage = "$SniperMaxDamage);
+	Send("  SniperHeadshotDamageScale = "$PercentageChangeStr(SniperHeadshotDamageScale));
+	Send("  SniperBodyshotDamageScale = "$PercentageChangeStr(SniperBodyshotDamageScale));
+	Send("  SniperHeadshotMaxDamage = "$SniperHeadshotMaxDamage);
+	Send("  SniperBodyshotMaxDamage = "$SniperBodyshotMaxDamage);
 	Send("  bScaleSniperByDistance = "$bScaleSniperByDistance);
-	Send("    SniperPowerRange = "$SniperPowerRange);
-	Send("    SniperMaxRange = "$SniperMaxRange);
+	Send("    SniperHalflifeRange = "$SniperHalflifeRange);
+	// Send("    SniperPowerRange = "$SniperPowerRange);
+	// Send("    SniperMaxRange = "$SniperMaxRange);
 	Send("    SniperMinDamage = "$SniperMinDamage);
 	Send("  bFixCrouchingBug = "$bFixCrouchingBug);
 	Send("  RocketDamageScale = "$PercentageChangeStr(RocketDamageScale));
@@ -515,13 +588,13 @@ function SendStatusTo(Pawn Sender) {
 	Send("  FlakSecondaryDamageScale = "$PercentageChangeStr(FlakSecondaryDamageScale));
 	Send("  PulseDamageScale = "$PercentageChangeStr(PulseDamageScale));
 	Send("  PulsebeamDamageScale = "$PercentageChangeStr(PulsebeamDamageScale));
-	Send("  RipperDamageScale = "$PercentageChangeStr(RipperDamageScale));
+	Send("  RipperPrimaryDamageScale = "$PercentageChangeStr(RipperPrimaryDamageScale));
 	Send("  RipperSecondaryDamageScale = "$PercentageChangeStr(RipperSecondaryDamageScale));
 	Send("  RipperHeadshotDamageScale = "$PercentageChangeStr(RipperHeadshotDamageScale));
 	Send("  MeleeWeaponDamageScale = "$PercentageChangeStr(MeleeWeaponDamageScale));
 	Send("  bAdjustBoost = "$bAdjustBoost);
 	//// Inaccurate approximation, given thresholds.
-	/* Send("So hardcore headshot 150 now gives "$ Int(150*SniperDamageScale) $" and bodyhit 67 gives "$ Int(67*SniperDamageScale) $"."); */
+	/* Send("So hardcore headshot 150 now gives "$ Int(150*SniperHeadshotDamageScale) $" and bodyhit 67 gives "$ Int(67*SniperDamageScale) $"."); */
 }
 
 function String PercentageChangeStr(float proportion) {
@@ -544,15 +617,22 @@ defaultproperties {
 	bLiveReports=False
 	bAdvertise=True
 	bReportAllDamage=True
+	bExtraCheckForPlayerSpawn=True
 
 	bKeepHeadshotsInAllModes=False
-	SniperDamageScale=1.0
-	SniperMaxDamage=150
+	// We scale up sniper to compensate for bScaleSniperByDistance.
+	// With scale 1.2 and half-life 1024 this creates PowerRange 269:
+	// 150 * 1.2 * (0.5 ** (269.0 / 1024.0)) = 150.035260381906
+	SniperHeadshotDamageScale=1.3
+	SniperBodyshotDamageScale=1.3
+	SniperHeadshotMaxDamage=150
+	SniperBodyshotMaxDamage=67
 	bScaleSniperByDistance=True
-	SniperPowerRange=256
-	SniperMidRange=2048
-	SniperMaxRange=9216
-	SniperMinDamage=12
+	SniperHalflifeRange=768
+	// SniperPowerRange=256
+	// SniperMidRange=2048
+	// SniperMaxRange=9216
+	SniperMinDamage=1
 	bFixCrouchingBug=False
 
 	RocketDamageScale=1.00
@@ -566,7 +646,7 @@ defaultproperties {
 	FlakSecondaryDamageScale=1.00
 	PulseDamageScale=1.00
 	PulsebeamDamageScale=1.00
-	RipperDamageScale=1.00
+	RipperPrimaryDamageScale=1.00
 	RipperSecondaryDamageScale=1.00
 	RipperHeadshotDamageScale=1.00
 	MeleeWeaponDamageScale=1.00
@@ -578,11 +658,8 @@ defaultproperties {
 // Note that this does not affect damage to armour, only damage to health.
 // Usually a headshot does 150 damage, and a body shot does 67.
 
-// We might want a headshot to do 102, and a bodyshot 52.  (scale 0.78)
-// This is the minimum that will look normal on a guy with 100 hp and 0 armour.
-
-// (Alternatively, for bodyshot 55, use scale 0.825.)
+// To scale from Hardcore to non-hardcore 0.667 should work in theory, but in practicel 0.672 is the minimum that can handle two round-down errors.
 
 // In non-hardcore mode (which Siege requires for jetpack), headshots usually
-// cost 100 and bodyshots 58.
+// deal 100 and bodyshots 58.  Really?  I am getting 45 now.  :o
 
