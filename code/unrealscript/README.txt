@@ -235,7 +235,7 @@ can pick up and work on the .uc, or squeeze "gcc -E" into your build process.
   To disable distance dropoff entirely, set SniperMaxRange=0
 
   Admins who are logged in can try "mutate help".  The mod can be toggled with
-  "mutate fwb" and display live damage changes with "mutate report".
+  "mutate fwb" and display live damage changes with "mutate fwbreport".
 
   NewNet/UTProMod is also attempting to rebalance the weapons:
 
