@@ -25,15 +25,23 @@ class FixWeaponBalanceSiege expands FixWeaponBalance config(FixWeaponBalance);
 defaultproperties {
 	// To increase damage to normal hardcore mode (headshot 150), we can multiply FWB's default scale by 1.5
 	// But we don't want sniper that strong (because zp has made it easy to use) so we aim for max 125 instead.
-	SniperHeadshotDamageScale=1.62
-	SniperBodyshotDamageScale=1.62
-	SniperHeadshotMaxDamage=125
-	SniperBodyshotMaxDamage=56
+	//// These will be overwritten by bSetDamageScaleFromRange
+	// SniperHeadshotDamageScale=1.62
+	// SniperBodyshotDamageScale=1.62
+	//// Half-hardcore means sniper gets a greater max than usual
+	// SniperHeadshotMaxDamage=125
+	// SniperBodyshotMaxDamage=56
+	//// Allow full hardcore, to compensate for sucking at distance.
+	SniperHeadshotMaxDamage=200
+	SniperBodyshotMaxDamage=67
+	//// But only half-hardcore on the power/range ratio
+	SniperPowerRange=480
+	// Other weapons at 125% (half-hardcore)
 	RocketDamageScale=1.25
 	RocketGrenadeDamageScale=1.25
 	BioDamageScale=1.25
 	EnforcerDamageScale=1.00
-	MinigunDamageScale=0.78
+	MinigunDamageScale=0.6
 	ShockPrimaryDamageScale=0.90
 	ShockBallDamageScale=1.15
 	FlakPrimaryDamageScale=1.25
@@ -50,4 +58,8 @@ defaultproperties {
 	bAdjustBoost=True
 	bOnlyAdjustBoostDownwards=True
 	*/
+
+// Siege special weapons:
+// Instagib rifle does 'jolted' power 150, and thus has ShockBallDamageScale applied
+// Super shock rifle does 'Pulsed', one hit of which was 50, and has PulseDamageScale applied.
 
