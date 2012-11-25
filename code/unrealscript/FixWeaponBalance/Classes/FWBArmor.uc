@@ -34,9 +34,7 @@ function int ArmorAbsorbDamage(int Damage, name DamageType, vector HitLocation) 
 		//// So we use all old values.
 		return Mut.AdjustDamageAndMomentum(Mut.InDamage,Pawn(Owner),Mut.LastInstigator,Mut.InHitLocation,Mut.LastMomentum,Mut.InDamageType);
 	} else {
-		// This is a critical bug which I want to hear about if it occurs, so we always log.  If admins still want to use the mod even if its occurring, they must suppress it.
-		// Log("
-		Mut.Report(None,"BUG! Mut.Stage="$ Mut.Stage $" in FWBArmor.ArmorAbsorbDamage()!  DamageType="$DamageType$" Damage="$Damage$" Owner="$Mut.GHN(Owner));
+		Mut.EmitWarning("BUG! Mut.Stage="$ Mut.Stage $" in FWBArmor.ArmorAbsorbDamage()!  DamageType="$DamageType$" Damage="$Damage$" Owner="$Mut.GHN(Owner));
 		return Damage;
 	}
 }
