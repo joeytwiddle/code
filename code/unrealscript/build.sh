@@ -128,6 +128,8 @@ rebuild_package_1() {
 		done
 		echo "EDITPACKAGES=\"$EDITPACKAGES\"" > editpackages.ini
 	fi
+	## BUG: Might occasionally be a problem if the first includes .uc files from the second, then we should have rebuilt (or at least, preprocessed) the second one first!
+	## Also: Often I want to indicate, not that the dependency should be rebuilt for me, but that I should be rebuilt *IF* the dependency changes!
 
 }
 
