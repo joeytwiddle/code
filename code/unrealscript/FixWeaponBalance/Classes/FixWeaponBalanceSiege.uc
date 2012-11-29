@@ -4,25 +4,12 @@
 
 class FixWeaponBalanceSiege expands FixWeaponBalance config(FixWeaponBalance);
 
-	/*
-	bEnabled=True
-	bLogging=False
-	bLiveReports=False
-
-	bKeepHeadshotsInAllModes=False
-	SniperDamageScale=1.25
-	SniperMaxDamage=150
-	bScaleSniperByDistance=True
-	SniperPowerRange=256
-	SniperMaxRange=4096
-	SniperMinDamage=12
-	bFixCrouchingBug=True
-	*/
-
 // We have modified sniper damage mostly because headshots are too easy in zeroping.
 // Body shots (usually 45 in Siege) are fairly weak by comparison, so we actually let them go stronger.
 
 defaultproperties {
+	bFixCrouchingBug=True
+	bExtraCheckForPlayerSpawn=True
 	// To increase damage to normal hardcore mode (headshot 150), we can multiply FWB's default scale by 1.5
 	// But we don't want sniper that strong (because zp has made it easy to use) so we aim for max 125 instead.
 	//// These will be overwritten by bSetDamageScaleFromRange
@@ -31,9 +18,10 @@ defaultproperties {
 	//// Half-hardcore means sniper gets a greater max than usual
 	// SniperHeadshotMaxDamage=125
 	// SniperBodyshotMaxDamage=56
-	//// Allow full hardcore, to compensate for sucking at distance.
-	SniperHeadshotMaxDamage=200
-	SniperBodyshotMaxDamage=67
+	//// Allow strong headshot, to compensate for sucking at distance.
+	// SniperHeadshotMaxDamage=200
+	// SniperBodyshotMaxDamage=67
+	//// Nooo we cannot limit the max, or we will limit amp max also!
 	//// But only half-hardcore on the power/range ratio
 	SniperPowerRange=480
 	// Other weapons at 125% (half-hardcore)
@@ -53,11 +41,6 @@ defaultproperties {
 	RipperHeadshotDamageScale=1.00
 	MeleeWeaponDamageScale=1.10
 }
-
-	/*
-	bAdjustBoost=True
-	bOnlyAdjustBoostDownwards=True
-	*/
 
 // Siege special weapons:
 // Instagib rifle does 'jolted' power 150, and thus has ShockBallDamageScale applied

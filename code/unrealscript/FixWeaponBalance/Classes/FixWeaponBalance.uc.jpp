@@ -14,7 +14,7 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 // DONE: Having got this far, at least make headshot vs body shot configurable.
 //       I suppose we could have two different scales.
 
-// TODO HELP!  bExtraCheckForPlayerSpawn (implemented in AlwaysKeep) could be improved!
+// TODO HELP!  bExtraCheckForPlayerSpawn (implemented via AlwaysKeep/CheckAllPlayersForFWBArmor) could be improved!
 
 // TODO: Try to become first mutator if not already.  (To avoid other mutators seeing some damage twice, or bad momentum values.)
 
@@ -26,11 +26,11 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // TODO: FWBArmor might try to skip all armor calls on the first pass, by breaking the armor chain?  It might need to be the first inventory item to achieve that.
 
-// BUG: Getting stuck on stage 2 on the first of a series of 'zapped' damage from a bot.
+// MAY BE FIXED ALREADY: Warnings could be emitted if an admin enter godmode, because his armor is never processed (Pawn.TakeDamage() skips the call to Inventory.ReduceDamage()).  Such warnings could be suppressed if the Victim's ReducedDamageType == 'All' ("God Mode").
 
-// BUG: Warnings will be emitted if an admin enter godmode, because his armor is never processed (Pawn.TakeDamage() skips the call to Inventory.ReduceDamage()).
+// BUG: It's all well and good to tweak the "max" the sniper does, but what about in the presence of amp?!
 
-#define DEV
+// #define DEV
 
 // #define DEBUG(X); if (bLogging) { Log("[FixWeaponBalance] "$(X)); } if (bLiveReports) { BroadcastMessage("[FWD] "$(X)); }
 #define DEBUG(X) if (bLogging) { Log("[FixWeaponBalance] "$(X)); }
@@ -40,13 +40,13 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 #define InflictedMaker ">"
 #define ReceivedMarker "<"
 
-#define SET_DAMAGE_SCALE if (bScaleSniperByDistance && bSetDamageScaleFromRange) { /* Scale = 1 / (0.5 ^ (PowerRange / HalfRange)) */ SniperHeadshotDamageScale = 1.0 / (0.5 ** (SniperPowerRange / SniperHalflifeRange)); SniperBodyshotDamageScale = SniperHeadshotDamageScale; }
+#define GET_RANGE_DAMAGE_SCALE if (bScaleSniperByDistance && bCalcDamageScaleFromRange) { /* Scale = 1 / (0.5 ^ (PowerRange / HalfRange)) */ SniperRangeDamageScale = 1.0 / (0.5 ** (SniperPowerRange / SniperHalflifeRange)); }
 
 var config bool bEnabled;
 var config bool bLogging;
 var config bool bAdvertise; // Tell players that the mod is on!
-var config bool bExtraCheckForPlayerSpawn; // Needed for some versions of Siege, when ModifyPlayer is not called.
-var config name TriggerExtraCheckFrom; // If your gametype does not give an enforcer, what does it give your players on spawn?
+var config bool bExtraCheckForPlayerSpawn; // Needed for some versions of Siege, when ModifyPlayer is not called.  Unfortunately less than efficient.
+var config name TriggerExtraSpawnCheckItem; // If your gametype does not give an enforcer, what does it give your players on spawn?
 var config bool bUseMagicMethod; // Whether or not to use the gnarly double-call technique.  Since it is needed, it will be switched on automatically if bScaleSniperByDistance is.
 // WARNING BUG: Do not disable bUseMagicMethod; it cannot tell the difference between sniper/mini/enforcer shots, or sniper/ripper headshots (because it does not have InstigatedBy).  Also it cannot affect momentum.
 var config bool bAnyoneMayToggleReporting;
@@ -57,11 +57,12 @@ var config bool bReportUnchangedDamage; // Shows in live reports all damage, not
 var config bool bKeepHeadshotsInAllModes;
 var config float SniperHeadshotDamageScale;
 var config float SniperBodyshotDamageScale;
-var config int SniperHeadshotMaxDamage;
+var float SniperRangeDamageScale;
+var config int SniperHeadshotMaxDamage; // I realised later, we should limit to 150, as that also limits what amp damage does!
 var config int SniperBodyshotMaxDamage;
 var config bool bScaleSniperByDistance;
 var config float SniperHalflifeRange;
-var config bool bSetDamageScaleFromRange;   // If this is enabled, SniperHeadshotDamageScale and SniperBodyshotDamageScale are overwritten by a calculation using SniperPowerRange.
+var config bool bCalcDamageScaleFromRange;   // If this is enabled, SniperRangeDamageScale will be calculated and used for scaling up before distance reduction, instead of SniperHeadshotDamageScale and SniperBodyshotDamageScale.
 var config float SniperPowerRange;     // At this distance, the weapon does the damage it normally would do.
 // var config float SniperMidRange;    // OLD: Used to define where power reached one-quarter.  The shape should correspond somewhat to the danger from other weapons across that range.
 // var config float SniperMaxRange;
@@ -104,7 +105,7 @@ var int NewDamage;
 function PostBeginPlay() {
 	Level.Game.RegisterDamageMutator(Self);
 	Level.Game.RegisterMessageMutator(Self);
-	SET_DAMAGE_SCALE
+	GET_RANGE_DAMAGE_SCALE
 #ifndef DEV
 	SaveConfig(); // For admin convenience, create ini file / add any missing vars
 #endif
@@ -121,14 +122,14 @@ function ModifyPlayer(Pawn Other) {
 // Unfortunately some versions of siege (XXL2e, XTreme02) forget to call ModifyPlayer, so they player does not get their armour on spawn.
 // We check harder here, to ensure they get it.
 function bool AlwaysKeep(Actor Other) {
-	// We want bUseMagicMethod to be enabled soon, if bScaleSniperByDistance is.
+	// We want bUseMagicMethod to be enabled soon, if bScaleSniperByDistance has been set.
 	// We check here simply because this functi_n is called often.
 	if (bScaleSniperByDistance) {
 		bUseMagicMethod = True;
 	}
 	// Check only happens when player is being given an Enforcer.  Hopefully that is enough.
 	// CONSIDER: Make that optional or make the inventory type configurable, for modes without enforcer but with a similarly broken ModifyPlayer()?
-	if (bEnabled && bExtraCheckForPlayerSpawn && Other.IsA(TriggerExtraCheckFrom)) {
+	if (bEnabled && bExtraCheckForPlayerSpawn && Other.IsA(TriggerExtraSpawnCheckItem)) {
 		Log("Someone is being given an enforcer.  Dunno who.");
 		CheckAllPlayersForFWBArmor();
 	}
@@ -142,13 +143,6 @@ function CheckAllPlayersForFWBArmor() {
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if ((p.bIsPlayer && !p.IsA('Spectator')) || p.IsA('Bot')) {
 			GiveMagicArmorToPlayer(p);
-			if (bAdvertise && PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
-				if (bScaleSniperByDistance) {
-					PlayerPawn(Other).ClientMessage("The sniper rifle is now a close-range weapon.  See !status for details.");
-				} else {
-					PlayerPawn(Other).ClientMessage("FixWeaponBalance is running.  See !status for details.");
-				}
-			}
 		}
 	}
 }
@@ -179,16 +173,26 @@ function GiveMagicArmorToPlayer(Pawn Other) {
 			arm.Mut = Self;
 			arm.GiveTo(Other);
 		}
+		if (bAdvertise && PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
+			if (bScaleSniperByDistance) {
+				PlayerPawn(Other).ClientMessage("The sniper rifle is now a close-range weapon.  See !status for details.");
+			} else {
+				PlayerPawn(Other).ClientMessage("FixWeaponBalance is running.  See !status for details.");
+			}
+		}
 	}
 }
 
 // Unfortunately Inventory.ArmorAbsorbDamage() is not given the Instigator, which is rather inconvenient if we want to scale a weapon's strength according to the distance between the two players!
 // The solution was somewhat convoluted and dirty.
+//   Stage 0
 //   - Override ArmorAbsorbDamage in the first armor inventory item (ensured by AbsorptionPriority=-999).
-//   - Have that DO NOTHING, except leave a TODO for the mutator.  (I.e. it absorbs all damage on that first call, and waits for second call from the mutator, once MutatorTakeDamage is reached.)
-//   - Wait for MutatorTakeDamage to be called on the mutator.  Now we have the InstigatedBy!
-//   - Now we must do whatever we didn't do before, by calling Victim.TakeDamage *a second time*.
-//   - Except this time, we allow things to pass through as "normal", applying our changes as intended.
+//   - Have that DO NOTHING, except leave a todo for the mutator.  (I.e. it absorbs all damage on that first call, and waits for second call from the mutator, once MutatorTakeDamage is reached.)
+//   Stage 1
+//   - Wait for MutatorTakeDamage to be called on the mutator.  Now we have the InstigatedBy (and momentum)!
+//   - Now we must do what we didn't do before, by calling Victim.TakeDamage *a second time*.
+//   Stage 2 (before armor) and 3 (before mutator)
+//   - Except this time, we allow the code to flow as normal, applying our damage change in the armor, and doing nothing through the mutator.
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 
@@ -196,7 +200,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 		if (!bUseMagicMethod) {
 			// Do nothing
-			// We would really like to affect out Momentum, but this is not possible.
+			// We would really like to affect our Momentum, but this is not possible.
 			// The NewMomentum stored by AdjustDamageAndMomentum() is useless because it was fed (0,0,0)!
 			// TODO: If it stored a NewMomentumScale for us, we could apply that here.
 		} else {
@@ -204,9 +208,11 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			if (Stage == 1) {
 				if (InDamage == 0) {
 					EmitWarning("Unexpected! In stage 1 although InDamage=0. "$ GHN(InstigatedBy) $" -> "$ GHN(Victim) $" "$DamageType);
-					// TODO: We don't really expect to reach stage 2 with damage 0, so we may as well reset to Stage 0 for the next iteration.
+					// DONE: We don't really expect to reach stage 2 with damage 0 (won't be sent through armors), so we may as well reset to Stage 0 for the next iteration, otherwise we will create more (misleading) warnings.
+					Stage = 0;
+				} else {
+					Stage = 2;
 				}
-				Stage = 2;
 				LastInstigator = InstigatedBy;
 				LastMomentum = Momentum * 1;
 				Victim.TakeDamage(InDamage,InstigatedBy,HitLocation,Momentum,DamageType);
@@ -231,6 +237,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 				}
 				*/
 			} else {
+				// Something went wrong!  Or did it?
 				if (Stage==0 && ActualDamage==0) {
 					// This is likely NOT a bug.  Inventory.ReduceDamage never calls ArmorAbsorbDamage if the ReduceAmount=0, so we would expect to still be on Stage 0!
 					// There seems little point in us calling AdjustDamageAndMomentum on a 0 damage, except perhaps to report damage was processed.  Let's do that directly instead.
@@ -241,25 +248,32 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 						}
 					}
 				} else if (Stage==2 && InDamage==1 && ActualDamage==0) {
-					// This sometimes happens when a bot shoots me with enforcer.
+					// This sometimes happens when a bot shoots me with enforcer in Siege.
+					// It may also have been observed on shots from team-mate bots?
 					// Not sure why Victim.TakeDamage(1,...) above does not pass the 1 to FWBArmor, although this may have something to do with it:
 					// SiegeGI CTF-BathroomsEQ1.SiegeGI0 (F_nction SiegeXtreme002.SiegeGI.ReduceDamage:028B) Accessed None
 					// Also not sure why the InDamage says the enforcer is dealing only 1 damage.  Although it's quite reasonable for the mutator to receive zero, if the 1 damage was absorbed by real armor.
+					// So let's assume this was a bug caused by sgProt.  And continue on as normal.
 					REPORT(InstigatedBy,InflictedMaker $" Weird '"$ DamageType $"': 1 -> 0 [NOARMOR] on "$ GHN(Victim));
 					if (bReportDamageReceived) {
 						REPORT(Victim,ReceivedMarker $" weird '"$ DamageType $"': 1 -> 0 [NOARMOR] from "$ GHN(InstigatedBy));
 					}
-					// So let's assume this is indeed a bug with sgProt.  And continue on as normal.
 					Stage = 0;
-					// Again there is nothing really to process, so we don't bother.
+					// Again there is nothing really to process (damage 0), so we don't bother.
 				} else {
-					// I sometimes see this firing with Stage=2 when the shot came from one of my bots!
+					// Stage 0 => armor was not called for absorption the first time
+					// Stage 2 => armor was called for absorption the first time, but not the second time
 					EmitWarning("BUG! Stage="$ Stage $" in FixWeaponBalance.MutatorTakeDamage()!  Doing fallback reduction.  InDamage="$InDamage);
 					// If we are on Stage 2, there is a concern that the damage we are receiving may have been scaled up by bHardcoreMode a second time during the second call to TakeDamage above.
+					if (Stage==2 && DeathMatchPlus(Level.Game).bHardcoreMode) {
+						ActualDamage = ActualDamage * 0.6666667;
+					}
 					// Let's at least apply what we can to the health damage being dealt?
 					// It's unlikely we are applying this again, after the armor did, if so the armor would have set Stage 3.
 					ActualDamage = AdjustDamageAndMomentum(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType,true);
 					Momentum = NewMomentum;
+					// Dunno what stage to set but let's reset.  Coming here again may reduce ActualDamage incorrectly.
+					Stage = 0;
 				}
 			}
 
@@ -270,7 +284,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
 }
 
-// Stores outputs NewDamage and NewMomentum.
+// Stores object vars NewDamage and NewMomentum.  Also returns NewDamage.
+// Should be called from the armor class, to affect damage before armor absorption.
 function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType, optional bool bReportNoArmor) {
 
 	local bool bSniperShot,bHeadshot; // bSniperShot also counts of Enforcer.
@@ -343,33 +358,47 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 
 		if (bFixCrouchingBug && Victim!=None && Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
 			// Headshots are not possible on crouched players, so we reduce the damage to a body hit.
+			if (bHeadshot) {
+				NewDamage *= 0.45; // 150 -> 67, 100 -> 45
+				bDidCrouchReduction = True;
+			}
+			// This old method had bug - it would reduce amp damage more than it should!  So we just scale down as above.
+			/*
 			if (bHardcore) {
 				if (ActualDamage > 67) {
-					ActualDamage = 67;
+					NewDamage = 67;
 					bDidCrouchReduction = True;
 				}
 			} else {
 				// Why did we have 58 here?!
 				if (ActualDamage > 45) {
-					ActualDamage = 45;
+					NewDamage = 45;
 					bDidCrouchReduction = True;
 				}
 			}
-			// TODO: If we can find accurate values in zeroping, we could compare HitLocation.Z against Victim.Location.Z, to see if the shot went over their head!
+			*/
+			// TODO: If we can find accurate values in zeroping, we could compare HitLocation.Z against Victim.Location.Z, to see if the shot went over their head entirely!
 		}
 
-		SET_DAMAGE_SCALE
+		// Scale damage for sniper rifle
+		if (bScaleSniperByDistance && bCalcDamageScaleFromRange) {
 
-		// Always scale damage for sniper rifle?
-		if (bHeadshot) {
-			NewDamage = ActualDamage * SniperHeadshotDamageScale;
+			GET_RANGE_DAMAGE_SCALE
+			NewDamage = NewDamage * SniperRangeDamageScale;
+
 		} else {
-			NewDamage = ActualDamage * SniperBodyshotDamageScale;
+
+			if (bHeadshot) {
+				NewDamage = NewDamage * SniperHeadshotDamageScale;
+			} else {
+				NewDamage = NewDamage * SniperBodyshotDamageScale;
+			}
+
 		}
 
 		if (bScaleSniperByDistance && InstigatedBy!=None) {
 			distance = VSize(Victim.Location - InstigatedBy.Location);
-			NewDamage = NewDamage * ( 0.5 ** (distance/SniperHalflifeRange) );
+			NewDamage = NewDamage * ( 0.5 ** (distance/SniperHalflifeRange) ) + 0.5;
 			/*
 			if (distance < SniperPowerRange) {
 				// Do nothing: leave strength unaffected
@@ -399,6 +428,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 		}
 
 		// In non-hardcore mode, we may not want to scale headshots down, because they are only 100 to start with!
+		// (This may get applied to amped body shots too.)
 		if (bKeepHeadshotsInAllModes && ActualDamage>=100 && NewDamage<100) {
 			NewDamage = 100;
 		}
@@ -435,13 +465,19 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 		}
 	} else if (DamageType == 'jolted') {
 		// Could be primary OR shockball collision OR nearby combo.
-		// Quite unlikely, but this check might flag a combo of just the right strength as a primary.
-		isShockPrimary = (bHardcore && ActualDamage==60) || (!bHardcore && ActualDamage==40);
-		if (isShockPrimary) {
-			NewDamage *= ShockPrimaryDamageScale;
+		// Whilst a rare issue, damage strength checks might flag a combo of just the right strength as something it is not.
+		// Siege HyperLeecher:
+		#define isHyperLeecher (!bHardcore && ActualDamage==150)
+		if (isHyperLeecher) {
+			NewDamage *= UnknownWeaponDamageScale;
 		} else {
-			// The damage caused by a shock ball can vary (centrality?), so it counts with a shock combo.
-			NewDamage *= ShockBallDamageScale;
+			isShockPrimary = (bHardcore && ActualDamage==60) || (!bHardcore && ActualDamage==40);
+			if (isShockPrimary) {
+				NewDamage *= ShockPrimaryDamageScale;
+			} else {
+				// The damage caused by a shock ball can vary (centrality?), so it counts with a shock combo.
+				NewDamage *= ShockBallDamageScale;
+			}
 		}
 	} else if (DamageType == 'FlakDeath') {
 		NewDamage *= FlakPrimaryDamageScale;
@@ -456,6 +492,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 	} else if (DamageType == 'RipperAltDeath') {
 		NewDamage *= RipperSecondaryDamageScale;
 	} else if (DamageType == 'decapitated') {
+		// BUG TODO: Or could be chainsaw!  Damage 110 in non-hardcore Siege.
 		NewDamage *= RipperHeadshotDamageScale;
 	} else if (DamageType == 'Impact') { // hammer
 		NewDamage *= MeleeWeaponDamageScale;
@@ -538,7 +575,7 @@ function Report(Pawn Target, String Msg) {
 	DEBUG("("$ GHN(Target) $") "$ Msg);
 	if (bLiveReports) {
 		if (Target == None) {
-			BroadcastMessage("[NoInstigator] "$ Msg);
+			BroadcastMessage("[Global] "$ Msg);
 		} else if (PlayerPawn(Target)!=None) {
 			Target.ClientMessage(Msg);
 		}
@@ -622,7 +659,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 	if (command ~= "HELP") {
 		Sender.ClientMessage("FixWeaponBalance.bEnabled = "$bEnabled);
-		Sender.ClientMessage("FixWeaponBalance commands: fwb | report | status");
+		Sender.ClientMessage("FixWeaponBalance commands: status | fwb | fwbreport | fwbdistance");
 		return True;
 	}
 
@@ -641,41 +678,59 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		return True;
 	}
 
+	if (command ~= "FWBDISTANCE") {
+		bScaleSniperByDistance = !bScaleSniperByDistance;
+		if (bScaleSniperByDistance)
+			tmpstr = "ENABLED";
+		else
+			tmpstr = "DISABLED";
+		if (bLiveReports)
+			BroadcastMessage(Sender.getHumanName()$" has "$tmpstr$" bScaleSniperByDistance.");
+		else
+			Sender.ClientMessage("You have "$tmpstr$" bScaleSniperByDistance.");
+		return True;
+	}
+
 	return False;
 
 }
 
-//// Normally we send the info to the caller:
-// #define Send Sender.ClientMessage
-//// But sometimes I want the output logged to the logfile, so I can post-process it:
-// #define Send DEBUG
-// #define Send(X); Sender.ClientMessage(X); Log(X);
 #define Send(X); if (Sender==None) { Log(X); } else { Sender.ClientMessage(X); }
 function SendStatusTo(Pawn Sender) {
-	Send("FixWeaponBalance settings:");
+	GET_RANGE_DAMAGE_SCALE
+	Send(Class.Name $" settings:");
+	/*
 	Send("  Enabled = "$bEnabled);
 	Send("  Logging = "$bLogging);
 	Send("  Reporting = "$bLiveReports);
+	*/
+	Send("  bUseMagicMethod = "$bUseMagicMethod);
 	Send("  bKeepHeadshotsInAllModes = "$bKeepHeadshotsInAllModes);
-	Send("  SniperHeadshotDamageScale = "$PercentageChangeStr(SniperHeadshotDamageScale));
-	Send("  SniperBodyshotDamageScale = "$PercentageChangeStr(SniperBodyshotDamageScale));
+	if (bScaleSniperByDistance && bCalcDamageScaleFromRange) {
+		Send("  SniperRangeDamageScale = "$PercentageChangeStr(SniperRangeDamageScale));
+	} else {
+		Send("  SniperHeadshotDamageScale = "$PercentageChangeStr(SniperHeadshotDamageScale));
+		Send("  SniperBodyshotDamageScale = "$PercentageChangeStr(SniperBodyshotDamageScale));
+	}
 	Send("  SniperHeadshotMaxDamage = "$SniperHeadshotMaxDamage);
 	Send("  SniperBodyshotMaxDamage = "$SniperBodyshotMaxDamage);
 	Send("  bScaleSniperByDistance = "$bScaleSniperByDistance);
 	if (bScaleSniperByDistance) {
-		SET_DAMAGE_SCALE
 		Send("    SniperHalflifeRange = "$SniperHalflifeRange);
 		// Send("    SniperMaxRange = "$SniperMaxRange);
 		Send("    SniperMinDamage = "$SniperMinDamage);
-		Send("    bSetDamageScaleFromRange = "$bSetDamageScaleFromRange);
-		if (bSetDamageScaleFromRange) {
+		Send("    bCalcDamageScaleFromRange = "$bCalcDamageScaleFromRange);
+		if (bCalcDamageScaleFromRange) {
 			Send("    SniperPowerRange = "$SniperPowerRange);
 		}
 		// Provided the MaxDamage matches that which the mutator normally gives, this should show us the range in which the max is applied, beyond which the damage begins to fall.
 		// PowerRange = HalfRange * log (1/Scale) / log 0.5
-		Send("    Expected SniperPowerRange = "$ Int(SniperHalflifeRange * loge(1/SniperHeadshotDamageScale) / loge(0.5)));
-		Send("    Your CollisionRadius = "$ Sender.CollisionRadius);
-		Send("    Making potential max damage scale = " $ SniperHeadshotDamageScale * ( 0.5 ** (Sender.CollisionRadius*2/SniperHalflifeRange) ) );
+		// BUG: Wrong damage scale if we aren't using bCalcDamageScaleFromRange
+		Send("    Expected SniperPowerRange = "$ Int(SniperHalflifeRange * loge(1/SniperRangeDamageScale) / loge(0.5)));
+		if (Sender != None) {
+			Send("    Your CollisionRadius = "$ Sender.CollisionRadius);
+			Send("    Making point-blank-range damage scale = " $ SniperRangeDamageScale * ( 0.5 ** (Sender.CollisionRadius*2/SniperHalflifeRange) ) );
+		}
 	}
 	Send("  bFixCrouchingBug = "$bFixCrouchingBug);
 	Send("  RocketDamageScale = "$PercentageChangeStr(RocketDamageScale));
@@ -715,9 +770,10 @@ function String PercentageChangeStr(float proportion) {
 defaultproperties {
 	bEnabled=True
 	bAdvertise=True
-	bExtraCheckForPlayerSpawn=True
-	TriggerExtraCheckFrom=Enforcer
+	bExtraCheckForPlayerSpawn=False
+	TriggerExtraSpawnCheckItem=Enforcer
 	bLiveReports=False
+	bUseMagicMethod=True
 #ifdef DEV
 	bLogging=True
 	bReportDamageReceived=True
@@ -742,23 +798,23 @@ defaultproperties {
 	//           log (0.5 ^ (PowerRange / HalfRange)) = log 1/Scale
 	//               (PowerRange/HalfRange) * log 0.5 = log 1/Scale
 	//                                     PowerRange = HalfRange * log (1/Scale) / log 0.5
-	SniperHeadshotDamageScale=1.3
-	SniperBodyshotDamageScale=1.3
-	SniperHeadshotMaxDamage=200
-	SniperBodyshotMaxDamage=67
+	SniperHeadshotDamageScale=1.0
+	SniperBodyshotDamageScale=1.0
+	// SniperHeadshotMaxDamage=200
+	// SniperBodyshotMaxDamage=67
+	SniperHeadshotMaxDamage=9999
+	SniperBodyshotMaxDamage=9999
 
 	bScaleSniperByDistance=True
 	SniperPowerRange=320
-	bSetDamageScaleFromRange=True
-	SniperHalflifeRange=768
+	bCalcDamageScaleFromRange=True
+	SniperHalflifeRange=1024
 	// SniperMidRange=2048
 	// SniperMaxRange=9216
 #ifdef DEV
 	SniperMinDamage=1
-	bSetDamageScaleFromRange=True
 #else
 	SniperMinDamage=12
-	bSetDamageScaleFromRange=False
 #endif
 
 	RocketDamageScale=1.00

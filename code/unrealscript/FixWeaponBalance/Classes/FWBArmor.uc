@@ -31,6 +31,10 @@ function int ArmorAbsorbDamage(int Damage, name DamageType, vector HitLocation) 
 		// if (Damage != Mut.InDamage) {
 		// 	Mut.Report(Mut.LastInstigator,"FWBArmor.ArmorAbsorbDamage() Damage!=InDamage ("$ Damage $" vs "$ Mut.InDamage $")");
 		// }
+		//// We should never usually get called with Damage=0, unless a custom implementation of ReduceDamage is being used.
+		if (Damage == 0 || Mut.InDamage == 0) {
+			Mut.Report(Mut.LastInstigator,"FWBArmor.ArmorAbsorbDamage() Unexpected Damage="$Damage$" InDamage="$Mut.InDamage$" InDamageType="$Mut.InDamageType);
+		}
 		//// So we use all old values.
 		return Mut.AdjustDamageAndMomentum(Mut.InDamage,Pawn(Owner),Mut.LastInstigator,Mut.InHitLocation,Mut.LastMomentum,Mut.InDamageType);
 	} else {
@@ -39,9 +43,51 @@ function int ArmorAbsorbDamage(int Damage, name DamageType, vector HitLocation) 
 	}
 }
 
+function int ArmorPriority(name DamageType) {
+	// Return high priority regardless of DamageType ('Drowned' usually returns 0 for all armors!).
+	return AbsorptionPriority;
+}
+
+// Clone of the default which does not check bIsAnArmor.
+function inventory PrioritizeArmor( int Damage, name DamageType, vector HitLocation )
+{
+	local Inventory FirstArmor, InsertAfter;
+
+	if ( Inventory != None )
+		FirstArmor = Inventory.PrioritizeArmor(Damage, DamageType, HitLocation);
+	else
+		FirstArmor = None;
+
+	if ( /*bIsAnArmor*/ true)
+	{
+		if ( FirstArmor == None )
+		{
+			nextArmor = None;
+			return self;
+		}
+
+		// insert this armor into the prioritized armor list
+		if ( FirstArmor.ArmorPriority(DamageType) < ArmorPriority(DamageType) )
+		{
+			nextArmor = FirstArmor;
+			return self;
+		}
+		InsertAfter = FirstArmor;
+		while ( (InsertAfter.nextArmor != None) 
+			&& (InsertAfter.nextArmor.ArmorPriority(DamageType) > ArmorPriority(DamageType)) )
+			InsertAfter = InsertAfter.nextArmor;
+
+		nextArmor = InsertAfter.nextArmor;
+		InsertAfter.nextArmor = self;
+	}
+	return FirstArmor;
+}
+
 defaultproperties {
-	bIsAnArmor=True
-	ArmorAbsorption=100
-	AbsorptionPriority=-999
+	//// We cannot set this because UT_Shieldbelt.HandlePickupQuery() will destroy any other armors in inventory!
+	//// Instead we will override PrioritizeArmor to put us in the list despite missing this flag.
+	// bIsAnArmor=True
+	// ArmorAbsorption=100
+	AbsorptionPriority=1000001
 }
 
