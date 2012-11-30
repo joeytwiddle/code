@@ -22,9 +22,10 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // Why half-life may have precedent: http://images49.fotki.com/v1556/photos/3/363331/1447715/300FPSEnergyChart-vi.jpg
 
-// TODO: To be neat, destroy self not other when new copy added.  If mutator is destroyed, remove all FWBArmors.  When adding new mutator, give FWBArmors to all players.
+// TODO: To be neat, destroy self not other when a new copy is added.  If mutator is destroyed, remove all FWBArmors.
+// DONE: When adding new mutator, give FWBArmors to all players.  If they already have FWBArmor, update the .Mut anyway.  (Costs little, should allow re-added mutator to act immediately and avoid calls to destroyed mutator / avoid fallback.)
 
-// TODO: FWBArmor might try to skip all armor calls on the first pass, by breaking the armor chain?  It might need to be the first inventory item to achieve that.
+// TODO: FWBArmor could try to skip all armor calls on the first pass, by breaking the armor chain?  It might need to be the first inventory item to achieve that.  This is only desirable if later armors change state (e.g. lose charge) when passed damage 0, which is unlikely.
 
 // MAY BE FIXED ALREADY: Warnings could be emitted if an admin enter godmode, because his armor is never processed (Pawn.TakeDamage() skips the call to Inventory.ReduceDamage()).  Such warnings could be suppressed if the Victim's ReducedDamageType == 'All' ("God Mode").
 
@@ -58,12 +59,12 @@ var config bool bKeepHeadshotsInAllModes;
 var config float SniperHeadshotDamageScale;
 var config float SniperBodyshotDamageScale;
 var float SniperRangeDamageScale;
-var config int SniperHeadshotMaxDamage; // I realised later, we should limit to 150, as that also limits what amp damage does!
-var config int SniperBodyshotMaxDamage;
 var config bool bScaleSniperByDistance;
 var config float SniperHalflifeRange;
 var config bool bCalcDamageScaleFromRange;   // If this is enabled, SniperRangeDamageScale will be calculated and used for scaling up before distance reduction, instead of SniperHeadshotDamageScale and SniperBodyshotDamageScale.
 var config float SniperPowerRange;     // At this distance, the weapon does the damage it normally would do.
+var config int SniperHeadshotMaxScale;
+var config int SniperBodyshotMaxScale;
 // var config float SniperMidRange;    // OLD: Used to define where power reached one-quarter.  The shape should correspond somewhat to the danger from other weapons across that range.
 // var config float SniperMaxRange;
 var config int SniperMinDamage;     // This currently only applies when adjusting with bScaleSniperByDistance.  Setting to 0 may produce a BUG! (no armor absorption on second call).
@@ -175,11 +176,14 @@ function GiveMagicArmorToPlayer(Pawn Other) {
 		}
 		if (bAdvertise && PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
 			if (bScaleSniperByDistance) {
-				PlayerPawn(Other).ClientMessage("The sniper rifle is now a close-range weapon.  See !status for details.");
+				PlayerPawn(Other).ClientMessage("The SNIPER RIFLE is now a CLOSE-RANGE weapon.  See !status for details.");
 			} else {
 				PlayerPawn(Other).ClientMessage("FixWeaponBalance is running.  See !status for details.");
 			}
 		}
+	} else {
+		arm = FWBArmor(inv);
+		arm.Mut = Self;
 	}
 }
 
@@ -291,7 +295,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 	local bool bSniperShot,bHeadshot; // bSniperShot also counts of Enforcer.
 	local bool bHardcore,isShockPrimary,isEnforcer,isMinigun;
 	local bool bDidCrouchReduction;
-	local float distance;
+	local float distance,DamageScale;
 	local String ReportStr, DistStr;
 
 	if (!bEnabled) {
@@ -309,7 +313,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 	// Is this a sniper hit?
 	// Note that mini and enforcer also produce DamageType 'shot' and ripper also gives 'decapitated'.
 	// BUG: Checking instigator's weapon could identify a ripper headshot ('decapitated') or maybe even minigun as a sniper shot, IF the player changed their weapon to sniper before it hits!
-	// BUG: Will fail to detect sniper-like weapons which don't extend the original class.
+	// TODO: Will fail to detect sniper-like weapons which don't extend the original class.  Make the class check configurable?
 	if (DamageType == 'shot' || DamageType == 'decapitated') {
 		if (InstigatedBy!=None && SniperRifle(InstigatedBy.Weapon) != None) {
 			bSniperShot = True;
@@ -317,6 +321,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 	}
 	// Alternative: Detect from damage values.
 	// BUG: Too many values!  With ZPP103 in hardcore games we get bodyhits sometimes 35 or 17, or 45 in non-hardcore siege.
+	//      Also amped values will be different from usual values.
 	/*
 	if (DamageType == 'decapitated') {
 		if (bHardcore) {
@@ -359,7 +364,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 		if (bFixCrouchingBug && Victim!=None && Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
 			// Headshots are not possible on crouched players, so we reduce the damage to a body hit.
 			if (bHeadshot) {
-				NewDamage *= 0.45; // 150 -> 67, 100 -> 45
+				NewDamage *= 0.45; // 150 -> 67.5, 100 -> 45
 				bDidCrouchReduction = True;
 			}
 			// This old method had bug - it would reduce amp damage more than it should!  So we just scale down as above.
@@ -377,7 +382,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 				}
 			}
 			*/
-			// TODO: If we can find accurate values in zeroping, we could compare HitLocation.Z against Victim.Location.Z, to see if the shot went over their head entirely!
+			// Extra feature?  By comparing HitLocation.Z to player's Location, we might determine if the shot went over the crouched player's head entirely, and if so reduce damage to 0?
 		}
 
 		// Scale damage for sniper rifle
@@ -398,7 +403,17 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 
 		if (bScaleSniperByDistance && InstigatedBy!=None) {
 			distance = VSize(Victim.Location - InstigatedBy.Location);
-			NewDamage = NewDamage * ( 0.5 ** (distance/SniperHalflifeRange) ) + 0.5;
+			DamageScale = 0.5 ** (distance/SniperHalflifeRange);
+			if (bHeadshot) {
+				if (DamageScale > SniperHeadshotMaxScale) {
+					DamageScale = SniperHeadshotMaxScale;
+				}
+			} else {
+				if (DamageScale > SniperBodyshotMaxScale) {
+					DamageScale = SniperBodyshotMaxScale;
+				}
+			}
+			NewDamage = NewDamage * DamageScale + 0.5;
 			/*
 			if (distance < SniperPowerRange) {
 				// Do nothing: leave strength unaffected
@@ -433,6 +448,8 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 			NewDamage = 100;
 		}
 
+		/*
+		// Damage thresholds suck due to amp.
 		if (bHeadshot) {
 			if (NewDamage > SniperHeadshotMaxDamage) {
 				NewDamage = SniperHeadshotMaxDamage;
@@ -442,6 +459,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 				NewDamage = SniperBodyshotMaxDamage;
 			}
 		}
+		*/
 
 	// WARNING: Some of the damage dealt may have already been partially absorbed by armour, making the == comparisons we make later inaccurate - they may fail to scale up/down damage on a weapon they should have.  In case of inaccuracies, they will fall to the final else case, so at least the damage scale there will be applied.
 	// If all their armour is gone, and they have only 12 health left, I believe 60 damage still reaches us as 60 (not reduced to 12).  If not for that, scaling damage down would make it impossible to kill people!
@@ -475,7 +493,7 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 			if (isShockPrimary) {
 				NewDamage *= ShockPrimaryDamageScale;
 			} else {
-				// The damage caused by a shock ball can vary (centrality?), so it counts with a shock combo.
+				// The damage caused by a shock ball can vary (centrality?), so it counts the same as a shock combo.
 				NewDamage *= ShockBallDamageScale;
 			}
 		}
@@ -712,8 +730,8 @@ function SendStatusTo(Pawn Sender) {
 		Send("  SniperHeadshotDamageScale = "$PercentageChangeStr(SniperHeadshotDamageScale));
 		Send("  SniperBodyshotDamageScale = "$PercentageChangeStr(SniperBodyshotDamageScale));
 	}
-	Send("  SniperHeadshotMaxDamage = "$SniperHeadshotMaxDamage);
-	Send("  SniperBodyshotMaxDamage = "$SniperBodyshotMaxDamage);
+	Send("  SniperHeadshotMaxScale = "$SniperHeadshotMaxScale);
+	Send("  SniperBodyshotMaxScale = "$SniperBodyshotMaxScale);
 	Send("  bScaleSniperByDistance = "$bScaleSniperByDistance);
 	if (bScaleSniperByDistance) {
 		Send("    SniperHalflifeRange = "$SniperHalflifeRange);
@@ -802,8 +820,8 @@ defaultproperties {
 	SniperBodyshotDamageScale=1.0
 	// SniperHeadshotMaxDamage=200
 	// SniperBodyshotMaxDamage=67
-	SniperHeadshotMaxDamage=9999
-	SniperBodyshotMaxDamage=9999
+	SniperHeadshotMaxScale=1.5
+	SniperBodyshotMaxScale=1.5
 
 	bScaleSniperByDistance=True
 	SniperPowerRange=320
