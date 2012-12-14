@@ -1,6 +1,7 @@
 package tools.parser;
 
 import java.lang.String;
+import java.util.List;
 import java.util.Vector;
 import java.util.Hashtable;
 import java.util.Map;
@@ -8,25 +9,25 @@ import java.util.Map;
 public class RuleSet {
 
 	String type;
-	Vector<Vector<Type>> rules;
-	Map<String,Vector<Type>> replacements;
+	List<List<Type>> rules;
+	Map<String,List<Type>> replacements;
 
 	RuleSet(String t) {
-		this(t, new Vector<Vector<Type>>(), new Hashtable());
+		this(t, new Vector<List<Type>>(), new Hashtable());
 	}
 
-	RuleSet(String t, Vector<Vector<Type>> rules, Map replacements) {
+	RuleSet(String t, List<List<Type>> rules, Map replacements) {
 		type = t;
 		this.rules = rules;
 		this.replacements = replacements;
 	}
 
-	void add(Vector<Type> pattern) {
+	void add(List<Type> pattern) {
 		rules.add(pattern);
 	}
 	/*
-	 * void addreplacementtype(String target) { map.put(target,new Vector()); }
-	 * void addreplacementbit(String target,Type t) { Vector rrs=map.get(target);
+	 * void addreplacementtype(String target) { map.put(target,new List()); }
+	 * void addreplacementbit(String target,Type t) { List rrs=map.get(target);
 	 * rrs.add(t); }
 	 */
 
@@ -36,7 +37,7 @@ public class RuleSet {
    	} else {
    		StringBuffer out = new StringBuffer();
    		for (int i=0;i<rules.size();i++) {
-   			Vector<Type> rule = rules.get(i);
+   			List<Type> rule = rules.get(i);
    			for (int j=0;j<rule.size();j++) {
    				Type bit = rule.get(j);
    				out.append(bit.toString());

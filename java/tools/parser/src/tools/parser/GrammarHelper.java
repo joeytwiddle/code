@@ -3,7 +3,7 @@ package tools.parser;
 
 public class GrammarHelper {
 
-	public static ConcatList newList() {
+	public static SimpleConcatList newList() {
 		return new SimpleConcatList();
 	}
 	

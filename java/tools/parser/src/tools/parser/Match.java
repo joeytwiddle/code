@@ -128,7 +128,7 @@ public class Match {
 	public void render(OutputContext ctx, Match btwyourdadis, String target, PrintStream out) {
 		if (parent == null) parent = btwyourdadis;
 
-		Vector<Type> replacementRule = null;
+		List<Type> replacementRule = null;
 		
 		// Find the replacement rule for this type, if possible
 		if (type instanceof Atom) {

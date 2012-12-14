@@ -142,6 +142,27 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Text("    return grammar;\n  }\n}\n"));
     ruleset.replacements.put("java",rule);
 
+    /*
+
+    // Alternative 1 - using standard libraries and array literal
+    ruleset.replacements.put("java",
+        Arrays.asList(new Type[] {
+           new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"),
+           new Atom("Grm"),
+           new Text("    return grammar;\n  }\n}\n")
+        })
+    );
+
+    // Alternative 2 - using a ConcatList 
+    ruleset.replacements.put("java",
+        newList()
+        .with(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"))
+        .with(new Atom("Grm"))
+        .with(new Text("    return grammar;\n  }\n}\n"))
+    );
+
+    */
+
     rule=new Vector<Type>();
         rule.add(new Text("module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ "));
         rule.add(new Atom("Grm"));
