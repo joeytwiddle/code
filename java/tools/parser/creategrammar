@@ -1,6 +1,23 @@
 #!/bin/sh
 
-[ "$1" = "" ] && echo "grammar name?" && exit 0
+if [ "$1" = "" ] || [ "$1" = --help ]
+then
+	echo
+	echo "creategrammar <grammar_name>"
+	echo
+	echo "  Creates a <name>Grm.java file using the \"java\" target."
+	echo "  That class can then be used to load the grammar into the JVM."
+	echo
+	echo "  For example:"
+	echo
+	echo "    creategrammar c"
+	echo
+	echo "  will parse c.grm and output cGrm.java, then try to compile it."
+	echo
+	echo "  In future this process may become redundant, if we can load Grammar objects directly from grm files."
+	echo
+	exit 0
+fi
 
 name="$1"
 
