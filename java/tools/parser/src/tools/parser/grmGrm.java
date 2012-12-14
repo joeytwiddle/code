@@ -1,10 +1,7 @@
 package tools.parser;
 
-import java.lang.String;
+import java.util.Arrays;
 import java.util.Vector;
-
-import tools.parser.*;
-import tools.parser.extensions.*;
 
 public class grmGrm extends GrammarHelper {
   public static Grammar setupgrammar() {
@@ -146,11 +143,11 @@ public class grmGrm extends GrammarHelper {
 
     // Alternative 1 - using standard libraries and array literal
     ruleset.replacements.put("java",
-        Arrays.asList(new Type[] {
+        Arrays.asList(
            new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"),
            new Atom("Grm"),
            new Text("    return grammar;\n  }\n}\n")
-        })
+        )
     );
 
     // Alternative 2 - using a ConcatList 
