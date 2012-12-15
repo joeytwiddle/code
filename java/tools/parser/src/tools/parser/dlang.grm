@@ -95,7 +95,7 @@ FunctionBody = NiceCode | MutableCodeBlock
 
 NiceCode = Expression ( Space "where" Space NiceNEDefs EOL | EOL )
 
-NiceNEDefs = NamedExpression '\n' NiceNEDefs
+NiceNEDefs = NamedExpression "\n" NiceNEDefs
            | NamedExpression
 
 ArgumentSignatureList = ArgumentSignature MoreArgs
