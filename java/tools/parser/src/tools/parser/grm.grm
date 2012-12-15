@@ -197,7 +197,7 @@ hugs: Replacement ",\n" Replacements
 # Replacements = ( Replacement "\n" )+
 # Replacements = Replacement ( "\n" Replacement )+ | ""
 
-Replacement = <target/"<>\n!qt! :"> ": " ReplacementDefn
+Replacement = <target/"<>\n!qt! :"> ": " Defn
 java: "    rule=new Vector<Type>();\n" Defn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
 hugs: "      ( !qt!" <target> "!qt! , [ " Defn " ] ) "
 
@@ -219,8 +219,6 @@ hugs: DefnBit ", " Defn
 # Perhaps we should create DefnBit and OutDefnBit, the latter containing those
 # few extra rules which can only be used for outputs.
 # Yes we should.
-
-ReplacementDefn = (DefnBit " "*)*
 
 DefnBit = ReplacementElement
         | BasicElement OptRepeatMarker
