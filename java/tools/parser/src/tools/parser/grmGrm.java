@@ -376,19 +376,55 @@ public class grmGrm extends GrammarHelper {
 
     // hugs: "-- " <comment> "\n"
 
-    // Note that two AtomDefs without an empty line between them will not parse!
-
-    // AtomName = <atomname/"^.<>\n\" =">
     ruleset=new RuleSet("AtomName");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("atomtype","^<>\n\t\r \"+*()![]{}"));
+        rule.add(new Atom("PackagedAtomName"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("PlainAtomName"));
       ruleset.add(rule);
     // Replacements
 
-    // AtomName = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
-    //# TODO: Why does the third type cause dlang.grm to fail parsing?
+
     //# WARNING: Although I want to use "." to refer to modular rules, it is already used for RelDown!
+    ruleset=new RuleSet("PackagedAtomName");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("PackageName"));
+        rule.add(new Text("."));
+        rule.add(new Atom("PlainAtomName"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("PlainAtomName");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Identifier"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("PackageName");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Identifier"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    // Identifier = <identifier/"^.<>\n\" =">
+    // Identifier = <identifier/"^<>\n\t\r \"+*()![]{}">
+    ruleset=new RuleSet("Identifier");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Var("identifier",null,"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    // Note that two AtomDefs without an empty line between them will not parse!
 
     ruleset=new RuleSet("AtomDef");
       grammar.addRuleset(ruleset);
@@ -402,11 +438,11 @@ public class grmGrm extends GrammarHelper {
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("    ruleset=new RuleSet(\""));
-         rule.add( new ArgReplacement(1) );
+         rule.add(new Atom("AtomName"));
          rule.add(new Text("\");\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n"));
-         rule.add( new ArgReplacement(3) );
+         rule.add(new Atom("Defn"));
          rule.add(new Text("      ruleset.add(rule);\n"));
-         rule.add( new ArgReplacement(4) );
+         rule.add(new Atom("OptReplacements"));
          rule.add(new Text("\n"));
     ruleset.replacements.put("java",rule);
 
@@ -561,6 +597,7 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("DefnBit"));
         rule.add(new Text(" "));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
         rule.add(new Atom("Defn"));
       ruleset.add(rule);
     // Replacements
@@ -649,7 +686,7 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Atom("ActiveReplacement"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("Var"));
+        rule.add(new Atom("VarRef"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("Text"));
@@ -692,6 +729,13 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
 
+
+    // Token "." or ";" could mean "definite".  If reached, it indicates everything
+    // before it has been parsed correctly, and there should be no alternative to
+    // what has been parsed.  If the parser then decides to reject this match, i.e.
+    // fall back and try something else earlier, the symbol can cause an exit with
+    // an error.  This would be difficult to use correctly on low-level elements,
+    // but should be possible on the top layer.
 
     // This can make things more efficient, by allowing us to exclude searches that
     // we know are invalid.
@@ -818,26 +862,12 @@ public class grmGrm extends GrammarHelper {
 
     // javaB: unused example of passing min and max rather than symbols
 
-    ruleset=new RuleSet("Variable");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Var"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("VarDeny"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("VarAccept"));
-      ruleset.add(rule);
-    // Replacements
-
-
     // I think Var is a VarReference - cannot be used for parsing (no terminal
     // condition!) but is used in replacements.
 
     // TODO: Perhaps make it explicit that Var and Re
 
-    ruleset=new RuleSet("Var");
+    ruleset=new RuleSet("VarRef");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Text("<"));
@@ -1138,7 +1168,7 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("Ref"));
         rule.add(new Text("^"));
-        rule.add(new Atom("BasicElement"));
+        rule.add(new Atom("ReplacementElement"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
@@ -1155,7 +1185,7 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("Ref"));
         rule.add(new Text("."));
-        rule.add(new Atom("BasicElement"));
+        rule.add(new Atom("ReplacementElement"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
