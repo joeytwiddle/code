@@ -11,10 +11,13 @@ info() {
 
 failandquit() {
 
+  newFile="$1"
+  [ -z "$newFile" ] && newFile="$gdir"/grmGrm.java.new
+
   # Display the problem
   info "Bad grammar!  Here are the first generation differences:"
   #jfcsh "$gdir"/grmGrm.java "$gdir"/grmGrm.java.2
-  diff "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java.new | diffhighlight -nm
+  diff "$gdir"/grmGrm.java.previous "$newFile" | diffhighlight -nm
 
   # Reset to original
   info "Bad grammar!  Restoring original..."
@@ -78,7 +81,7 @@ info "Test: Convert once again"
 ./build.sh || failandquit
 
 info "Creating final ruleset to compare"
-jparse grm "$gdir"/grm.grm java $@ > "$gdir"/grmGrm.java.2 || failandquit
+jparse grm "$gdir"/grm.grm java $@ > "$gdir"/grmGrm.java.2 || failandquit "$gdir"/grmGrm.java.2
 if [ "$1" = "debug" ]; then
   edit "$gdir"/grmGrm.java
 fi
@@ -87,7 +90,7 @@ info "Comparing first and second generations"
 if cmp "$gdir"/grmGrm.java "$gdir"/grmGrm.java.2 > /dev/null 2>&1 ; then
   echo "New grammar installed OK"
 else
-  failandquit
+  failandquit "$gdir"/grmGrm.java.2
 fi
 
 # echo "stringhash=$# stringunderscore=$_"

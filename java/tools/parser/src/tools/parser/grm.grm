@@ -197,9 +197,9 @@ hugs: Replacement ",\n" Replacements
 # Replacements = ( Replacement "\n" )+
 # Replacements = Replacement ( "\n" Replacement )+ | ""
 
-Replacement = <target/"<>\n!qt! :"> ": " Defn
-java: "    rule=new Vector<Type>();\n" Defn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
-hugs: "      ( !qt!" <target> "!qt! , [ " Defn " ] ) "
+Replacement = <target/"<>\n!qt! :"> ": " ReplacementDefn
+java: "    rule=new Vector<Type>();\n" ReplacementDefn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
+hugs: "      ( !qt!" <target> "!qt! , [ " ReplacementDefn " ] ) "
 
 Defn = DefnOr
      | DefnAnd
@@ -220,20 +220,25 @@ hugs: DefnBit ", " Defn
 # few extra rules which can only be used for outputs.
 # Yes we should.
 
-DefnBit = ReplacementElement
-        | BasicElement OptRepeatMarker
+DefnBit = BasicElement OptRepeatMarker
 
-ReplacementElement = ArgReplacement
-                   | RelativeElement
-                   | ActiveReplacement
-
-BasicElement = Variable
+BasicElement = VarAccept
+             | VarDeny
              | Text
              | GroupElement
              | MagicSymbol
              | AtomRef
              | Regexp
              | OptionalElement
+
+ReplacementDefn = (OptSpc ReplacementElement OptSpc)*
+
+ReplacementElement = ArgReplacement
+                   | RelativeElement
+                   | ActiveReplacement
+                   | Var
+                   | Text
+                   | AtomRef
 
 #              | RepeatElement
 
