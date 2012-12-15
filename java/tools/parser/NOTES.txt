@@ -38,6 +38,14 @@ Two ways to create inline lists:
 
     /*
 
+    // Original
+    rule=new Vector<Type>();
+        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
+        rule.add(new Atom("Grm"));
+        rule.add(new Text("    return grammar;\n  }\n}\n"));
+    ruleset.replacements.put("java",rule);
+
+
     // Alternative 1 - using standard libraries and array literal
     ruleset.replacements.put("java",
         Arrays.asList(
@@ -56,6 +64,6 @@ Two ways to create inline lists:
     );
 
     */
-    
-    
-    
+
+
+
