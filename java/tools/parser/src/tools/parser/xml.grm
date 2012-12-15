@@ -7,11 +7,12 @@
 # It might be possible for the grm grammar to seek and responds to this
 # pattern, so it needn't be a special case for the Parser.
 
-XML = "<" <type> ">" Inside "</" <type> ">"
-    | "<" <type> Param ">" Inside "</" <type> ">"
-    | "<" <type> "/>"
+XML = "<" <type/" >"> ">" Inside "</" <type/" >"> ">"
+    | "<" <type/" >"> Param ">" Inside "</" <type/" >"> ">"
+    | "<" <type/" >"> "/>"
 
-Param = " " <param> "=" <value>
+Param = " " <param/" >"> "=" <value/" >">
       | Param Param
 
-Inside = "" | XML Inside | <text>
+Inside = "" | XML Inside | <text/"<">
+
