@@ -1,7 +1,11 @@
 package tools.parser;
 
+import java.lang.String;
 import java.util.Arrays;
 import java.util.Vector;
+
+import tools.parser.*;
+import tools.parser.extensions.*;
 
 public class grmGrm extends GrammarHelper {
   public static Grammar setupgrammar() {
@@ -134,31 +138,10 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
+        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
         rule.add(new Atom("Grm"));
         rule.add(new Text("    return grammar;\n  }\n}\n"));
     ruleset.replacements.put("java",rule);
-
-    /*
-
-    // Alternative 1 - using standard libraries and array literal
-    ruleset.replacements.put("java",
-        Arrays.asList(
-           new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"),
-           new Atom("Grm"),
-           new Text("    return grammar;\n  }\n}\n")
-        )
-    );
-
-    // Alternative 2 - using a ConcatList 
-    ruleset.replacements.put("java",
-        newList()
-        .with(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"))
-        .with(new Atom("Grm"))
-        .with(new Text("    return grammar;\n  }\n}\n"))
-    );
-
-    */
 
     rule=new Vector<Type>();
         rule.add(new Text("module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ "));
@@ -399,11 +382,13 @@ public class grmGrm extends GrammarHelper {
     ruleset=new RuleSet("AtomName");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("atomtype","^.<>\n\t\r \"+*()![]{}"));
+        rule.add(new Var("atomtype","^<>\n\t\r \"+*()![]{}"));
       ruleset.add(rule);
     // Replacements
 
     // AtomName = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
+    //# TODO: Why does the third type cause dlang.grm to fail parsing?
+    //# WARNING: Although I want to use "." to refer to modular rules, it is already used for RelDown!
 
     ruleset=new RuleSet("AtomDef");
       grammar.addRuleset(ruleset);
@@ -438,11 +423,14 @@ public class grmGrm extends GrammarHelper {
     rule=new Vector<Type>();
         rule.add(new Text("interface "));
         rule.add(new Atom("AtomName"));
-        rule.add(new Text(" {\n\n}\n  class AnImplmentation {\n"));
+        rule.add(new Text(" {\n\n}\n  class AnImplementation implements "));
+        rule.add(new Atom("AtomName"));
+        rule.add(new Text(" {\n"));
         rule.add(new Atom("Defn"));
         rule.add(new Text("  }\n\n"));
     ruleset.replacements.put("pojo",rule);
 
+    // BUG: We cannot make a second reference to AtomName
 
     // Replacements are the lines defining export targets: java, hugs, pojo
 
@@ -632,6 +620,9 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Atom("GroupElement"));
       ruleset.add(rule);
       rule=new Vector<Type>();
+        rule.add(new Atom("MagicSymbol"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
         rule.add(new Atom("AtomRef"));
       ruleset.add(rule);
       rule=new Vector<Type>();
@@ -639,9 +630,6 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("OptionalElement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("MagicTokenOfDoom"));
       ruleset.add(rule);
     // Replacements
 
@@ -655,6 +643,21 @@ public class grmGrm extends GrammarHelper {
     // This might be called "exclusion" in Prolog.  *yawn*
     // If the magic token is reached, none of later options in a DefnBit will be attempted.
     // In other words, ! commits us to the current line, or failure.
+
+    ruleset=new RuleSet("MagicSymbol");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("MagicTokenOfDoom"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Text("%"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Text("$"));
+      ruleset.add(rule);
+    // Replacements
+
+    // Don't put "#" here - it will eat through comments!
 
     ruleset=new RuleSet("MagicTokenOfDoom");
       grammar.addRuleset(ruleset);
@@ -1090,7 +1093,7 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("java",rule);
 
 
-    // I think RelativeElement might be a dodgy way to access variables in parent/child types.
+    // RelativeElement is a way to access variables in parent/child types.
     // ^SearchUp->SearchDown.DirectDown
 
     ruleset=new RuleSet("RelativeElement");
