@@ -1,8 +1,10 @@
 package tools.parser;
 
 /**
- * Magic types are types that may appear in the replacement but that need to
- * find their equivalent in the list of sub-matches before they can be rendered.
+ * Magic types are types that may appear in the replacement and will need to
+ * find their corresponding entry in the list of matches.
+ * 
+ * @see Match.grabUnusedMatchMatching
  */
 public interface MagicType extends Type {
 

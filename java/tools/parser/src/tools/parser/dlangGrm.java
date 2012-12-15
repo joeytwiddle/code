@@ -1,6 +1,7 @@
 package tools.parser;
 
 import java.lang.String;
+import java.util.Arrays;
 import java.util.Vector;
 
 import tools.parser.*;

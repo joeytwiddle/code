@@ -34,4 +34,28 @@ I prefer packaging/namespacing with "." over ":".  "." does suggest more than on
 
 
 
+Two ways to create inline lists:
 
+    /*
+
+    // Alternative 1 - using standard libraries and array literal
+    ruleset.replacements.put("java",
+        Arrays.asList(
+           new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"),
+           new Atom("Grm"),
+           new Text("    return grammar;\n  }\n}\n")
+        )
+    );
+
+    // Alternative 2 - using a ConcatList 
+    ruleset.replacements.put("java",
+        newList()
+        .with(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"))
+        .with(new Atom("Grm"))
+        .with(new Text("    return grammar;\n  }\n}\n"))
+    );
+
+    */
+    
+    
+    
