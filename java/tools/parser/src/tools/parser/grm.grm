@@ -162,16 +162,24 @@ OptComment = Comment | ""
 
 # hugs: "-- " <comment> "\n"
 
+AtomName = PackagedAtomName
+         | PlainAtomName
+
+## WARNING: Although I want to use "." to refer to modular rules, it is already used for RelDown!
+PackagedAtomName = PackageName "." PlainAtomName
+
+PlainAtomName = Identifier
+
+PackageName = Identifier
+
+# Identifier = <identifier/"^.<>\n!qt! =">
+# Identifier = <identifier/"^<>\n\t\r !qt!+*()![]{}">
+Identifier = <identifier~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
+
 # Note that two AtomDefs without an empty line between them will not parse!
 
-# AtomName = <atomname/"^.<>\n!qt! =">
-AtomName = <atomtype/"^<>\n\t\r !qt!+*()![]{}">
-# AtomName = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
-## TODO: Why does the third type cause dlang.grm to fail parsing?
-## WARNING: Although I want to use "." to refer to modular rules, it is already used for RelDown!
-
 AtomDef = AtomName " = " Defn OptReplacements NL
-java: "    ruleset=new RuleSet(!qt!" $1 "!qt!);\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n" $3 "      ruleset.add(rule);\n" $4 "\n"
+java: "    ruleset=new RuleSet(!qt!" AtomName "!qt!);\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
 hugs: "  ( Atom !qt!" AtomName "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
 pojo: "interface " AtomName " {\n\n}\n  class AnImplementation implements " AtomName " {\n" Defn "  }\n\n"
 # BUG: We cannot make a second reference to AtomName
@@ -210,7 +218,7 @@ java: DefnBit "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" Defn
 hugs: DefnBit "] ,\n      [ " Defn
 pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
 
-DefnAnd = DefnBit " " Defn
+DefnAnd = DefnBit " "+ Defn
 java: DefnBit Defn
 hugs: DefnBit ", " Defn
 
@@ -236,7 +244,7 @@ ReplacementDefn = (OptSpc ReplacementElement OptSpc)*
 ReplacementElement = ArgReplacement
                    | RelativeElement
                    | ActiveReplacement
-                   | Var
+                   | VarRef
                    | Text
                    | AtomRef
 
@@ -254,6 +262,13 @@ MagicSymbol = MagicTokenOfDoom | "%" | "$"
 # Don't put "#" here - it will eat through comments!
 
 MagicTokenOfDoom = "!"
+
+# Token "." or ";" could mean "definite".  If reached, it indicates everything
+# before it has been parsed correctly, and there should be no alternative to
+# what has been parsed.  If the parser then decides to reject this match, i.e.
+# fall back and try something else earlier, the symbol can cause an exit with
+# an error.  This would be difficult to use correctly on low-level elements,
+# but should be possible on the top layer.
 
 # This can make things more efficient, by allowing us to exclude searches that
 # we know are invalid.
@@ -303,16 +318,12 @@ ZeroOrOne = OptionalElement
 
 # javaB: unused example of passing min and max rather than symbols
 
-Variable = Var
-         | VarDeny
-         | VarAccept
-
 # I think Var is a VarReference - cannot be used for parsing (no terminal
 # condition!) but is used in replacements.
 
 # TODO: Perhaps make it explicit that Var and Re
 
-Var = "<" <varname/"<>\n!qt!/ "> ">"
+VarRef = "<" <varname/"<>\n!qt!/ "> ">"
 java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"
 hugs: "Var !qt!" <varname> "!qt!"
 pojo: "    String " <varname> ";\n"
@@ -396,10 +407,10 @@ java: "      rule.add( new ActiveReplacement() { public String replace(OutputCon
 RelativeElement = RelUp
                 | RelDown
 
-RelUp = Ref "^" BasicElement
+RelUp = Ref "^" ReplacementElement
 java: "        { Vector realrule=rule; rule=new Vector<Type>(); " BasicElement " realrule.add(new RelElement('^'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
 
-RelDown = Ref "." BasicElement
+RelDown = Ref "." ReplacementElement
 java: "        { Vector realrule=rule; rule=new Vector<Type>(); " BasicElement " realrule.add(new RelElement('.'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
 
 Ref = <ref/" !qt!\n.^">
