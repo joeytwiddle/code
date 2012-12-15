@@ -171,7 +171,7 @@ AtomName = <atomtype/"^<>\n\t\r !qt!+*()![]{}">
 ## WARNING: Although I want to use "." to refer to modular rules, it is already used for RelDown!
 
 AtomDef = AtomName " = " Defn OptReplacements NL
-java: "    ruleset=new RuleSet(!qt!" AtomName "!qt!);\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
+java: "    ruleset=new RuleSet(!qt!" $1 "!qt!);\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n" $3 "      ruleset.add(rule);\n" $4 "\n"
 hugs: "  ( Atom !qt!" AtomName "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
 pojo: "interface " AtomName " {\n\n}\n  class AnImplementation implements " AtomName " {\n" Defn "  }\n\n"
 # BUG: We cannot make a second reference to AtomName

@@ -402,11 +402,11 @@ public class grmGrm extends GrammarHelper {
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("    ruleset=new RuleSet(\""));
-         rule.add(new Atom("AtomName"));
+         rule.add( new ArgReplacement(1) );
          rule.add(new Text("\");\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n"));
-         rule.add(new Atom("Defn"));
+         rule.add( new ArgReplacement(3) );
          rule.add(new Text("      ruleset.add(rule);\n"));
-         rule.add(new Atom("OptReplacements"));
+         rule.add( new ArgReplacement(4) );
          rule.add(new Text("\n"));
     ruleset.replacements.put("java",rule);
 
