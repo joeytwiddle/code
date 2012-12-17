@@ -35,7 +35,7 @@ import tools.parser.*;
 public class Atom implements MagicType {
 
 	public static int depth = 0;
-	public static Vector path = new Vector();
+	public static List path = new Vector();
 	
 	String type;
 
@@ -151,7 +151,7 @@ public class Atom implements MagicType {
 		}
 		for (int i = 0; i < rs.rules.size(); i++) {
 			// Profile.start("Atom.match: Outside loop");
-			Vector rules = (Vector) rs.rules.get(i);
+			List rules = rs.rules.get(i);
 			if (rules.size() == 0) {
 				System.err.println("rulesetforatom(" + type + ") number " + i
 				      + " is empty!");
@@ -170,7 +170,7 @@ public class Atom implements MagicType {
 				      + "..";
 				Logger.log(indent()+" "+Parser.lastMatchAttempt);
 			}
-			Vector<Match> ms = new Vector<Match>();
+			List<Match> ms = new Vector<Match>();
 			SomeString rest = s;
 			boolean failure = false;
 			depth++;
@@ -254,7 +254,7 @@ public class Atom implements MagicType {
 	public static String indent() {
 		// return JString.repeat(">", depth);
 		// return path.toString();
-		return JString.repeat(">", depth) + (path.size()>0 ? path.lastElement() : "");
+		return JString.repeat(">", depth) + (path.size()>0 ? path.get(path.size()-1) : "");
 	}
 
 	public static String headSome(SomeString s) {

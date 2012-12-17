@@ -10,30 +10,29 @@ package tools.parser;
  */
 
 // import java.lang.*;
-import java.util.*;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.io.PrintStream; // import java.io.PrintWriter;
-
-import org.neuralyte.Logger;
-
+import jlib.strings.FakeOutputStream;
+import jlib.strings.SomeString;
+// import java.io.PrintWriter;
 /*
  * import java.awt.TextArea; // debug import java.awt.Frame; // debug import
  * java.awt.FlowLayout; // debug import java.awt.event.ActionListener; // debug
  * import java.awt.event.ActionEvent; // debug import java.awt.Button; // debug
  */
-
 // import jlib.Files;
 // import jlib.JString;
-import jlib.strings.*;
 
 public class Match {
 
 	Type type;
 	SomeString string;
-	Vector<Match> matches; // sub-matches making up this one, if any (can be null).
+	List<Match> matches; // sub-matches making up this one, if any (can be null).
 	Match parent; // parent match of which this is a sub-match
 	SomeString left = null; // new RealString("error: left not initialised!");
-	private Vector<Match> unusedMatches;
+	private List<Match> unusedMatches;
 
 	/*
 	
@@ -45,7 +44,7 @@ public class Match {
 		matches = null; // new Vector();
 	}
 
-	Match(Type t, SomeString s, Vector<Match> ms) {
+	Match(Type t, SomeString s, List<Match> ms) {
 		type = t;
 		string = s;
 		matches = ms;
@@ -59,7 +58,7 @@ public class Match {
 		left = ll;
 	}
 
-	Match(Type t, SomeString s, Vector<Match> ms, SomeString ll) {
+	Match(Type t, SomeString s, List<Match> ms, SomeString ll) {
 		type = t;
 		string = s;
 		matches = ms;
@@ -114,8 +113,8 @@ public class Match {
 	}
 
 	/*
-	public Vector<Type> rulefrommatch() {
-		Vector<Type> v = new Vector<Type>();
+	public List<Type> rulefrommatch() {
+		List<Type> v = new Vector<Type>();
 		for (int i = 0; i < matches.size(); i++) {
 			v.add(matches.get(i).type);
 		}
@@ -163,10 +162,10 @@ public class Match {
 			// if (tmp!=null || target.length()==0)
 			// if (tmp==null)
 			// return "";
-			// Vector rs = (tmp == null ? rulefrommatch() : (Vector) tmp);
+			// List rs = (tmp == null ? rulefrommatch() : (List) tmp);
 			// out.print("    // Rendering "+Atom.strip(""+this)+" against "+rs+"\n";
 			// out.print("    // Rendering "+a.type+": "+rs+"\n";
-			// Vector<Match> unusedmatches = (Vector<Match>) matches.clone();
+			// List<Match> unusedmatches = (List<Match>) matches.clone();
 			for (int i = 0; i < replacementRule.size(); i++) {
 				Type t = (Type) replacementRule.get(i);
 				// renderIn(unusedmatches, t, target, out);
@@ -186,15 +185,22 @@ public class Match {
 		return out.store.toString();
 	}
 	
-	public Vector<Match> getUnusedMatches() {
+	public List<Match> getUnusedMatches() {
 		if (this.unusedMatches == null) {
-			this.unusedMatches = (Vector<Match>) matches.clone();
+			/* Whu?  .clone() has left the language?
+			if (matches instanceof Cloneable) {
+				this.unusedMatches = ((Cloneable)matches).clone();
+			} else {
+				throw new Error("matches was built from an un-cloneable list type.");
+			}
+			*/
+			this.unusedMatches = new ArrayList<Match>(matches);
 		}
-		return unusedMatches;
+		return this.unusedMatches;
 	}
 	
 	public Match grabUnusedMatchMatching(MagicType t) {
-		Vector<Match> unused = getUnusedMatches();
+		List<Match> unused = getUnusedMatches();
 		for (int i=0;i<unused.size();i++) {
 			Match m = unused.get(i);
 			// if (m.type.equals(t)) {
@@ -207,7 +213,7 @@ public class Match {
 	}
 
 	/*
-	public void renderIn(Vector<Match> unusedmatches, Type outType, String target,
+	public void renderIn(List<Match> unusedmatches, Type outType, String target,
 	      PrintStream out) {
 		
 		// TODO: Do we need all these instanceof checks?  Couldn't we instead
