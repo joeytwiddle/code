@@ -126,7 +126,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("GrammarDefn"));
       ruleset.add(rule);
-    // Replacements
 
 
     // java: "package grammars;\n\n" GrammarDefn
@@ -150,9 +149,9 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("hugs",rule);
 
     rule=new Vector<Type>();
-        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\ngrammar = new Grammar("));
+        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\nimport org.neuralyte.literal.LiteralMap;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar( new LiteralMap()"));
          rule.add(new Atom("Grm"));
-         rule.add(new Text(");    return grammar;\n  }\n}\n"));
+         rule.add(new Text("\n    );\n    return grammar;\n  }\n}\n"));
     ruleset.replacements.put("javadecl",rule);
 
 
@@ -164,7 +163,6 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Atom("GrmBit"));
         rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("GrmHeaderBit");
@@ -178,7 +176,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("Comment"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("GrmAt");
@@ -195,7 +192,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("GrmOtherAt"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("GrmOption");
@@ -228,18 +224,10 @@ public class grmGrm extends GrammarHelper {
         rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
           RuleSet ruleset = new RuleSet("Anonymous");
         Vector<Type> rule = new Vector<Type>();
-        rule.add(new Atom("OptionArgs"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("HorizSpace"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
         ruleset.add(rule);
           return ruleset;
         } }.run() ) );
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("OptionArgs");
@@ -250,7 +238,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("OptionArg"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("MultipleOptionArgs");
@@ -273,7 +260,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Var("arg"," \t\n\r"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("GrmImport");
@@ -308,7 +294,6 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text("\""));
          rule.add(new Atom("NL"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("GrmOtherAt");
@@ -342,7 +327,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("AtomDef"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("Comment");
@@ -369,9 +353,9 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("pojo",rule);
 
     rule=new Vector<Type>();
-        rule.add(new Text("    /*"));
+        rule.add(new Text("    //"));
          rule.add(new Var("comment"));
-         rule.add(new Text("*/\n"));
+         rule.add(new Text("\n"));
     ruleset.replacements.put("javadecl",rule);
 
 
@@ -383,7 +367,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
     // hugs: "-- " <comment> "\n"
@@ -396,7 +379,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("PlainAtomName"));
       ruleset.add(rule);
-    // Replacements
 
 
     //# WARNING: Although I want to use "." to refer to modular rules, it is already used for RelDown!
@@ -407,7 +389,6 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text("."));
          rule.add(new Atom("PlainAtomName"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("PlainAtomName");
@@ -415,7 +396,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("Identifier"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("PackageName");
@@ -423,7 +403,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("Identifier"));
       ruleset.add(rule);
-    // Replacements
 
 
     // Identifier = <identifier/"^.<>\n\" =">
@@ -433,7 +412,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Var("identifier",null,"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"));
       ruleset.add(rule);
-    // Replacements
 
 
     // Note that two AtomDefs without an empty line between them will not parse!
@@ -443,7 +421,7 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("AtomName"));
          rule.add(new Text(" = "));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("RuleSet"));
          rule.add(new Atom("OptReplacements"));
          rule.add(new Atom("NL"));
       ruleset.add(rule);
@@ -452,7 +430,7 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Text("    ruleset=new RuleSet(\""));
          rule.add(new Atom("AtomName"));
          rule.add(new Text("\");\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n"));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("RuleSet"));
          rule.add(new Text("      ruleset.add(rule);\n"));
          rule.add(new Atom("OptReplacements"));
          rule.add(new Text("\n"));
@@ -462,7 +440,7 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Text("  ( Atom \""));
          rule.add(new Atom("AtomName"));
          rule.add(new Text("\",[\n    [ "));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("RuleSet"));
          rule.add(new Text(" ]\n    ] , [\n"));
          rule.add(new Atom("OptReplacements"));
          rule.add(new Text("\n  ] ) ,\n"));
@@ -474,18 +452,20 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text(" {\n\n}\n  class AnImplementation implements "));
          rule.add(new Atom("AtomName"));
          rule.add(new Text(" {\n"));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("RuleSet"));
          rule.add(new Text("  }\n\n"));
     ruleset.replacements.put("pojo",rule);
 
     // BUG: We cannot make a second reference to AtomName
     rule=new Vector<Type>();
-        rule.add(new Text("    ruleset = new RuleSet(\""));
+        rule.add(new Text("    .with(\""));
+         rule.add( new ArgReplacement(1) );
+         rule.add(new Text("\", new RuleSet(\""));
          rule.add(new Atom("AtomName"));
          rule.add(new Text("\", "));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("RuleSet"));
          rule.add(new Atom("OptReplacements"));
-         rule.add(new Text(");\n"));
+         rule.add(new Text("\n    ))\n"));
     ruleset.replacements.put("javadecl",rule);
 
 
@@ -494,17 +474,29 @@ public class grmGrm extends GrammarHelper {
     ruleset=new RuleSet("OptReplacements");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Text("\n"));
-         rule.add(new Atom("Replacements"));
+        rule.add(new Atom("YesReplacements"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Text(""));
+      ruleset.add(rule);
+
+
+    ruleset=new RuleSet("YesReplacements");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Text("\n"));
+         rule.add(new Atom("Replacements"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("    // Replacements\n"));
          rule.add(new Atom("Replacements"));
     ruleset.replacements.put("java",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Text(",\n        /* Replacements */\n        new LiteralMap()\n"));
+         rule.add(new Atom("Replacements"));
+    ruleset.replacements.put("javadecl",rule);
 
 
     ruleset=new RuleSet("Replacements");
@@ -519,13 +511,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("Replacement"));
       ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text(",\n        /* Replacements */\n        Arrays.asList("));
-         rule.add( new ArgReplacement(1) );
-         rule.add( new ArgReplacement(2) );
-         rule.add(new Text(")"));
-    ruleset.replacements.put("javadecl",rule);
 
 
     ruleset=new RuleSet("ManyReplacements");
@@ -576,7 +561,25 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("hugs",rule);
 
     rule=new Vector<Type>();
-        rule.add(new Atom("ReplacementDefn"));
+        rule.add(new Text("        .with(\""));
+         rule.add(new Var("target"));
+         rule.add(new Text("\", Arrays.asList("));
+         rule.add(new Atom("ReplacementDefn"));
+         rule.add(new Text("))\n"));
+    ruleset.replacements.put("javadecl",rule);
+
+
+    // The only difference between a RuleSet and a Defn is how we output it.
+    ruleset=new RuleSet("RuleSet");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Defn"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("Arrays.asList(\n        "));
+         rule.add(new Atom("Defn"));
+         rule.add(new Text("\n      )"));
     ruleset.replacements.put("javadecl",rule);
 
 
@@ -585,7 +588,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("DefnOr"));
       ruleset.add(rule);
-    // Replacements
 
 
     //# We had to split DefnAnd and DefnOr into chains, so we can output separated by commas.
@@ -607,12 +609,13 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("Arrays.asList("));
+        rule.add(new Text("Arrays.asList( new Type[]{ "));
          rule.add(new Atom("DefnAnd"));
+         rule.add(new Text(" } )"));
          rule.add(new Atom("DefnOrMaybeMore"));
-         rule.add(new Text(")"));
     ruleset.replacements.put("javadecl",rule);
 
+    // Java requires us to be specific about the array types here.
 
     ruleset=new RuleSet("DefnOrMaybeMore");
       grammar.addRuleset(ruleset);
@@ -622,7 +625,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("DefnOrMore");
@@ -650,7 +652,7 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("pojo",rule);
 
     rule=new Vector<Type>();
-        rule.add(new Text(", "));
+        rule.add(new Text(",\n      "));
          rule.add(new Atom("DefnOr"));
     ruleset.replacements.put("javadecl",rule);
 
@@ -665,8 +667,9 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Atom("DefnBit"));
          rule.add(new Atom("MaybeMore"));
       ruleset.add(rule);
-    // Replacements
 
+    // javadecl: "Arrays.asList( new Type[]{ " DefnBit MaybeMore " } )"
+    // Java requires us to be specific about the array types here.
 
     ruleset=new RuleSet("MaybeMore");
       grammar.addRuleset(ruleset);
@@ -676,7 +679,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("MoreAnd");
@@ -684,21 +686,21 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(" "));
         rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("DefnAnd"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Atom("Defn"));
+        rule.add(new Atom("DefnAnd"));
     ruleset.replacements.put("Java",rule);
 
     rule=new Vector<Type>();
         rule.add(new Text(", "));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("DefnAnd"));
     ruleset.replacements.put("hugs",rule);
 
     rule=new Vector<Type>();
         rule.add(new Text(", "));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("DefnAnd"));
     ruleset.replacements.put("javadecl",rule);
 
 
@@ -720,7 +722,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("BasicElement"));
       ruleset.add(rule);
-    // Replacements
 
 
     // Would-be best-of-both but not yet supported
@@ -752,24 +753,40 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("OptionalElement"));
       ruleset.add(rule);
-    // Replacements
 
 
+    // ReplacementDefn = (OptSpc ReplacementElement OptSpc)*
     ruleset=new RuleSet("ReplacementDefn");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
-        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
-          RuleSet ruleset = new RuleSet("Anonymous");
-        Vector<Type> rule = new Vector<Type>();
         rule.add(new Atom("OptSpc"));
          rule.add(new Atom("ReplacementElement"));
          rule.add(new Atom("OptSpc"));
-        ruleset.add(rule);
-          return ruleset;
-        } }.run() ) );
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
+         rule.add(new Atom("ReplacementElementMaybeMore"));
+      ruleset.add(rule);
+
+
+    ruleset=new RuleSet("ReplacementElementMaybeMore");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("OptSpc"));
+         rule.add(new Atom("ReplacementElementMore"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+
+
+    ruleset=new RuleSet("ReplacementElementMore");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("ReplacementDefn"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text(", "));
+         rule.add(new Atom("ReplacementDefn"));
+    ruleset.replacements.put("javadecl",rule);
 
 
     ruleset=new RuleSet("ReplacementElement");
@@ -792,7 +809,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("AtomRef"));
       ruleset.add(rule);
-    // Replacements
 
 
     // CONSIDER: Could we put = BasicElement RepeatMarker | ... at the top?
@@ -823,7 +839,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("MagicTokenOfCommitment"));
       ruleset.add(rule);
-    // Replacements
 
     // Don't put "#" here - it may eat through comments!
 
@@ -832,7 +847,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text("!"));
       ruleset.add(rule);
-    // Replacements
 
 
     // Token "." or ";" could mean "definite".  If reached, it indicates everything
@@ -870,7 +884,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(";"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("GroupElement");
@@ -878,7 +891,7 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text("("));
          rule.add(new Atom("OWS"));
-         rule.add(new Atom("Defn"));
+         rule.add(new Atom("RuleSet"));
          rule.add(new Atom("OWS"));
          rule.add(new Text(")"));
       ruleset.add(rule);
@@ -888,6 +901,12 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Atom("Defn"));
          rule.add(new Text("        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"));
     ruleset.replacements.put("java",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Text("new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          return new RuleSet(\"Anonymous\", "));
+         rule.add(new Atom("RuleSet"));
+         rule.add(new Text(");\n        } }.run() )"));
+    ruleset.replacements.put("javadecl",rule);
 
 
     ruleset=new RuleSet("RepeatedElement");
@@ -904,7 +923,14 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text("\"));\n"));
     ruleset.replacements.put("java",rule);
 
-    // java: "        rule.add( new RepeatedRule(" BasicElement ") );\n"
+    rule=new Vector<Type>();
+        rule.add(new Text("new RepeatedRule("));
+         rule.add(new Atom("BasicElement"));
+         rule.add(new Text(",\""));
+         rule.add(new Atom("RepeatMarker"));
+         rule.add(new Text("\")"));
+    ruleset.replacements.put("javadecl",rule);
+
 
     ruleset=new RuleSet("OptionalElement");
       grammar.addRuleset(ruleset);
@@ -922,6 +948,12 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("java",rule);
 
     // java: "        rule.add(new RepeatedRule(" Defn ",0,1));\n"
+    rule=new Vector<Type>();
+        rule.add(new Text("new RepeatedRule("));
+         rule.add(new Atom("Defn"));
+         rule.add(new Text(",0,1))"));
+    ruleset.replacements.put("javadecl",rule);
+
 
     ruleset=new RuleSet("RepeatMarker");
       grammar.addRuleset(ruleset);
@@ -931,7 +963,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("OneOrMore"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("OptRepeatMarker");
@@ -942,7 +973,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("RepeatMarkerOld");
@@ -966,7 +996,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("OneOrMore"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("ZeroOrMore");
@@ -1031,6 +1060,12 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text(";\n"));
     ruleset.replacements.put("pojo",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Text("new Var(\""));
+         rule.add(new Var("varname"));
+         rule.add(new Text("\")"));
+    ruleset.replacements.put("javadecl",rule);
+
 
     ruleset=new RuleSet("VarDeny");
       grammar.addRuleset(ruleset);
@@ -1063,6 +1098,14 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Var("varname"));
          rule.add(new Text(";\n"));
     ruleset.replacements.put("pojo",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Text("new Var(\""));
+         rule.add(new Var("varname"));
+         rule.add(new Text("\",\""));
+         rule.add(new Var("denied"));
+         rule.add(new Text("\")"));
+    ruleset.replacements.put("javadecl",rule);
 
 
     ruleset=new RuleSet("VarAccept");
@@ -1097,6 +1140,14 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text(";\n"));
     ruleset.replacements.put("pojo",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Text("new Var(\""));
+         rule.add(new Var("varname"));
+         rule.add(new Text("\",null,\""));
+         rule.add(new Var("accepted"));
+         rule.add(new Text("\")"));
+    ruleset.replacements.put("javadecl",rule);
+
 
     ruleset=new RuleSet("AtomRef");
       grammar.addRuleset(ruleset);
@@ -1121,6 +1172,12 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Atom("AtomName"));
          rule.add(new Text(" arg1;\n"));
     ruleset.replacements.put("pojo",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Text("new Atom(\""));
+         rule.add(new Atom("AtomName"));
+         rule.add(new Text("\")"));
+    ruleset.replacements.put("javadecl",rule);
 
 
     // pojo: "  /* Possible " <atomtype> " */\n"
@@ -1165,6 +1222,12 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text("\" */\n"));
     ruleset.replacements.put("pojo",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Text("new Text(\""));
+         rule.add(new Var("text"));
+         rule.add(new Text("\")"));
+    ruleset.replacements.put("javadecl",rule);
+
 
 
 
@@ -1176,7 +1239,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text("\n"));
       ruleset.add(rule);
-    // Replacements
 
 
     // HorizSpace = " " | "\t"
@@ -1185,7 +1247,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Var("horizspace",null," \t"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("OptHorizSpace");
@@ -1196,7 +1257,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("OptSpc");
@@ -1208,7 +1268,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("SpcBit");
@@ -1219,7 +1278,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text("\t"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("WhitespaceBit");
@@ -1236,7 +1294,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text("\r"));
       ruleset.add(rule);
-    // Replacements
 
 
     // Whitespace = WhitespaceBit Whitespace
@@ -1248,7 +1305,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Var("whitespace",null," \n\t\r"));
       ruleset.add(rule);
-    // Replacements
 
 
     // Optional whitespace:
@@ -1262,7 +1318,6 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Atom("WhitespaceBit"));
         rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
       ruleset.add(rule);
-    // Replacements
 
 
 
@@ -1286,6 +1341,12 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text(" } } );\n"));
     ruleset.replacements.put("java",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Text("new ActiveReplacement() { public String replace(OutputContext ctx) { "));
+         rule.add(new Var("java"));
+         rule.add(new Text(" } }"));
+    ruleset.replacements.put("javadecl",rule);
+
 
     // RelativeElement is a way to access variables in parent/child types.
     // ^SearchUp->SearchDown.DirectDown
@@ -1298,7 +1359,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Atom("RelDown"));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("RelUp");
@@ -1317,6 +1377,14 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text(",(Type)rule.get(0))); rule=realrule; }\n"));
     ruleset.replacements.put("java",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Text("{ return new RelElement('^',"));
+         rule.add(new Atom("Ref"));
+         rule.add(new Text(","));
+         rule.add(new Atom("ReplacementElement"));
+         rule.add(new Text("); }"));
+    ruleset.replacements.put("javadecl",rule);
+
 
     ruleset=new RuleSet("RelDown");
       grammar.addRuleset(ruleset);
@@ -1334,6 +1402,14 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text(",(Type)rule.get(0))); rule=realrule; }\n"));
     ruleset.replacements.put("java",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Text("{ return new RelElement('.',"));
+         rule.add(new Atom("Ref"));
+         rule.add(new Text(","));
+         rule.add(new Atom("ReplacementElement"));
+         rule.add(new Text("); }"));
+    ruleset.replacements.put("javadecl",rule);
+
 
     ruleset=new RuleSet("Ref");
       grammar.addRuleset(ruleset);
@@ -1346,6 +1422,12 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Var("ref"));
          rule.add(new Text("\""));
     ruleset.replacements.put("java",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Text("\""));
+         rule.add(new Var("ref"));
+         rule.add(new Text("\""));
+    ruleset.replacements.put("javadecl",rule);
 
 
     ruleset=new RuleSet("ArgReplacement");
@@ -1360,6 +1442,12 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Var("num"));
          rule.add(new Text(") );\n"));
     ruleset.replacements.put("java",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Text("new ArgReplacement("));
+         rule.add(new Var("num"));
+         rule.add(new Text(")"));
+    ruleset.replacements.put("javadecl",rule);
 
 
 
@@ -1381,6 +1469,12 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text("\")"));
     ruleset.replacements.put("java",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Text("new Regexp(\""));
+         rule.add(new Atom("RegexpBody"));
+         rule.add(new Text("\")"));
+    ruleset.replacements.put("javadecl",rule);
+
 
     ruleset=new RuleSet("RegexpBody");
       grammar.addRuleset(ruleset);
@@ -1391,7 +1485,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("RegexpBit");
@@ -1414,7 +1507,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
     ruleset=new RuleSet("RegexpCharBlock");
@@ -1431,7 +1523,6 @@ public class grmGrm extends GrammarHelper {
       rule=new Vector<Type>();
         rule.add(new Text(""));
       ruleset.add(rule);
-    // Replacements
 
 
 
@@ -1441,12 +1532,10 @@ public class grmGrm extends GrammarHelper {
         rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
           RuleSet ruleset = new RuleSet("Anonymous");
         Vector<Type> rule = new Vector<Type>();
-        rule.add(new Atom("DummyTestContents"));
         ruleset.add(rule);
           return ruleset;
         } }.run() ) );
       ruleset.add(rule);
-    // Replacements
 
 
     return grammar;

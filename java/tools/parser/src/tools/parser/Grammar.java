@@ -1,12 +1,9 @@
 package tools.parser;
 
-import java.lang.String;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
-
-import tools.parser.*;
-import tools.parser.extensions.WrapMeaningfulIndentation;
 
 
 
@@ -24,8 +21,14 @@ public class Grammar {
 		}
 	};*/
 
-	public HashMap<String, RuleSet> rulesets = new HashMap<String, RuleSet>();
+	public Map<String, RuleSet> rulesets = new HashMap<String, RuleSet>();
 
+	public Grammar() {
+	}
+	
+	public Grammar(Map<String,RuleSet> _rulesets) {
+		rulesets = _rulesets;
+	}
 
 	public RuleSet getrulesetforatom(String type, ParseContext ctx) {
 		/*

@@ -12,11 +12,15 @@ public class RuleSet {
 	List<List<Type>> rules;
 	Map<String,List<Type>> replacements;
 
-	RuleSet(String t) {
-		this(t, new Vector<List<Type>>(), new Hashtable());
+	public RuleSet(String t) {
+		this(t, new Vector<List<Type>>());
 	}
 
-	RuleSet(String t, List<List<Type>> rules, Map replacements) {
+	public RuleSet(String t, List<List<Type>> rules) {
+		this(t,rules,new Hashtable());
+	}
+
+	public RuleSet(String t, List<List<Type>> rules, Map replacements) {
 		type = t;
 		this.rules = rules;
 		this.replacements = replacements;
