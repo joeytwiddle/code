@@ -49,7 +49,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("package dlang.parsed;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport dlang.types.*;\n\npublic class DLangFile {\n  public static void build() {\n    \n\n") , new Atom("DLangHeader") , new Atom("DLangFileMain") , new Text("  }\n}\n")))
-
     ))
 
     // DLangHeader = DLangModuleBlock DLangImports
@@ -67,7 +66,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("DLangModule", new RuleSet("DLangModule", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("package"), new Atom("Space"), new Var("module","\n;"), new Atom("EOL") } ),
-      Arrays.asList( new Type[]{ new Text("module"), new Atom("Space"), new Var("module","\n;"), new Atom("EOL") } )
+        Arrays.asList( new Type[]{ new Text("module"), new Atom("Space"), new Var("module","\n;"), new Atom("EOL") } )
       )
     ))
 
@@ -79,15 +78,15 @@ public class dlangGrm extends GrammarHelper {
     .with("DLangImports", new RuleSet("DLangImports", Arrays.asList(
         Arrays.asList( new Type[]{ new RepeatedRule(new GroupedDefn(new RuleSet("Anonymous", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("DLangImport") } ),
-      Arrays.asList( new Type[]{ new Atom("Space") } )
+        Arrays.asList( new Type[]{ new Atom("Space") } )
       ))),"*") } )
       )
     ))
 
     .with("DLangImport", new RuleSet("DLangImport", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("DLangImportProper") } ),
-      Arrays.asList( new Type[]{ new Atom("Comment") } ),
-      Arrays.asList( new Type[]{ new Atom("Space") } )
+        Arrays.asList( new Type[]{ new Atom("Comment") } ),
+        Arrays.asList( new Type[]{ new Atom("Space") } )
       )
     ))
 
@@ -101,12 +100,11 @@ public class dlangGrm extends GrammarHelper {
     // TODO: Comments might perceivably be 0 chars long, but <var> demands > 0
     .with("Comment", new RuleSet("Comment", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("#"), new Var("comment","\n"), new Text("\n") } ),
-      Arrays.asList( new Type[]{ new Text("//"), new Var("comment","\n"), new Text("\n") } )
+        Arrays.asList( new Type[]{ new Text("//"), new Var("comment","\n"), new Text("\n") } )
       ),
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("\n/*") , new Var("comment") , new Text(" */\n")))
-
     ))
 
     // TODO: Parametrised classes (templates)
@@ -116,13 +114,12 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new ClassDefinition(\"") , new Atom("className") , new Text("\", ") , new Atom("ClassBody") , new Text(", \"") , new Atom("OptClassMods") , new Text("\")")))
-
     ))
 
     .with("OptClassMods", new RuleSet("OptClassMods", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Space"), new Text("extends"), new Atom("Space"), new Atom("ClassRef") } ),
-      Arrays.asList( new Type[]{ new Atom("Space"), new Text("implements"), new Atom("Space"), new Atom("ClassRef") } ),
-      Arrays.asList( new Type[]{ new Atom("OptHorizSpace") } )
+        Arrays.asList( new Type[]{ new Atom("Space"), new Text("implements"), new Atom("Space"), new Atom("ClassRef") } ),
+        Arrays.asList( new Type[]{ new Atom("OptHorizSpace") } )
       )
     ))
 
@@ -132,7 +129,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("[]")))
-
     ))
 
     // ClassBody = IndentedDLangBlock
@@ -149,12 +145,11 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new Function(\"") , new Var("fnname") , new Text("\", {") , new Atom("ArgumentSignatureList") , new Text("}, ") , new Atom("FunctionBody") , new Text(")")))
-
     ))
 
     .with("FunctionBody", new RuleSet("FunctionBody", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("NiceCode") } ),
-      Arrays.asList( new Type[]{ new Atom("MutableCodeBlock") } )
+        Arrays.asList( new Type[]{ new Atom("MutableCodeBlock") } )
       )
     ))
 
@@ -168,21 +163,21 @@ public class dlangGrm extends GrammarHelper {
     .with("NiceCode", new RuleSet("NiceCode", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Expression"), new GroupedDefn(new RuleSet("Anonymous", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Space"), new Text("where"), new Atom("Space"), new Atom("NiceNEDefs"), new Atom("EOL") } ),
-      Arrays.asList( new Type[]{ new Atom("EOL") } )
+        Arrays.asList( new Type[]{ new Atom("EOL") } )
       ))) } )
       )
     ))
 
     .with("NiceNEDefs", new RuleSet("NiceNEDefs", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("NamedExpression"), new Text("\n"), new Atom("NiceNEDefs") } ),
-      Arrays.asList( new Type[]{ new Atom("NamedExpression") } )
+        Arrays.asList( new Type[]{ new Atom("NamedExpression") } )
       )
     ))
 
     .with("ArgumentSignatureList", new RuleSet("ArgumentSignatureList", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ArgumentSignature"), new Atom("MoreArgs") } ),
-      Arrays.asList( new Type[]{ new Atom("ArgumentSignature") } ),
-      Arrays.asList( new Type[]{ new Atom("WS") } )
+        Arrays.asList( new Type[]{ new Atom("ArgumentSignature") } ),
+        Arrays.asList( new Type[]{ new Atom("WS") } )
       )
     ))
 
@@ -229,18 +224,16 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new VarReference(\"") , new Atom("VarName") , new Text("\")")))
-
     ))
 
     // Could also be called a PrimitiveLiteral
     .with("ConstReference", new RuleSet("ConstReference", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Number") } ),
-      Arrays.asList( new Type[]{ new Atom("String") } )
+        Arrays.asList( new Type[]{ new Atom("String") } )
       ),
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("Constants.getConstRef(") , new Atom("Number") , new Atom("String") , new Text(")")))
-
     ))
 
 
@@ -251,7 +244,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("MutableCodeBlock allTheCode = ") , new Atom("MutableCodeBlock") , new Text(";")))
-
     ))
 
     .with("MutableCodeBlock", new RuleSet("MutableCodeBlock", Arrays.asList(
@@ -260,7 +252,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new MutableCodeBlock( newList()") , new ArgReplacement(1) , new Text(" )")))
-
     ))
     // dintj: "new MutableCodeBlock({" MutableCodeInner "})"
     // dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
@@ -270,33 +261,32 @@ public class dlangGrm extends GrammarHelper {
 
     .with("MutableCodeInner", new RuleSet("MutableCodeInner", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Space") } ),
-      Arrays.asList( new Type[]{ new Atom("Comment") } ),
-      Arrays.asList( new Type[]{ new Atom("RelevantCodeBit") } )
+        Arrays.asList( new Type[]{ new Atom("Comment") } ),
+        Arrays.asList( new Type[]{ new Atom("RelevantCodeBit") } )
       )
     ))
 
     .with("RelevantCodeBit", new RuleSet("RelevantCodeBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("NonStatement") } ),
-      Arrays.asList( new Type[]{ new Atom("Statement") } )
+        Arrays.asList( new Type[]{ new Atom("Statement") } )
       ),
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("      .with(") , new ArgReplacement(1) , new Text(")\n")))
-
     ))
     // dintj: Space NonStatement Statement ", "
     // dintj: ".concat(" NonStatement | Statement ")"
 
     .with("Statement", new RuleSet("Statement", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Assignment") } ),
-      Arrays.asList( new Type[]{ new Atom("FunctionCall") } ),
-      Arrays.asList( new Type[]{ new Atom("Loop") } )
+        Arrays.asList( new Type[]{ new Atom("FunctionCall") } ),
+        Arrays.asList( new Type[]{ new Atom("Loop") } )
       )
     ))
 
     .with("NonStatement", new RuleSet("NonStatement", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ClassDefinition") } ),
-      Arrays.asList( new Type[]{ new Atom("FunctionDefinition") } )
+        Arrays.asList( new Type[]{ new Atom("FunctionDefinition") } )
       )
     ))
 
@@ -304,7 +294,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("Assignment", new RuleSet("Assignment", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("NormalAssignment") } ),
-      Arrays.asList( new Type[]{ new Atom("SpecialAssignment") } )
+        Arrays.asList( new Type[]{ new Atom("SpecialAssignment") } )
       )
     ))
 
@@ -314,7 +304,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new NormalAssignment(") , new Atom("VarOrMemberReference") , new Text(",") , new Atom("Expression") , new Text(")")))
-
     ))
 
     .with("SpecialAssignment", new RuleSet("SpecialAssignment", Arrays.asList(
@@ -323,14 +312,13 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new SpecialAssignment(") , new Atom("VarOrMemberReference") , new Text(",\"") , new Atom("SpecialAssignmentOperator") , new Text("\",") , new Atom("Expression") , new Text(")")))
-
     ))
 
     .with("SpecialAssignmentOperator", new RuleSet("SpecialAssignmentOperator", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("+=") } ),
-      Arrays.asList( new Type[]{ new Text("-=") } ),
-      Arrays.asList( new Type[]{ new Text("*=") } ),
-      Arrays.asList( new Type[]{ new Text("/=") } )
+        Arrays.asList( new Type[]{ new Text("-=") } ),
+        Arrays.asList( new Type[]{ new Text("*=") } ),
+        Arrays.asList( new Type[]{ new Text("/=") } )
       )
     ))
 
@@ -338,7 +326,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("ExpressionTerminal", new RuleSet("ExpressionTerminal", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ConstReference") } ),
-      Arrays.asList( new Type[]{ new Atom("VarOrMemberReference") } )
+        Arrays.asList( new Type[]{ new Atom("VarOrMemberReference") } )
       )
     ))
 
@@ -352,16 +340,16 @@ public class dlangGrm extends GrammarHelper {
 
     .with("ExpressionBit", new RuleSet("ExpressionBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("HorizSpace"), new Atom("ExpressionBit") } ),
-      Arrays.asList( new Type[]{ new Atom("Algebra") } ),
-      Arrays.asList( new Type[]{ new Atom("ExpressionAtom") } )
+        Arrays.asList( new Type[]{ new Atom("Algebra") } ),
+        Arrays.asList( new Type[]{ new Atom("ExpressionAtom") } )
       )
     ))
 
     .with("ExpressionAtom", new RuleSet("ExpressionAtom", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("HorizSpace"), new Atom("ExpressionAtom") } ),
-      Arrays.asList( new Type[]{ new Atom("FunctionCall") } ),
-      Arrays.asList( new Type[]{ new Atom("BracketedExpression") } ),
-      Arrays.asList( new Type[]{ new Atom("ExpressionTerminal") } )
+        Arrays.asList( new Type[]{ new Atom("FunctionCall") } ),
+        Arrays.asList( new Type[]{ new Atom("BracketedExpression") } ),
+        Arrays.asList( new Type[]{ new Atom("ExpressionTerminal") } )
       )
     ))
 
@@ -373,7 +361,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("FunctionCall", new RuleSet("FunctionCall", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ConstructorCall") } ),
-      Arrays.asList( new Type[]{ new Atom("RealFunctionCall") } )
+        Arrays.asList( new Type[]{ new Atom("RealFunctionCall") } )
       )
     ))
 
@@ -383,7 +371,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new FunctionCall(") , new Atom("VarOrMemberReference") , new Text(", [") , new Atom("ArgumentParameterList") , new Text("])")))
-
     ))
 
     .with("ConstructorCall", new RuleSet("ConstructorCall", Arrays.asList(
@@ -392,7 +379,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new ConstructorCall(") , new Atom("RealFunctionCall") , new Text(")")))
-
     ))
 
     .with("MemberName", new RuleSet("MemberName", Arrays.asList(
@@ -422,7 +408,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("VarOrMemberReference", new RuleSet("VarOrMemberReference", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("VarReference"), new Text("."), new Atom("VarOrMemberReference") } ),
-      Arrays.asList( new Type[]{ new Atom("VarReference") } )
+        Arrays.asList( new Type[]{ new Atom("VarReference") } )
       )
     ))
 
@@ -430,8 +416,8 @@ public class dlangGrm extends GrammarHelper {
 
     .with("ArgumentParameterList", new RuleSet("ArgumentParameterList", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Expression"), new Text(","), new Atom("ArgumentParameterList") } ),
-      Arrays.asList( new Type[]{ new Atom("Expression") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Atom("Expression") } ),
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -449,7 +435,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new Operation(") , new Atom("ExpressionAtom") , new Text(",") , new Atom("Operator") , new Text(",") , new Atom("Expression") , new Text(")")))
-
     ))
 
     .with("TerminalAlgebraicOperation", new RuleSet("TerminalAlgebraicOperation", Arrays.asList(
@@ -463,7 +448,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("Operators.getOperator(\"") , new Atom("OperatorSymbol") , new Text("\")")))
-
     ))
     // dintj: "new Operator(\"" OperatorSymbol "\")"
 
@@ -475,33 +459,33 @@ public class dlangGrm extends GrammarHelper {
 
     .with("OperatorSymbol", new RuleSet("OperatorSymbol", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("BooleanOperator") } ),
-      Arrays.asList( new Type[]{ new Atom("AlgebraicOperator") } ),
-      Arrays.asList( new Type[]{ new Atom("OtherOperator") } )
+        Arrays.asList( new Type[]{ new Atom("AlgebraicOperator") } ),
+        Arrays.asList( new Type[]{ new Atom("OtherOperator") } )
       )
     ))
 
     .with("AlgebraicOperator", new RuleSet("AlgebraicOperator", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("*") } ),
-      Arrays.asList( new Type[]{ new Text("/") } ),
-      Arrays.asList( new Type[]{ new Text("+") } ),
-      Arrays.asList( new Type[]{ new Text("-") } ),
-      Arrays.asList( new Type[]{ new Text("^") } ),
-      Arrays.asList( new Type[]{ new Text("<<") } ),
-      Arrays.asList( new Type[]{ new Text(">>") } ),
-      Arrays.asList( new Type[]{ new Text("&") } ),
-      Arrays.asList( new Type[]{ new Text("|") } )
+        Arrays.asList( new Type[]{ new Text("/") } ),
+        Arrays.asList( new Type[]{ new Text("+") } ),
+        Arrays.asList( new Type[]{ new Text("-") } ),
+        Arrays.asList( new Type[]{ new Text("^") } ),
+        Arrays.asList( new Type[]{ new Text("<<") } ),
+        Arrays.asList( new Type[]{ new Text(">>") } ),
+        Arrays.asList( new Type[]{ new Text("&") } ),
+        Arrays.asList( new Type[]{ new Text("|") } )
       )
     ))
 
     .with("BooleanOperator", new RuleSet("BooleanOperator", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("==") } ),
-      Arrays.asList( new Type[]{ new Text("!=") } ),
-      Arrays.asList( new Type[]{ new Text(">") } ),
-      Arrays.asList( new Type[]{ new Text("<") } ),
-      Arrays.asList( new Type[]{ new Text(">=") } ),
-      Arrays.asList( new Type[]{ new Text("<=") } ),
-      Arrays.asList( new Type[]{ new Text("&&") } ),
-      Arrays.asList( new Type[]{ new Text("||") } )
+        Arrays.asList( new Type[]{ new Text("!=") } ),
+        Arrays.asList( new Type[]{ new Text(">") } ),
+        Arrays.asList( new Type[]{ new Text("<") } ),
+        Arrays.asList( new Type[]{ new Text(">=") } ),
+        Arrays.asList( new Type[]{ new Text("<=") } ),
+        Arrays.asList( new Type[]{ new Text("&&") } ),
+        Arrays.asList( new Type[]{ new Text("||") } )
       )
     ))
 
@@ -513,7 +497,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("VarDeclaration", new RuleSet("VarDeclaration", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("VarDeclarationAndAssignment") } ),
-      Arrays.asList( new Type[]{ new Atom("VarDeclarationWithoutAssignment") } )
+        Arrays.asList( new Type[]{ new Atom("VarDeclarationWithoutAssignment") } )
       )
     ))
 
@@ -528,7 +512,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("Type", new RuleSet("Type", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("TypeWithoutTemplate") } ),
-      Arrays.asList( new Type[]{ new Atom("TypeWithTemplate") } )
+        Arrays.asList( new Type[]{ new Atom("TypeWithTemplate") } )
       )
     ))
 
@@ -549,7 +533,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("TemplateBits", new RuleSet("TemplateBits", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("WS"), new Atom("TemplateBit"), new Atom("WS"), new Text(","), new Atom("WS"), new Atom("TemplateBits") } ),
-      Arrays.asList( new Type[]{ new Atom("WS"), new Atom("TemplateBit") } )
+        Arrays.asList( new Type[]{ new Atom("WS"), new Atom("TemplateBit") } )
       )
     ))
 
@@ -560,7 +544,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("Number", new RuleSet("Number", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Float") } ),
-      Arrays.asList( new Type[]{ new Atom("Int") } )
+        Arrays.asList( new Type[]{ new Atom("Int") } )
       )
     ))
 
@@ -576,7 +560,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("Digits", new RuleSet("Digits", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Digit"), new Atom("Digits") } ),
-      Arrays.asList( new Type[]{ new Atom("Digit") } )
+        Arrays.asList( new Type[]{ new Atom("Digit") } )
       )
     ))
 
@@ -594,8 +578,8 @@ public class dlangGrm extends GrammarHelper {
 
     .with("Loop", new RuleSet("Loop", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ForNumLoop") } ),
-      Arrays.asList( new Type[]{ new Atom("ForListLoop") } ),
-      Arrays.asList( new Type[]{ new Atom("WhileLoop") } )
+        Arrays.asList( new Type[]{ new Atom("ForListLoop") } ),
+        Arrays.asList( new Type[]{ new Atom("WhileLoop") } )
       )
     ))
 
@@ -605,7 +589,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new ForNumLoop(") , new Atom("VarName") , new Text(",") , new Atom("LoopRange") , new Text(")")))
-
     ))
     // "{" ForBody "}"
 
@@ -615,7 +598,6 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new ForListLoop(") , new Atom("VarName") , new Text(",") , new Atom("Expression") , new Text(")")))
-
     ))
     // "{" ForBody "}"
 
@@ -630,21 +612,20 @@ public class dlangGrm extends GrammarHelper {
     .with("LoopRange", new RuleSet("LoopRange", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ConstReference"), new Atom("Space"), new GroupedDefn(new RuleSet("Anonymous", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("to") } ),
-      Arrays.asList( new Type[]{ new Text("..") } )
+        Arrays.asList( new Type[]{ new Text("..") } )
       ))), new Atom("Space"), new Atom("Expression"), new Atom("OptStep") } )
       ),
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new LoopRange(") , new Atom("ConstReference") , new Text(",") , new Atom("Expression") , new Text(")")))
-
     ))
 
     .with("OptStep", new RuleSet("OptStep", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("WS"), new GroupedDefn(new RuleSet("Anonymous", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("step") } ),
-      Arrays.asList( new Type[]{ new Text("by") } )
+        Arrays.asList( new Type[]{ new Text("by") } )
       ))), new Atom("Space"), new Atom("Expression") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -674,7 +655,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("WS", new RuleSet("WS", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Whitespace") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -708,7 +689,7 @@ public class dlangGrm extends GrammarHelper {
 
     .with("OptHorizSpace", new RuleSet("OptHorizSpace", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("HorizSpace") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 

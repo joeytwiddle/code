@@ -131,11 +131,8 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n") , new Atom("Grm") , new Text("    return grammar;\n  }\n}\n")))
-
         .with("hugs", Arrays.asList(new Text("module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ ") , new Atom("Grm") , new Text(" ]\n")))
-
         .with("javadecl", Arrays.asList(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\nimport org.neuralyte.literal.LiteralMap;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar( new LiteralMap()") , new Atom("Grm") , new Text("\n    );\n    return grammar;\n  }\n}\n")))
-
     ))
 
     .with("Grm", new RuleSet("Grm", Arrays.asList(
@@ -145,16 +142,16 @@ public class grmGrm extends GrammarHelper {
 
     .with("GrmHeaderBit", new RuleSet("GrmHeaderBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("GrmAt") } ),
-      Arrays.asList( new Type[]{ new Atom("Whitespace") } ),
-      Arrays.asList( new Type[]{ new Atom("Comment") } )
+        Arrays.asList( new Type[]{ new Atom("Whitespace") } ),
+        Arrays.asList( new Type[]{ new Atom("Comment") } )
       )
     ))
 
     .with("GrmAt", new RuleSet("GrmAt", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("GrmOption") } ),
-      Arrays.asList( new Type[]{ new Atom("GrmImport") } ),
-      Arrays.asList( new Type[]{ new Atom("GrmExtend") } ),
-      Arrays.asList( new Type[]{ new Atom("GrmOtherAt") } )
+        Arrays.asList( new Type[]{ new Atom("GrmImport") } ),
+        Arrays.asList( new Type[]{ new Atom("GrmExtend") } ),
+        Arrays.asList( new Type[]{ new Atom("GrmOtherAt") } )
       )
     ))
 
@@ -164,27 +161,25 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("    grammar.setOption_") , new Var("optname") , new Text("(") , new Atom("OptOptionArgs") , new Text(");\n")))
-
     //# Had trouble referring to grouped atom when OptOptionArgs was inline.
     // java: "    grammar.setOption_" <optname> "(" OptionArgs ");\n"
     //# Alternative, less hard-coded into grammar object.
     // java: "    grammar.setOption(\"" <optname> "\", { " OptionArgs " } );\n"
         .with("javadecl", Arrays.asList(new Text("    // @todo grammar.setOption_") , new Var("optname") , new Text("(") , new Atom("OptOptionArgs") , new Text(");\n")))
-
     ))
 
     .with("OptOptionArgs", new RuleSet("OptOptionArgs", Arrays.asList(
         Arrays.asList( new Type[]{ new GroupedDefn(new RuleSet("Anonymous", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("OptionArgs") } ),
-      Arrays.asList( new Type[]{ new Atom("HorizSpace") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Atom("HorizSpace") } ),
+        Arrays.asList( new Type[]{ new Text("") } )
       ))) } )
       )
     ))
 
     .with("OptionArgs", new RuleSet("OptionArgs", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("MultipleOptionArgs") } ),
-      Arrays.asList( new Type[]{ new Atom("OptionArg") } )
+        Arrays.asList( new Type[]{ new Atom("OptionArg") } )
       )
     ))
 
@@ -194,7 +189,6 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Atom("OptionArg") , new Text(", ") , new Atom("OptionArgs")))
-
     ))
 
     .with("OptionArg", new RuleSet("OptionArg", Arrays.asList(
@@ -208,9 +202,7 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("    grammar.importNamespace(\"") , new Var("namespace") , new Text("\",\"") , new Var("filename") , new Text("\");\n")))
-
         .with("javadecl", Arrays.asList(new Text("    // @todo grammar.importNamespace(\"") , new Var("namespace") , new Text("\",\"") , new Var("filename") , new Text("\");\n")))
-
     ))
 
     .with("GrmExtend", new RuleSet("GrmExtend", Arrays.asList(
@@ -225,9 +217,7 @@ public class grmGrm extends GrammarHelper {
         new LiteralMap()
     //# For prototyping, for now, we allow grammar to insert any Java it likes.
         .with("java", Arrays.asList(new Text("    ") , new Var("rest")))
-
         .with("javadecl", Arrays.asList(new Text("    // @todo ") , new Var("rest")))
-
     ))
 
     // TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
@@ -235,28 +225,25 @@ public class grmGrm extends GrammarHelper {
 
     .with("GrmBit", new RuleSet("GrmBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Whitespace") } ),
-      Arrays.asList( new Type[]{ new Atom("Comment") } ),
-      Arrays.asList( new Type[]{ new Atom("AtomDef") } )
+        Arrays.asList( new Type[]{ new Atom("Comment") } ),
+        Arrays.asList( new Type[]{ new Atom("AtomDef") } )
       )
     ))
 
     .with("Comment", new RuleSet("Comment", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("#"), new Var("comment","\n"), new Text("\n") } ),
-      Arrays.asList( new Type[]{ new Text("#\n") } )
+        Arrays.asList( new Type[]{ new Text("#\n") } )
       ),
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("    //") , new Var("comment") , new Text("\n")))
-
         .with("pojo", Arrays.asList(new Text("    //") , new Var("comment") , new Text("\n")))
-
         .with("javadecl", Arrays.asList(new Text("    //") , new Var("comment") , new Text("\n")))
-
     ))
 
     .with("OptComment", new RuleSet("OptComment", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Comment") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -264,7 +251,7 @@ public class grmGrm extends GrammarHelper {
 
     .with("AtomName", new RuleSet("AtomName", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("PackagedAtomName") } ),
-      Arrays.asList( new Type[]{ new Atom("PlainAtomName") } )
+        Arrays.asList( new Type[]{ new Atom("PlainAtomName") } )
       )
     ))
 
@@ -299,21 +286,17 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("    ruleset=new RuleSet(\"") , new Atom("AtomName") , new Text("\");\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n") , new Atom("RuleSet") , new Text("      ruleset.add(rule);\n") , new Atom("OptReplacements") , new Text("\n")))
-
         .with("hugs", Arrays.asList(new Text("  ( Atom \"") , new Atom("AtomName") , new Text("\",[\n    [ ") , new Atom("RuleSet") , new Text(" ]\n    ] , [\n") , new Atom("OptReplacements") , new Text("\n  ] ) ,\n")))
-
         .with("pojo", Arrays.asList(new Text("interface ") , new Atom("AtomName") , new Text(" {\n\n}\n  class AnImplementation implements ") , new Atom("AtomName") , new Text(" {\n") , new Atom("RuleSet") , new Text("  }\n\n")))
-
     // BUG: We cannot make a second reference to AtomName
         .with("javadecl", Arrays.asList(new Text("    .with(\"") , new ArgReplacement(1) , new Text("\", new RuleSet(\"") , new Atom("AtomName") , new Text("\", ") , new Atom("RuleSet") , new Atom("OptReplacements") , new Text("\n    ))\n")))
-
     ))
 
     // Replacements are the lines defining export targets: java, hugs, pojo
 
     .with("OptReplacements", new RuleSet("OptReplacements", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("YesReplacements") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -323,15 +306,13 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("    // Replacements\n") , new Atom("Replacements")))
-
         .with("javadecl", Arrays.asList(new Text(",\n        /* Replacements */\n        new LiteralMap()\n") , new Atom("Replacements")))
-
     ))
 
     .with("Replacements", new RuleSet("Replacements", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ManyReplacements") } ),
-      Arrays.asList( new Type[]{ new Atom("Comment"), new Atom("Replacements") } ),
-      Arrays.asList( new Type[]{ new Atom("Replacement") } )
+        Arrays.asList( new Type[]{ new Atom("Comment"), new Atom("Replacements") } ),
+        Arrays.asList( new Type[]{ new Atom("Replacement") } )
       )
     ))
 
@@ -341,7 +322,6 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("hugs", Arrays.asList(new Atom("Replacement") , new Text(",\n") , new Atom("Replacements")))
-
     ))
 
     // Note that use of + and * make it harder to place things *inbetween* the
@@ -358,11 +338,8 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("    rule=new Vector<Type>();\n") , new Atom("ReplacementDefn") , new Text("    ruleset.replacements.put(\"") , new Var("target") , new Text("\",rule);\n")))
-
         .with("hugs", Arrays.asList(new Text("      ( \"") , new Var("target") , new Text("\" , [ ") , new Atom("ReplacementDefn") , new Text(" ] ) ")))
-
-        .with("javadecl", Arrays.asList(new Text("        .with(\"") , new Var("target") , new Text("\", Arrays.asList(") , new Atom("ReplacementDefn") , new Text("))\n")))
-
+        .with("javadecl", Arrays.asList(new Text("        .with(\"") , new Var("target") , new Text("\", Arrays.asList(") , new Atom("ReplacementDefn") , new Text("))")))
     ))
 
     // The only difference between a RuleSet and a Defn is how we output it.
@@ -372,7 +349,6 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("javadecl", Arrays.asList(new Text("Arrays.asList(\n        ") , new Atom("Defn") , new Text("\n      )")))
-
     ))
 
     .with("Defn", new RuleSet("Defn", Arrays.asList(
@@ -397,13 +373,12 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("javadecl", Arrays.asList(new Text("Arrays.asList( new Type[]{ ") , new Atom("DefnAnd") , new Text(" } )") , new Atom("DefnOrMaybeMore")))
-
     ))
     // Java requires us to be specific about the array types here.
 
     .with("DefnOrMaybeMore", new RuleSet("DefnOrMaybeMore", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("DefnOrMore") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -413,13 +388,9 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("      ruleset.add(rule);\n      rule=new Vector<Type>();\n") , new Atom("DefnOr")))
-
         .with("hugs", Arrays.asList(new Text("] ,\n      [ ") , new Atom("DefnOr")))
-
         .with("pojo", Arrays.asList(new Text("  }\n  class AnotherImplementation {\n") , new Atom("DefnOr")))
-
-        .with("javadecl", Arrays.asList(new Text(",\n      ") , new Atom("DefnOr")))
-
+        .with("javadecl", Arrays.asList(new Text(",\n        ") , new Atom("DefnOr")))
     ))
 
     // DefnAnd = DefnBit " "+ Defn
@@ -435,7 +406,7 @@ public class grmGrm extends GrammarHelper {
 
     .with("MaybeMore", new RuleSet("MaybeMore", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("MoreAnd") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -445,11 +416,8 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("Java", Arrays.asList(new Atom("DefnAnd")))
-
         .with("hugs", Arrays.asList(new Text(", ") , new Atom("DefnAnd")))
-
         .with("javadecl", Arrays.asList(new Text(", ") , new Atom("DefnAnd")))
-
     ))
 
     // ReplacementElement is only used for output/replacement lines, not the rule definition.
@@ -464,7 +432,7 @@ public class grmGrm extends GrammarHelper {
     // Inefficient but atomic output
     .with("DefnBit", new RuleSet("DefnBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("RepeatedElement") } ),
-      Arrays.asList( new Type[]{ new Atom("BasicElement") } )
+        Arrays.asList( new Type[]{ new Atom("BasicElement") } )
       )
     ))
 
@@ -473,13 +441,13 @@ public class grmGrm extends GrammarHelper {
 
     .with("BasicElement", new RuleSet("BasicElement", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("VarAccept") } ),
-      Arrays.asList( new Type[]{ new Atom("VarDeny") } ),
-      Arrays.asList( new Type[]{ new Atom("Text") } ),
-      Arrays.asList( new Type[]{ new Atom("GroupElement") } ),
-      Arrays.asList( new Type[]{ new Atom("MagicSymbol") } ),
-      Arrays.asList( new Type[]{ new Atom("AtomRef") } ),
-      Arrays.asList( new Type[]{ new Atom("Regexp") } ),
-      Arrays.asList( new Type[]{ new Atom("OptionalElement") } )
+        Arrays.asList( new Type[]{ new Atom("VarDeny") } ),
+        Arrays.asList( new Type[]{ new Atom("Text") } ),
+        Arrays.asList( new Type[]{ new Atom("GroupElement") } ),
+        Arrays.asList( new Type[]{ new Atom("MagicSymbol") } ),
+        Arrays.asList( new Type[]{ new Atom("AtomRef") } ),
+        Arrays.asList( new Type[]{ new Atom("Regexp") } ),
+        Arrays.asList( new Type[]{ new Atom("OptionalElement") } )
       )
     ))
 
@@ -491,7 +459,7 @@ public class grmGrm extends GrammarHelper {
 
     .with("ReplacementElementMaybeMore", new RuleSet("ReplacementElementMaybeMore", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("OptSpc"), new Atom("ReplacementElementMore") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -501,16 +469,15 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("javadecl", Arrays.asList(new Text(", ") , new Atom("ReplacementDefn")))
-
     ))
 
     .with("ReplacementElement", new RuleSet("ReplacementElement", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ArgReplacement") } ),
-      Arrays.asList( new Type[]{ new Atom("RelativeElement") } ),
-      Arrays.asList( new Type[]{ new Atom("ActiveReplacement") } ),
-      Arrays.asList( new Type[]{ new Atom("VarRef") } ),
-      Arrays.asList( new Type[]{ new Atom("Text") } ),
-      Arrays.asList( new Type[]{ new Atom("AtomRef") } )
+        Arrays.asList( new Type[]{ new Atom("RelativeElement") } ),
+        Arrays.asList( new Type[]{ new Atom("ActiveReplacement") } ),
+        Arrays.asList( new Type[]{ new Atom("VarRef") } ),
+        Arrays.asList( new Type[]{ new Atom("Text") } ),
+        Arrays.asList( new Type[]{ new Atom("AtomRef") } )
       )
     ))
 
@@ -530,9 +497,9 @@ public class grmGrm extends GrammarHelper {
 
     .with("MagicSymbol", new RuleSet("MagicSymbol", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("MagicTokenOfDoom") } ),
-      Arrays.asList( new Type[]{ new Text("%") } ),
-      Arrays.asList( new Type[]{ new Text("$") } ),
-      Arrays.asList( new Type[]{ new Atom("MagicTokenOfCommitment") } )
+        Arrays.asList( new Type[]{ new Text("%") } ),
+        Arrays.asList( new Type[]{ new Text("$") } ),
+        Arrays.asList( new Type[]{ new Atom("MagicTokenOfCommitment") } )
       )
     ))
     // Don't put "#" here - it may eat through comments!
@@ -559,6 +526,9 @@ public class grmGrm extends GrammarHelper {
     // be un-done!  It is simpler but knows only itself, not the context in which it
     // was included.
 
+    // Presumably we want to report a problem at the first atom after the symbol
+    // which fails to match.
+
     // I can envisage another token which might be useful.  Let's call it % for now.
     // It can be used to mark a force-fail match, e.g. in the following
     //   cat = % Dog
@@ -583,11 +553,8 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(\"Anonymous\");\n        Vector<Type> rule = new Vector<Type>();\n") , new Atom("Defn") , new Text("        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n")))
-
         .with("javadeclold", Arrays.asList(new Text("new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          return new RuleSet(\"Anonymous\", ") , new Atom("RuleSet") , new Text(");\n        } }.run() )")))
-
         .with("javadecl", Arrays.asList(new Text("new GroupedDefn(new RuleSet(\"Anonymous\", ") , new Atom("RuleSet") , new Text("))")))
-
     ))
 
     .with("RepeatedElement", new RuleSet("RepeatedElement", Arrays.asList(
@@ -596,9 +563,7 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Atom("BasicElement") , new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),\"") , new Atom("RepeatMarker") , new Text("\"));\n")))
-
         .with("javadecl", Arrays.asList(new Text("new RepeatedRule(") , new Atom("BasicElement") , new Text(",\"") , new Atom("RepeatMarker") , new Text("\")")))
-
     ))
 
     // TODO: Surely like GroupElement, OptionalElement should be able to contain a
@@ -610,21 +575,19 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Atom("Defn") , new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n")))
-
     // java: "        rule.add(new RepeatedRule(" BasicElement ",0,1));\n"
         .with("javadecl", Arrays.asList(new Text("new RepeatedRule(") , new Atom("BasicElement") , new Text(",0,1)")))
-
     ))
 
     .with("RepeatMarker", new RuleSet("RepeatMarker", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ZeroOrMore") } ),
-      Arrays.asList( new Type[]{ new Atom("OneOrMore") } )
+        Arrays.asList( new Type[]{ new Atom("OneOrMore") } )
       )
     ))
 
     .with("OptRepeatMarker", new RuleSet("OptRepeatMarker", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("RepeatMarkerOld") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
@@ -634,12 +597,11 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),\"") , new Atom("RepeatMarker2") , new Text("\"));\n")))
-
     ))
 
     .with("RepeatMarker2", new RuleSet("RepeatMarker2", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("ZeroOrMore") } ),
-      Arrays.asList( new Type[]{ new Atom("OneOrMore") } )
+        Arrays.asList( new Type[]{ new Atom("OneOrMore") } )
       )
     ))
 
@@ -649,7 +611,6 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("*")))
-
     ))
     // javaB: 0,-1
 
@@ -659,7 +620,6 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("+")))
-
     ))
     // javaB: 1,-1
 
@@ -681,13 +641,9 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        rule.add(new Var(\"") , new Var("varname") , new Text("\"));\n")))
-
         .with("hugs", Arrays.asList(new Text("Var \"") , new Var("varname") , new Text("\"")))
-
         .with("pojo", Arrays.asList(new Text("    String ") , new Var("varname") , new Text(";\n")))
-
         .with("javadecl", Arrays.asList(new Text("new Var(\"") , new Var("varname") , new Text("\")")))
-
     ))
 
     .with("VarDeny", new RuleSet("VarDeny", Arrays.asList(
@@ -696,13 +652,9 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        rule.add(new Var(\"") , new Var("varname") , new Text("\",\"") , new Var("denied") , new Text("\"));\n")))
-
         .with("hugs", Arrays.asList(new Text("VarExcl \"") , new Var("varname") , new Text("\" \"") , new Var("denied") , new Text("\"")))
-
         .with("pojo", Arrays.asList(new Text("    String ") , new Var("varname") , new Text(";\n")))
-
         .with("javadecl", Arrays.asList(new Text("new Var(\"") , new Var("varname") , new Text("\",\"") , new Var("denied") , new Text("\")")))
-
     ))
 
     .with("VarAccept", new RuleSet("VarAccept", Arrays.asList(
@@ -711,13 +663,9 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        rule.add(new Var(\"") , new Var("varname") , new Text("\",null,\"") , new Var("accepted") , new Text("\"));\n")))
-
         .with("hugs", Arrays.asList(new Text("VarIncl \"") , new Var("varname") , new Text("\" \"") , new Var("denied") , new Text("\"")))
-
         .with("pojo", Arrays.asList(new Text("    String ") , new Var("varname") , new Text(";\n")))
-
         .with("javadecl", Arrays.asList(new Text("new Var(\"") , new Var("varname") , new Text("\",null,\"") , new Var("accepted") , new Text("\")")))
-
     ))
 
     .with("AtomRef", new RuleSet("AtomRef", Arrays.asList(
@@ -726,13 +674,9 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        rule.add(new Atom(\"") , new Atom("AtomName") , new Text("\"));\n")))
-
         .with("hugs", Arrays.asList(new Text("Atom \"") , new Atom("AtomName") , new Text("\"")))
-
         .with("pojo", Arrays.asList(new Text("    ") , new Atom("AtomName") , new Text(" arg1;\n")))
-
         .with("javadecl", Arrays.asList(new Text("new Atom(\"") , new Atom("AtomName") , new Text("\")")))
-
     ))
 
     // pojo: "  /* Possible " <atomtype> " */\n"
@@ -750,25 +694,21 @@ public class grmGrm extends GrammarHelper {
 
     .with("Text", new RuleSet("Text", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("\""), new Var("text","\""), new Text("\"") } ),
-      Arrays.asList( new Type[]{ new Text("\"\"") } )
+        Arrays.asList( new Type[]{ new Text("\"\"") } )
       ),
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        rule.add(new Text(\"") , new Var("text") , new Text("\"));\n")))
-
         .with("hugs", Arrays.asList(new Text("Str \"") , new Var("text") , new Text("\"")))
-
         .with("pojo", Arrays.asList(new Text("    /* Matched: \"") , new Var("text") , new Text("\" */\n")))
-
         .with("javadecl", Arrays.asList(new Text("new Text(\"") , new Var("text") , new Text("\")")))
-
     ))
 
 
 
     .with("NL", new RuleSet("NL", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("\r\n") } ),
-      Arrays.asList( new Type[]{ new Text("\n") } )
+        Arrays.asList( new Type[]{ new Text("\n") } )
       )
     ))
 
@@ -780,27 +720,27 @@ public class grmGrm extends GrammarHelper {
 
     .with("OptHorizSpace", new RuleSet("OptHorizSpace", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("HorizSpace") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
     .with("OptSpc", new RuleSet("OptSpc", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("SpcBit"), new Atom("OptSpc") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
     .with("SpcBit", new RuleSet("SpcBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Text(" ") } ),
-      Arrays.asList( new Type[]{ new Text("\t") } )
+        Arrays.asList( new Type[]{ new Text("\t") } )
       )
     ))
 
     .with("WhitespaceBit", new RuleSet("WhitespaceBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("\n") } ),
-      Arrays.asList( new Type[]{ new Text(" ") } ),
-      Arrays.asList( new Type[]{ new Text("\t") } ),
-      Arrays.asList( new Type[]{ new Text("\r") } )
+        Arrays.asList( new Type[]{ new Text(" ") } ),
+        Arrays.asList( new Type[]{ new Text("\t") } ),
+        Arrays.asList( new Type[]{ new Text("\r") } )
       )
     ))
 
@@ -836,9 +776,7 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) { ") , new Var("java") , new Text(" } } );\n")))
-
         .with("javadecl", Arrays.asList(new Text("new ActiveReplacement() { public String replace(OutputContext ctx) { ") , new Var("java") , new Text(" } }")))
-
     ))
 
     // RelativeElement is a way to access variables in parent/child types.
@@ -846,7 +784,7 @@ public class grmGrm extends GrammarHelper {
 
     .with("RelativeElement", new RuleSet("RelativeElement", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("RelUp") } ),
-      Arrays.asList( new Type[]{ new Atom("RelDown") } )
+        Arrays.asList( new Type[]{ new Atom("RelDown") } )
       )
     ))
 
@@ -856,9 +794,7 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        { Vector realrule=rule; rule=new Vector<Type>(); ") , new Atom("BasicElement") , new Text(" realrule.add(new RelElement('^',") , new Atom("Ref") , new Text(",(Type)rule.get(0))); rule=realrule; }\n")))
-
         .with("javadecl", Arrays.asList(new Text("new RelElement('^',") , new Atom("Ref") , new Text(",") , new Atom("ReplacementElement") , new Text(")")))
-
     ))
 
     .with("RelDown", new RuleSet("RelDown", Arrays.asList(
@@ -867,9 +803,7 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        { Vector realrule=rule; rule=new Vector<Type>(); ") , new Atom("BasicElement") , new Text(" realrule.add(new RelElement('.',") , new Atom("Ref") , new Text(",(Type)rule.get(0))); rule=realrule; }\n")))
-
         .with("javadecl", Arrays.asList(new Text("new RelElement('.',") , new Atom("Ref") , new Text(",") , new Atom("ReplacementElement") , new Text(")")))
-
     ))
 
     .with("Ref", new RuleSet("Ref", Arrays.asList(
@@ -878,9 +812,7 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("\"") , new Var("ref") , new Text("\"")))
-
         .with("javadecl", Arrays.asList(new Text("\"") , new Var("ref") , new Text("\"")))
-
     ))
 
     .with("ArgReplacement", new RuleSet("ArgReplacement", Arrays.asList(
@@ -889,9 +821,7 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("        rule.add( new ArgReplacement(") , new Var("num") , new Text(") );\n")))
-
         .with("javadecl", Arrays.asList(new Text("new ArgReplacement(") , new Var("num") , new Text(")")))
-
     ))
 
 
@@ -905,29 +835,27 @@ public class grmGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("new Regexp(\"") , new Atom("RegexpBody") , new Text("\")")))
-
         .with("javadecl", Arrays.asList(new Text("new Regexp(\"") , new Atom("RegexpBody") , new Text("\")")))
-
     ))
 
     .with("RegexpBody", new RuleSet("RegexpBody", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("RegexpBit"), new Atom("RegexpBody") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
     .with("RegexpBit", new RuleSet("RegexpBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("\\"), new Atom("AnyOneChar"), new Atom("RegexpBit") } ),
-      Arrays.asList( new Type[]{ new Text("["), new Atom("RegexpCharBlock"), new Text("]"), new Atom("RegexpBit") } ),
-      Arrays.asList( new Type[]{ new Var("regexpbit","\\/[\n"), new Atom("RegexpBit") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("["), new Atom("RegexpCharBlock"), new Text("]"), new Atom("RegexpBit") } ),
+        Arrays.asList( new Type[]{ new Var("regexpbit","\\/[\n"), new Atom("RegexpBit") } ),
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
     .with("RegexpCharBlock", new RuleSet("RegexpCharBlock", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("\\"), new Atom("AnyOneChar"), new Atom("RegexpCharBlock") } ),
-      Arrays.asList( new Type[]{ new Var("regexpcharblock","]\n"), new Atom("RegexpCharBlock") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Var("regexpcharblock","]\n"), new Atom("RegexpCharBlock") } ),
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 

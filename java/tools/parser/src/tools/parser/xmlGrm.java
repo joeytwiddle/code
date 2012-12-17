@@ -21,21 +21,21 @@ public class xmlGrm extends GrammarHelper {
 
     .with("XML", new RuleSet("XML", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("<"), new Var("type"," >"), new Text(">"), new Atom("Inside"), new Text("</"), new Var("type"," >"), new Text(">") } ),
-      Arrays.asList( new Type[]{ new Text("<"), new Var("type"," >"), new Atom("Param"), new Text(">"), new Atom("Inside"), new Text("</"), new Var("type"," >"), new Text(">") } ),
-      Arrays.asList( new Type[]{ new Text("<"), new Var("type"," >"), new Text("/>") } )
+        Arrays.asList( new Type[]{ new Text("<"), new Var("type"," >"), new Atom("Param"), new Text(">"), new Atom("Inside"), new Text("</"), new Var("type"," >"), new Text(">") } ),
+        Arrays.asList( new Type[]{ new Text("<"), new Var("type"," >"), new Text("/>") } )
       )
     ))
 
     .with("Param", new RuleSet("Param", Arrays.asList(
         Arrays.asList( new Type[]{ new Text(" "), new Var("param"," >"), new Text("="), new Var("value"," >") } ),
-      Arrays.asList( new Type[]{ new Atom("Param"), new Atom("Param") } )
+        Arrays.asList( new Type[]{ new Atom("Param"), new Atom("Param") } )
       )
     ))
 
     .with("Inside", new RuleSet("Inside", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("") } ),
-      Arrays.asList( new Type[]{ new Atom("XML"), new Atom("Inside") } ),
-      Arrays.asList( new Type[]{ new Var("text","<") } )
+        Arrays.asList( new Type[]{ new Atom("XML"), new Atom("Inside") } ),
+        Arrays.asList( new Type[]{ new Var("text","<") } )
       )
     ))
 

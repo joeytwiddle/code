@@ -216,7 +216,7 @@ hugs: Replacement ",\n" Replacements
 Replacement = <target/"<>\n!qt! :"> ": " ReplacementDefn
 java: "    rule=new Vector<Type>();\n" ReplacementDefn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
 hugs: "      ( !qt!" <target> "!qt! , [ " ReplacementDefn " ] ) "
-javadecl: "        .with(!qt!" <target> "!qt!, Arrays.asList(" ReplacementDefn "))\n"
+javadecl: "        .with(!qt!" <target> "!qt!, Arrays.asList(" ReplacementDefn "))"
 
 # The only difference between a RuleSet and a Defn is how we output it.
 RuleSet = Defn
@@ -245,7 +245,7 @@ DefnOrMore = OWS "|" OWS DefnOr
 java: "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" DefnOr
 hugs: "] ,\n      [ " DefnOr
 pojo: "  }\n  class AnotherImplementation {\n" DefnOr
-javadecl: ",\n      " DefnOr
+javadecl: ",\n        " DefnOr
 
 # DefnAnd = DefnBit " "+ Defn
 # java: DefnBit Defn
@@ -337,6 +337,9 @@ MagicTokenOfDoom = "!"
 # Alternatively, "=!" could mean "=" but if a match is found, it should never
 # be un-done!  It is simpler but knows only itself, not the context in which it
 # was included.
+
+# Presumably we want to report a problem at the first atom after the symbol
+# which fails to match.
 
 # I can envisage another token which might be useful.  Let's call it % for now.
 # It can be used to mark a force-fail match, e.g. in the following

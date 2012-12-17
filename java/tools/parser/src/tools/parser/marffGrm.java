@@ -17,18 +17,17 @@ public class marffGrm extends GrammarHelper {
 
     .with("Definition", new RuleSet("Definition", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("DefBit"), new Atom("Definition") } ),
-      Arrays.asList( new Type[]{ new Atom("DefBit") } )
+        Arrays.asList( new Type[]{ new Atom("DefBit") } )
       )
     ))
 
     .with("DefBit", new RuleSet("DefBit", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Comment") } ),
-      Arrays.asList( new Type[]{ new Text("@"), new Atom("DefBit2"), new Var("whatever","\n"), new Text("\n") } )
+        Arrays.asList( new Type[]{ new Text("@"), new Atom("DefBit2"), new Var("whatever","\n"), new Text("\n") } )
       ),
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Atom("Comment") , new Atom("DefBit2")))
-
     ))
 
     // That said: print whatever Comment or DefBit2 (whichever if matched) print,
@@ -40,19 +39,18 @@ public class marffGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("// ") , new Atom("CommentStart") , new Var("comment") , new Text("\n")))
-
     ))
 
     .with("CommentStart", new RuleSet("CommentStart", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("#") } ),
-      Arrays.asList( new Type[]{ new Text("(*") } )
+        Arrays.asList( new Type[]{ new Text("(*") } )
       )
     ))
 
     .with("DefBit2", new RuleSet("DefBit2", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("DefRelation") } ),
-      Arrays.asList( new Type[]{ new Atom("DefLink") } ),
-      Arrays.asList( new Type[]{ new Atom("DefAttribute") } )
+        Arrays.asList( new Type[]{ new Atom("DefLink") } ),
+        Arrays.asList( new Type[]{ new Atom("DefAttribute") } )
       )
     ))
 
@@ -62,7 +60,6 @@ public class marffGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("	definitions.add(new Relation(\"") , new Var("relation") , new Text("\");\n")))
-
     ))
 
     .with("DefLink", new RuleSet("DefLink", Arrays.asList(
@@ -71,7 +68,6 @@ public class marffGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("	definitions.add(new Link(\"") , new Var("filename") , new Text("\");\n")))
-
     ))
 
     .with("DefAttribute", new RuleSet("DefAttribute", Arrays.asList(
@@ -80,18 +76,17 @@ public class marffGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("java", Arrays.asList(new Text("	definitions.add(new Attribute(\"") , new Var("attrname") , new Text("\", ... ,\"") , new Var("attrtype") , new Text("\");\n")))
-
     ))
 
     .with("OptKey", new RuleSet("OptKey", Arrays.asList(
         Arrays.asList( new Type[]{ new Text(" key") } ),
-      Arrays.asList( new Type[]{ new Text("") } )
+        Arrays.asList( new Type[]{ new Text("") } )
       )
     ))
 
     .with("Data", new RuleSet("Data", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("DataBit"), new Atom("Data") } ),
-      Arrays.asList( new Type[]{ new Atom("DataBit") } )
+        Arrays.asList( new Type[]{ new Atom("DataBit") } )
       )
     ))
 
@@ -102,7 +97,7 @@ public class marffGrm extends GrammarHelper {
 
     .with("Fields", new RuleSet("Fields", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("Field"), new Text(","), new Atom("Fields") } ),
-      Arrays.asList( new Type[]{ new Atom("Field"), new Text("\n") } )
+        Arrays.asList( new Type[]{ new Atom("Field"), new Text("\n") } )
       )
     ))
 
