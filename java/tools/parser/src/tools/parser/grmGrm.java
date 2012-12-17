@@ -620,18 +620,19 @@ public class grmGrm extends GrammarHelper {
     // Yes we should.
 
     // Efficient
+    // DefnBit = BasicElement OptRepeatMarker
+
+    // Inefficient but atomic output
     ruleset=new RuleSet("DefnBit");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
+        rule.add(new Atom("RepeatedElement"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
         rule.add(new Atom("BasicElement"));
-        rule.add(new Atom("OptRepeatMarker"));
       ruleset.add(rule);
     // Replacements
 
-
-    // Inefficient but atomic output
-    // DefnBit = RepeatElement
-    //         | BasicElement
 
     // Would-be best-of-both but not yet supported
     // DefnBit = BasicElement OptRepeatMarker
@@ -787,14 +788,21 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("java",rule);
 
 
-    ruleset=new RuleSet("RepeatElement");
+    ruleset=new RuleSet("RepeatedElement");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("BasicElement"));
         rule.add(new Atom("RepeatMarker"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Atom("BasicElement"));
+         rule.add(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),\""));
+         rule.add(new Atom("RepeatMarker"));
+         rule.add(new Text("\"));\n"));
+    ruleset.replacements.put("java",rule);
 
+    // java: "        rule.add( new RepeatedRule(" BasicElement ") );\n"
 
     ruleset=new RuleSet("OptionalElement");
       grammar.addRuleset(ruleset);
@@ -811,11 +819,23 @@ public class grmGrm extends GrammarHelper {
          rule.add(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n"));
     ruleset.replacements.put("java",rule);
 
+    // java: "        rule.add(new RepeatedRule(" Defn ",0,1));\n"
+
+    ruleset=new RuleSet("RepeatMarker");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("ZeroOrMore"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("OneOrMore"));
+      ruleset.add(rule);
+    // Replacements
+
 
     ruleset=new RuleSet("OptRepeatMarker");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("RepeatMarker"));
+        rule.add(new Atom("RepeatMarkerOld"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Text(""));
@@ -823,7 +843,7 @@ public class grmGrm extends GrammarHelper {
     // Replacements
 
 
-    ruleset=new RuleSet("RepeatMarker");
+    ruleset=new RuleSet("RepeatMarkerOld");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("RepeatMarker2"));

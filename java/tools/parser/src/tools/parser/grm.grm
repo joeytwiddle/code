@@ -229,11 +229,11 @@ hugs: DefnBit ", " Defn
 # Yes we should.
 
 # Efficient
-DefnBit = BasicElement OptRepeatMarker
+# DefnBit = BasicElement OptRepeatMarker
 
 # Inefficient but atomic output
-# DefnBit = RepeatElement
-#         | BasicElement
+DefnBit = RepeatedElement
+        | BasicElement
 
 # Would-be best-of-both but not yet supported
 # DefnBit = BasicElement OptRepeatMarker
@@ -306,14 +306,19 @@ MagicTokenOfDoom = "!"
 GroupElement = "(" OWS Defn OWS ")"
 java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(!qt!Anonymous!qt!);\n        Vector<Type> rule = new Vector<Type>();\n" Defn "        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"
 
-RepeatElement = BasicElement RepeatMarker
+RepeatedElement = BasicElement RepeatMarker
+java: BasicElement "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),!qt!" RepeatMarker "!qt!));\n"
+# java: "        rule.add( new RepeatedRule(" BasicElement ") );\n"
 
 OptionalElement = "[" OWS Defn OWS "]"
 java: Defn "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n"
+# java: "        rule.add(new RepeatedRule(" Defn ",0,1));\n"
 
-OptRepeatMarker = RepeatMarker | ""
+RepeatMarker = ZeroOrMore | OneOrMore
 
-RepeatMarker = RepeatMarker2
+OptRepeatMarker = RepeatMarkerOld | ""
+
+RepeatMarkerOld = RepeatMarker2
 java: "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),!qt!" RepeatMarker2 "!qt!));\n"
 
 RepeatMarker2 = ZeroOrMore | OneOrMore
