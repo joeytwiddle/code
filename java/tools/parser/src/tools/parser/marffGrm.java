@@ -3,202 +3,118 @@ package tools.parser;
 import java.lang.String;
 import java.util.Arrays;
 import java.util.Vector;
+import org.neuralyte.literal.LiteralMap;
 
 import tools.parser.*;
 import tools.parser.extensions.*;
 
 public class marffGrm extends GrammarHelper {
   public static Grammar setupgrammar() {
-    Grammar grammar = new Grammar();
-    RuleSet ruleset;
-    Vector<Type> rule;
+    Grammar grammar = new Grammar( new LiteralMap()    .with("Main", new RuleSet("Main", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Definition"), new Text("@data\n"), new Atom("Data") } )
+      )
+    ))
 
-    ruleset=new RuleSet("Main");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Definition"));
-        rule.add(new Text("@data\n"));
-        rule.add(new Atom("Data"));
-      ruleset.add(rule);
-    // Replacements
+    .with("Definition", new RuleSet("Definition", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("DefBit"), new Atom("Definition") } ),
+      Arrays.asList( new Type[]{ new Atom("DefBit") } )
+      )
+    ))
 
+    .with("DefBit", new RuleSet("DefBit", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Comment") } ),
+      Arrays.asList( new Type[]{ new Text("@"), new Atom("DefBit2"), new Var("whatever","\n"), new Text("\n") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Atom("Comment") , new Atom("DefBit2")))
 
-    ruleset=new RuleSet("Definition");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefBit"));
-        rule.add(new Atom("Definition"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefBit"));
-      ruleset.add(rule);
-    // Replacements
-
-
-    ruleset=new RuleSet("DefBit");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("@"));
-        rule.add(new Atom("DefBit2"));
-        rule.add(new Var("whatever","\n"));
-        rule.add(new Text("\n"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-         rule.add(new Atom("DefBit2"));
-    ruleset.replacements.put("java",rule);
-
+    ))
 
     // That said: print whatever Comment or DefBit2 (whichever if matched) print,
     // but skip the "@", "\n" etc.
 
-    ruleset=new RuleSet("Comment");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("CommentStart"));
-        rule.add(new Var("comment","\n"));
-        rule.add(new Text("\n"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("// "));
-         rule.add(new Atom("CommentStart"));
-         rule.add(new Var("comment"));
-         rule.add(new Text("\n"));
-    ruleset.replacements.put("java",rule);
+    .with("Comment", new RuleSet("Comment", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("CommentStart"), new Var("comment","\n"), new Text("\n") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("// ") , new Atom("CommentStart") , new Var("comment") , new Text("\n")))
 
+    ))
 
-    ruleset=new RuleSet("CommentStart");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("#"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("(*"));
-      ruleset.add(rule);
-    // Replacements
+    .with("CommentStart", new RuleSet("CommentStart", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("#") } ),
+      Arrays.asList( new Type[]{ new Text("(*") } )
+      )
+    ))
 
+    .with("DefBit2", new RuleSet("DefBit2", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("DefRelation") } ),
+      Arrays.asList( new Type[]{ new Atom("DefLink") } ),
+      Arrays.asList( new Type[]{ new Atom("DefAttribute") } )
+      )
+    ))
 
-    ruleset=new RuleSet("DefBit2");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefRelation"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefLink"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefAttribute"));
-      ruleset.add(rule);
-    // Replacements
+    .with("DefRelation", new RuleSet("DefRelation", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("relation "), new Var("relation","\n") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("	definitions.add(new Relation(\"") , new Var("relation") , new Text("\");\n")))
 
+    ))
 
-    ruleset=new RuleSet("DefRelation");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("relation "));
-        rule.add(new Var("relation","\n"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("	definitions.add(new Relation(\""));
-         rule.add(new Var("relation"));
-         rule.add(new Text("\");\n"));
-    ruleset.replacements.put("java",rule);
+    .with("DefLink", new RuleSet("DefLink", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("link "), new Var("filename","\n") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("	definitions.add(new Link(\"") , new Var("filename") , new Text("\");\n")))
 
+    ))
 
-    ruleset=new RuleSet("DefLink");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("link "));
-        rule.add(new Var("filename","\n"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("	definitions.add(new Link(\""));
-         rule.add(new Var("filename"));
-         rule.add(new Text("\");\n"));
-    ruleset.replacements.put("java",rule);
+    .with("DefAttribute", new RuleSet("DefAttribute", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("attribute "), new Var("attrname"," "), new Atom("OptKey"), new Text(" "), new Var("attrtype"," \n") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("	definitions.add(new Attribute(\"") , new Var("attrname") , new Text("\", ... ,\"") , new Var("attrtype") , new Text("\");\n")))
 
+    ))
 
-    ruleset=new RuleSet("DefAttribute");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("attribute "));
-        rule.add(new Var("attrname"," "));
-        rule.add(new Atom("OptKey"));
-        rule.add(new Text(" "));
-        rule.add(new Var("attrtype"," \n"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("	definitions.add(new Attribute(\""));
-         rule.add(new Var("attrname"));
-         rule.add(new Text("\", ... ,\""));
-         rule.add(new Var("attrtype"));
-         rule.add(new Text("\");\n"));
-    ruleset.replacements.put("java",rule);
+    .with("OptKey", new RuleSet("OptKey", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text(" key") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
+    .with("Data", new RuleSet("Data", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("DataBit"), new Atom("Data") } ),
+      Arrays.asList( new Type[]{ new Atom("DataBit") } )
+      )
+    ))
 
-    ruleset=new RuleSet("OptKey");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text(" key"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
-    // Replacements
+    .with("DataBit", new RuleSet("DataBit", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Fields") } )
+      )
+    ))
 
-
-    ruleset=new RuleSet("Data");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DataBit"));
-        rule.add(new Atom("Data"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DataBit"));
-      ruleset.add(rule);
-    // Replacements
-
-
-    ruleset=new RuleSet("DataBit");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Fields"));
-      ruleset.add(rule);
-    // Replacements
-
-
-    ruleset=new RuleSet("Fields");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Field"));
-        rule.add(new Text(","));
-        rule.add(new Atom("Fields"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Field"));
-        rule.add(new Text("\n"));
-      ruleset.add(rule);
-    // Replacements
-
+    .with("Fields", new RuleSet("Fields", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Field"), new Text(","), new Atom("Fields") } ),
+      Arrays.asList( new Type[]{ new Atom("Field"), new Text("\n") } )
+      )
+    ))
 
     // Field = NumericalField | StringField
 
-    ruleset=new RuleSet("Field");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Var("field",",\n"));
-      ruleset.add(rule);
-    // Replacements
+    .with("Field", new RuleSet("Field", Arrays.asList(
+        Arrays.asList( new Type[]{ new Var("field",",\n") } )
+      )
+    ))
 
 
+    );
     return grammar;
   }
 }

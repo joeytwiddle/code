@@ -3,17 +3,14 @@ package tools.parser;
 import java.lang.String;
 import java.util.Arrays;
 import java.util.Vector;
+import org.neuralyte.literal.LiteralMap;
 
 import tools.parser.*;
 import tools.parser.extensions.*;
 
 public class grmGrm extends GrammarHelper {
   public static Grammar setupgrammar() {
-    Grammar grammar = new Grammar();
-    RuleSet ruleset;
-    Vector<Type> rule;
-
-    // This grammar defines the file format for a grammar.
+    Grammar grammar = new Grammar( new LiteralMap()    // This grammar defines the file format for a grammar.
     // It can be used to parse .grm files.
     //
     // Export targets ("replacements"/output types - really need to standardise this term!):
@@ -121,412 +118,231 @@ public class grmGrm extends GrammarHelper {
     // DefnPostOr = "|" Defn
     // DefnPostAnd = Defn
 
-    ruleset=new RuleSet("Main");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GrammarDefn"));
-      ruleset.add(rule);
-
+    .with("Main", new RuleSet("Main", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("GrammarDefn") } )
+      )
+    ))
 
     // java: "package grammars;\n\n" GrammarDefn
 
-    ruleset=new RuleSet("GrammarDefn");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Grm"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
-         rule.add(new Atom("Grm"));
-         rule.add(new Text("    return grammar;\n  }\n}\n"));
-    ruleset.replacements.put("java",rule);
+    .with("GrammarDefn", new RuleSet("GrammarDefn", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Grm") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n") , new Atom("Grm") , new Text("    return grammar;\n  }\n}\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ "));
-         rule.add(new Atom("Grm"));
-         rule.add(new Text(" ]\n"));
-    ruleset.replacements.put("hugs",rule);
+        .with("hugs", Arrays.asList(new Text("module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ ") , new Atom("Grm") , new Text(" ]\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\nimport org.neuralyte.literal.LiteralMap;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar( new LiteralMap()"));
-         rule.add(new Atom("Grm"));
-         rule.add(new Text("\n    );\n    return grammar;\n  }\n}\n"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\nimport org.neuralyte.literal.LiteralMap;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar( new LiteralMap()") , new Atom("Grm") , new Text("\n    );\n    return grammar;\n  }\n}\n")))
 
+    ))
 
-    ruleset=new RuleSet("Grm");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GrmHeaderBit"));
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
-         rule.add(new Atom("GrmBit"));
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
-      ruleset.add(rule);
+    .with("Grm", new RuleSet("Grm", Arrays.asList(
+        Arrays.asList( new Type[]{ new RepeatedRule(new Atom("GrmHeaderBit"),"*"), new RepeatedRule(new Atom("GrmBit"),"*") } )
+      )
+    ))
 
+    .with("GrmHeaderBit", new RuleSet("GrmHeaderBit", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("GrmAt") } ),
+      Arrays.asList( new Type[]{ new Atom("Whitespace") } ),
+      Arrays.asList( new Type[]{ new Atom("Comment") } )
+      )
+    ))
 
-    ruleset=new RuleSet("GrmHeaderBit");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GrmAt"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Whitespace"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-      ruleset.add(rule);
+    .with("GrmAt", new RuleSet("GrmAt", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("GrmOption") } ),
+      Arrays.asList( new Type[]{ new Atom("GrmImport") } ),
+      Arrays.asList( new Type[]{ new Atom("GrmExtend") } ),
+      Arrays.asList( new Type[]{ new Atom("GrmOtherAt") } )
+      )
+    ))
 
-
-    ruleset=new RuleSet("GrmAt");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GrmOption"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GrmImport"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GrmExtend"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GrmOtherAt"));
-      ruleset.add(rule);
-
-
-    ruleset=new RuleSet("GrmOption");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("@OPTION"));
-         rule.add(new Atom("HorizSpace"));
-         rule.add(new Var("optname"," \t\n\r"));
-         rule.add(new Atom("HorizSpace"));
-         rule.add(new Atom("OptOptionArgs"));
-         rule.add(new Atom("NL"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("    grammar.setOption_"));
-         rule.add(new Var("optname"));
-         rule.add(new Text("("));
-         rule.add(new Atom("OptOptionArgs"));
-         rule.add(new Text(");\n"));
-    ruleset.replacements.put("java",rule);
+    .with("GrmOption", new RuleSet("GrmOption", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("@OPTION"), new Atom("HorizSpace"), new Var("optname"," \t\n\r"), new Atom("HorizSpace"), new Atom("OptOptionArgs"), new Atom("NL") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("    grammar.setOption_") , new Var("optname") , new Text("(") , new Atom("OptOptionArgs") , new Text(");\n")))
 
     //# Had trouble referring to grouped atom when OptOptionArgs was inline.
     // java: "    grammar.setOption_" <optname> "(" OptionArgs ");\n"
     //# Alternative, less hard-coded into grammar object.
     // java: "    grammar.setOption(\"" <optname> "\", { " OptionArgs " } );\n"
+        .with("javadecl", Arrays.asList(new Text("    // @todo grammar.setOption_") , new Var("optname") , new Text("(") , new Atom("OptOptionArgs") , new Text(");\n")))
 
-    ruleset=new RuleSet("OptOptionArgs");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
-          RuleSet ruleset = new RuleSet("Anonymous");
-        Vector<Type> rule = new Vector<Type>();
-        ruleset.add(rule);
-          return ruleset;
-        } }.run() ) );
-      ruleset.add(rule);
+    ))
 
+    .with("OptOptionArgs", new RuleSet("OptOptionArgs", Arrays.asList(
+        Arrays.asList( new Type[]{ new GroupedDefn(new RuleSet("Anonymous", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("OptionArgs") } ),
+      Arrays.asList( new Type[]{ new Atom("HorizSpace") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      ))) } )
+      )
+    ))
 
-    ruleset=new RuleSet("OptionArgs");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("MultipleOptionArgs"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OptionArg"));
-      ruleset.add(rule);
+    .with("OptionArgs", new RuleSet("OptionArgs", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("MultipleOptionArgs") } ),
+      Arrays.asList( new Type[]{ new Atom("OptionArg") } )
+      )
+    ))
 
+    .with("MultipleOptionArgs", new RuleSet("MultipleOptionArgs", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("OptionArg"), new Atom("HorizSpace"), new Atom("OptionArgs") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Atom("OptionArg") , new Text(", ") , new Atom("OptionArgs")))
 
-    ruleset=new RuleSet("MultipleOptionArgs");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OptionArg"));
-         rule.add(new Atom("HorizSpace"));
-         rule.add(new Atom("OptionArgs"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("OptionArg"));
-         rule.add(new Text(", "));
-         rule.add(new Atom("OptionArgs"));
-    ruleset.replacements.put("java",rule);
+    ))
 
+    .with("OptionArg", new RuleSet("OptionArg", Arrays.asList(
+        Arrays.asList( new Type[]{ new Var("arg"," \t\n\r") } )
+      )
+    ))
 
-    ruleset=new RuleSet("OptionArg");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Var("arg"," \t\n\r"));
-      ruleset.add(rule);
+    .with("GrmImport", new RuleSet("GrmImport", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("@IMPORT"), new Atom("HorizSpace"), new Var("namespace"," \t\n\r"), new Atom("HorizSpace"), new Text("\""), new Var("filename","\"\n"), new Text("\""), new Atom("NL") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("    grammar.importNamespace(\"") , new Var("namespace") , new Text("\",\"") , new Var("filename") , new Text("\");\n")))
 
+        .with("javadecl", Arrays.asList(new Text("    // @todo grammar.importNamespace(\"") , new Var("namespace") , new Text("\",\"") , new Var("filename") , new Text("\");\n")))
 
-    ruleset=new RuleSet("GrmImport");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("@IMPORT"));
-         rule.add(new Atom("HorizSpace"));
-         rule.add(new Var("namespace"," \t\n\r"));
-         rule.add(new Atom("HorizSpace"));
-         rule.add(new Text("\""));
-         rule.add(new Var("filename","\"\n"));
-         rule.add(new Text("\""));
-         rule.add(new Atom("NL"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("    grammar.importNamespace(\""));
-         rule.add(new Var("namespace"));
-         rule.add(new Text("\",\""));
-         rule.add(new Var("filename"));
-         rule.add(new Text("\");\n"));
-    ruleset.replacements.put("java",rule);
+    ))
 
+    .with("GrmExtend", new RuleSet("GrmExtend", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("@EXTEND"), new Atom("HorizSpace"), new Text("\""), new Var("filename","\"\n"), new Text("\""), new Atom("NL") } )
+      )
+    ))
 
-    ruleset=new RuleSet("GrmExtend");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("@EXTEND"));
-         rule.add(new Atom("HorizSpace"));
-         rule.add(new Text("\""));
-         rule.add(new Var("filename","\"\n"));
-         rule.add(new Text("\""));
-         rule.add(new Atom("NL"));
-      ruleset.add(rule);
-
-
-    ruleset=new RuleSet("GrmOtherAt");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("@"));
-         rule.add(new Var("option_name"," \n"));
-         rule.add(new Atom("OptHorizSpace"));
-         rule.add(new Var("rest","\n"));
-         rule.add(new Atom("NL"));
-      ruleset.add(rule);
-    // Replacements
+    .with("GrmOtherAt", new RuleSet("GrmOtherAt", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("@"), new Var("option_name"," \n"), new Atom("OptHorizSpace"), new Var("rest","\n"), new Atom("NL") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
     //# For prototyping, for now, we allow grammar to insert any Java it likes.
-    rule=new Vector<Type>();
-        rule.add(new Text("    "));
-         rule.add(new Var("rest"));
-    ruleset.replacements.put("java",rule);
+        .with("java", Arrays.asList(new Text("    ") , new Var("rest")))
 
+        .with("javadecl", Arrays.asList(new Text("    // @todo ") , new Var("rest")))
+
+    ))
 
     // TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
     // No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
 
-    ruleset=new RuleSet("GrmBit");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Whitespace"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("AtomDef"));
-      ruleset.add(rule);
+    .with("GrmBit", new RuleSet("GrmBit", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Whitespace") } ),
+      Arrays.asList( new Type[]{ new Atom("Comment") } ),
+      Arrays.asList( new Type[]{ new Atom("AtomDef") } )
+      )
+    ))
 
+    .with("Comment", new RuleSet("Comment", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("#"), new Var("comment","\n"), new Text("\n") } ),
+      Arrays.asList( new Type[]{ new Text("#\n") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("    //") , new Var("comment") , new Text("\n")))
 
-    ruleset=new RuleSet("Comment");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("#"));
-         rule.add(new Var("comment","\n"));
-         rule.add(new Text("\n"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("#\n"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("    //"));
-         rule.add(new Var("comment"));
-         rule.add(new Text("\n"));
-    ruleset.replacements.put("java",rule);
+        .with("pojo", Arrays.asList(new Text("    //") , new Var("comment") , new Text("\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("    //"));
-         rule.add(new Var("comment"));
-         rule.add(new Text("\n"));
-    ruleset.replacements.put("pojo",rule);
+        .with("javadecl", Arrays.asList(new Text("    //") , new Var("comment") , new Text("\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("    //"));
-         rule.add(new Var("comment"));
-         rule.add(new Text("\n"));
-    ruleset.replacements.put("javadecl",rule);
+    ))
 
-
-    ruleset=new RuleSet("OptComment");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
-
+    .with("OptComment", new RuleSet("OptComment", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Comment") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
     // hugs: "-- " <comment> "\n"
 
-    ruleset=new RuleSet("AtomName");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("PackagedAtomName"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("PlainAtomName"));
-      ruleset.add(rule);
-
+    .with("AtomName", new RuleSet("AtomName", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("PackagedAtomName") } ),
+      Arrays.asList( new Type[]{ new Atom("PlainAtomName") } )
+      )
+    ))
 
     //# WARNING: Although I want to use "." to refer to modular rules, it is already used for RelDown!
-    ruleset=new RuleSet("PackagedAtomName");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("PackageName"));
-         rule.add(new Text("."));
-         rule.add(new Atom("PlainAtomName"));
-      ruleset.add(rule);
+    .with("PackagedAtomName", new RuleSet("PackagedAtomName", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("PackageName"), new Text("."), new Atom("PlainAtomName") } )
+      )
+    ))
 
+    .with("PlainAtomName", new RuleSet("PlainAtomName", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Identifier") } )
+      )
+    ))
 
-    ruleset=new RuleSet("PlainAtomName");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Identifier"));
-      ruleset.add(rule);
-
-
-    ruleset=new RuleSet("PackageName");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Identifier"));
-      ruleset.add(rule);
-
+    .with("PackageName", new RuleSet("PackageName", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Identifier") } )
+      )
+    ))
 
     // Identifier = <identifier/"^.<>\n\" =">
     // Identifier = <identifier/"^<>\n\t\r \"+*()![]{}">
-    ruleset=new RuleSet("Identifier");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Var("identifier",null,"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"));
-      ruleset.add(rule);
-
+    .with("Identifier", new RuleSet("Identifier", Arrays.asList(
+        Arrays.asList( new Type[]{ new Var("identifier",null,"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") } )
+      )
+    ))
 
     // Note that two AtomDefs without an empty line between them will not parse!
 
-    ruleset=new RuleSet("AtomDef");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("AtomName"));
-         rule.add(new Text(" = "));
-         rule.add(new Atom("RuleSet"));
-         rule.add(new Atom("OptReplacements"));
-         rule.add(new Atom("NL"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("    ruleset=new RuleSet(\""));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text("\");\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n"));
-         rule.add(new Atom("RuleSet"));
-         rule.add(new Text("      ruleset.add(rule);\n"));
-         rule.add(new Atom("OptReplacements"));
-         rule.add(new Text("\n"));
-    ruleset.replacements.put("java",rule);
+    .with("AtomDef", new RuleSet("AtomDef", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("AtomName"), new Text(" = "), new Atom("RuleSet"), new Atom("OptReplacements"), new Atom("NL") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("    ruleset=new RuleSet(\"") , new Atom("AtomName") , new Text("\");\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n") , new Atom("RuleSet") , new Text("      ruleset.add(rule);\n") , new Atom("OptReplacements") , new Text("\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("  ( Atom \""));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text("\",[\n    [ "));
-         rule.add(new Atom("RuleSet"));
-         rule.add(new Text(" ]\n    ] , [\n"));
-         rule.add(new Atom("OptReplacements"));
-         rule.add(new Text("\n  ] ) ,\n"));
-    ruleset.replacements.put("hugs",rule);
+        .with("hugs", Arrays.asList(new Text("  ( Atom \"") , new Atom("AtomName") , new Text("\",[\n    [ ") , new Atom("RuleSet") , new Text(" ]\n    ] , [\n") , new Atom("OptReplacements") , new Text("\n  ] ) ,\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("interface "));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text(" {\n\n}\n  class AnImplementation implements "));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text(" {\n"));
-         rule.add(new Atom("RuleSet"));
-         rule.add(new Text("  }\n\n"));
-    ruleset.replacements.put("pojo",rule);
+        .with("pojo", Arrays.asList(new Text("interface ") , new Atom("AtomName") , new Text(" {\n\n}\n  class AnImplementation implements ") , new Atom("AtomName") , new Text(" {\n") , new Atom("RuleSet") , new Text("  }\n\n")))
 
     // BUG: We cannot make a second reference to AtomName
-    rule=new Vector<Type>();
-        rule.add(new Text("    .with(\""));
-         rule.add( new ArgReplacement(1) );
-         rule.add(new Text("\", new RuleSet(\""));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text("\", "));
-         rule.add(new Atom("RuleSet"));
-         rule.add(new Atom("OptReplacements"));
-         rule.add(new Text("\n    ))\n"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("    .with(\"") , new ArgReplacement(1) , new Text("\", new RuleSet(\"") , new Atom("AtomName") , new Text("\", ") , new Atom("RuleSet") , new Atom("OptReplacements") , new Text("\n    ))\n")))
 
+    ))
 
     // Replacements are the lines defining export targets: java, hugs, pojo
 
-    ruleset=new RuleSet("OptReplacements");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("YesReplacements"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("OptReplacements", new RuleSet("OptReplacements", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("YesReplacements") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
+    .with("YesReplacements", new RuleSet("YesReplacements", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("\n"), new Atom("Replacements") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("    // Replacements\n") , new Atom("Replacements")))
 
-    ruleset=new RuleSet("YesReplacements");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("\n"));
-         rule.add(new Atom("Replacements"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("    // Replacements\n"));
-         rule.add(new Atom("Replacements"));
-    ruleset.replacements.put("java",rule);
+        .with("javadecl", Arrays.asList(new Text(",\n        /* Replacements */\n        new LiteralMap()\n") , new Atom("Replacements")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text(",\n        /* Replacements */\n        new LiteralMap()\n"));
-         rule.add(new Atom("Replacements"));
-    ruleset.replacements.put("javadecl",rule);
+    ))
 
+    .with("Replacements", new RuleSet("Replacements", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("ManyReplacements") } ),
+      Arrays.asList( new Type[]{ new Atom("Comment"), new Atom("Replacements") } ),
+      Arrays.asList( new Type[]{ new Atom("Replacement") } )
+      )
+    ))
 
-    ruleset=new RuleSet("Replacements");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("ManyReplacements"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-         rule.add(new Atom("Replacements"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Replacement"));
-      ruleset.add(rule);
+    .with("ManyReplacements", new RuleSet("ManyReplacements", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Replacement"), new Text("\n"), new Atom("Replacements") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("hugs", Arrays.asList(new Atom("Replacement") , new Text(",\n") , new Atom("Replacements")))
 
-
-    ruleset=new RuleSet("ManyReplacements");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Replacement"));
-         rule.add(new Text("\n"));
-         rule.add(new Atom("Replacements"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("Replacement"));
-         rule.add(new Text(",\n"));
-         rule.add(new Atom("Replacements"));
-    ruleset.replacements.put("hugs",rule);
-
+    ))
 
     // Note that use of + and * make it harder to place things *inbetween* the
     // elements during output (list join), so the above hugs output cannot currently
@@ -536,59 +352,33 @@ public class grmGrm extends GrammarHelper {
     // Replacements = ( Replacement "\n" )+
     // Replacements = Replacement ( "\n" Replacement )+ | ""
 
-    ruleset=new RuleSet("Replacement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Var("target","<>\n\" :"));
-         rule.add(new Text(": "));
-         rule.add(new Atom("ReplacementDefn"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("    rule=new Vector<Type>();\n"));
-         rule.add(new Atom("ReplacementDefn"));
-         rule.add(new Text("    ruleset.replacements.put(\""));
-         rule.add(new Var("target"));
-         rule.add(new Text("\",rule);\n"));
-    ruleset.replacements.put("java",rule);
+    .with("Replacement", new RuleSet("Replacement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Var("target","<>\n\" :"), new Text(": "), new Atom("ReplacementDefn") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("    rule=new Vector<Type>();\n") , new Atom("ReplacementDefn") , new Text("    ruleset.replacements.put(\"") , new Var("target") , new Text("\",rule);\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("      ( \""));
-         rule.add(new Var("target"));
-         rule.add(new Text("\" , [ "));
-         rule.add(new Atom("ReplacementDefn"));
-         rule.add(new Text(" ] ) "));
-    ruleset.replacements.put("hugs",rule);
+        .with("hugs", Arrays.asList(new Text("      ( \"") , new Var("target") , new Text("\" , [ ") , new Atom("ReplacementDefn") , new Text(" ] ) ")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("        .with(\""));
-         rule.add(new Var("target"));
-         rule.add(new Text("\", Arrays.asList("));
-         rule.add(new Atom("ReplacementDefn"));
-         rule.add(new Text("))\n"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("        .with(\"") , new Var("target") , new Text("\", Arrays.asList(") , new Atom("ReplacementDefn") , new Text("))\n")))
 
+    ))
 
     // The only difference between a RuleSet and a Defn is how we output it.
-    ruleset=new RuleSet("RuleSet");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Defn"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("Arrays.asList(\n        "));
-         rule.add(new Atom("Defn"));
-         rule.add(new Text("\n      )"));
-    ruleset.replacements.put("javadecl",rule);
+    .with("RuleSet", new RuleSet("RuleSet", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Defn") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("javadecl", Arrays.asList(new Text("Arrays.asList(\n        ") , new Atom("Defn") , new Text("\n      )")))
 
+    ))
 
-    ruleset=new RuleSet("Defn");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefnOr"));
-      ruleset.add(rule);
-
+    .with("Defn", new RuleSet("Defn", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("DefnOr") } )
+      )
+    ))
 
     //# We had to split DefnAnd and DefnOr into chains, so we can output separated by commas.
     //# TODO: A convenience way to do this to any RepeatElement e.g. (A B)+ is desirable!  At the moment we don't even have any way to refer to a matched list.  Perhaps $* iff the whole rule is one list...?  :f  Perhaps ReplacementArgs $1 $2 could refer to items in the rule not in the match?  Mmm there's really no difference.  :P  So we *can* refer to a list with $n?  So our goal is ... $3.join(", ") or join($3,", ") ?  Somehow I prefer the former; we can throw a "method join not found" error rather than "wrong args for join call".
@@ -601,108 +391,66 @@ public class grmGrm extends GrammarHelper {
     // hugs: DefnBit "] ,\n      [ " Defn
     // pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
 
-    ruleset=new RuleSet("DefnOr");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefnAnd"));
-         rule.add(new Atom("DefnOrMaybeMore"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("Arrays.asList( new Type[]{ "));
-         rule.add(new Atom("DefnAnd"));
-         rule.add(new Text(" } )"));
-         rule.add(new Atom("DefnOrMaybeMore"));
-    ruleset.replacements.put("javadecl",rule);
+    .with("DefnOr", new RuleSet("DefnOr", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("DefnAnd"), new Atom("DefnOrMaybeMore") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("javadecl", Arrays.asList(new Text("Arrays.asList( new Type[]{ ") , new Atom("DefnAnd") , new Text(" } )") , new Atom("DefnOrMaybeMore")))
 
+    ))
     // Java requires us to be specific about the array types here.
 
-    ruleset=new RuleSet("DefnOrMaybeMore");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefnOrMore"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("DefnOrMaybeMore", new RuleSet("DefnOrMaybeMore", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("DefnOrMore") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
+    .with("DefnOrMore", new RuleSet("DefnOrMore", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("OWS"), new Text("|"), new Atom("OWS"), new Atom("DefnOr") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("      ruleset.add(rule);\n      rule=new Vector<Type>();\n") , new Atom("DefnOr")))
 
-    ruleset=new RuleSet("DefnOrMore");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OWS"));
-         rule.add(new Text("|"));
-         rule.add(new Atom("OWS"));
-         rule.add(new Atom("DefnOr"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("      ruleset.add(rule);\n      rule=new Vector<Type>();\n"));
-         rule.add(new Atom("DefnOr"));
-    ruleset.replacements.put("java",rule);
+        .with("hugs", Arrays.asList(new Text("] ,\n      [ ") , new Atom("DefnOr")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("] ,\n      [ "));
-         rule.add(new Atom("DefnOr"));
-    ruleset.replacements.put("hugs",rule);
+        .with("pojo", Arrays.asList(new Text("  }\n  class AnotherImplementation {\n") , new Atom("DefnOr")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("  }\n  class AnotherImplementation {\n"));
-         rule.add(new Atom("DefnOr"));
-    ruleset.replacements.put("pojo",rule);
+        .with("javadecl", Arrays.asList(new Text(",\n      ") , new Atom("DefnOr")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text(",\n      "));
-         rule.add(new Atom("DefnOr"));
-    ruleset.replacements.put("javadecl",rule);
-
+    ))
 
     // DefnAnd = DefnBit " "+ Defn
     // java: DefnBit Defn
     // hugs: DefnBit ", " Defn
     // javadecl: ", " DefnAnd
-    ruleset=new RuleSet("DefnAnd");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefnBit"));
-         rule.add(new Atom("MaybeMore"));
-      ruleset.add(rule);
-
+    .with("DefnAnd", new RuleSet("DefnAnd", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("DefnBit"), new Atom("MaybeMore") } )
+      )
+    ))
     // javadecl: "Arrays.asList( new Type[]{ " DefnBit MaybeMore " } )"
     // Java requires us to be specific about the array types here.
 
-    ruleset=new RuleSet("MaybeMore");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("MoreAnd"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("MaybeMore", new RuleSet("MaybeMore", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("MoreAnd") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
+    .with("MoreAnd", new RuleSet("MoreAnd", Arrays.asList(
+        Arrays.asList( new Type[]{ new RepeatedRule(new Text(" "),"+"), new Atom("DefnAnd") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("Java", Arrays.asList(new Atom("DefnAnd")))
 
-    ruleset=new RuleSet("MoreAnd");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text(" "));
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
-         rule.add(new Atom("DefnAnd"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("DefnAnd"));
-    ruleset.replacements.put("Java",rule);
+        .with("hugs", Arrays.asList(new Text(", ") , new Atom("DefnAnd")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text(", "));
-         rule.add(new Atom("DefnAnd"));
-    ruleset.replacements.put("hugs",rule);
+        .with("javadecl", Arrays.asList(new Text(", ") , new Atom("DefnAnd")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text(", "));
-         rule.add(new Atom("DefnAnd"));
-    ruleset.replacements.put("javadecl",rule);
-
+    ))
 
     // ReplacementElement is only used for output/replacement lines, not the rule definition.
     // However at the moment we have included it in DefnBit.
@@ -714,102 +462,57 @@ public class grmGrm extends GrammarHelper {
     // DefnBit = BasicElement OptRepeatMarker
 
     // Inefficient but atomic output
-    ruleset=new RuleSet("DefnBit");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("RepeatedElement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("BasicElement"));
-      ruleset.add(rule);
-
+    .with("DefnBit", new RuleSet("DefnBit", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("RepeatedElement") } ),
+      Arrays.asList( new Type[]{ new Atom("BasicElement") } )
+      )
+    ))
 
     // Would-be best-of-both but not yet supported
     // DefnBit = BasicElement OptRepeatMarker
 
-    ruleset=new RuleSet("BasicElement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("VarAccept"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("VarDeny"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Text"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GroupElement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("MagicSymbol"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("AtomRef"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Regexp"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OptionalElement"));
-      ruleset.add(rule);
-
+    .with("BasicElement", new RuleSet("BasicElement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("VarAccept") } ),
+      Arrays.asList( new Type[]{ new Atom("VarDeny") } ),
+      Arrays.asList( new Type[]{ new Atom("Text") } ),
+      Arrays.asList( new Type[]{ new Atom("GroupElement") } ),
+      Arrays.asList( new Type[]{ new Atom("MagicSymbol") } ),
+      Arrays.asList( new Type[]{ new Atom("AtomRef") } ),
+      Arrays.asList( new Type[]{ new Atom("Regexp") } ),
+      Arrays.asList( new Type[]{ new Atom("OptionalElement") } )
+      )
+    ))
 
     // ReplacementDefn = (OptSpc ReplacementElement OptSpc)*
-    ruleset=new RuleSet("ReplacementDefn");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OptSpc"));
-         rule.add(new Atom("ReplacementElement"));
-         rule.add(new Atom("OptSpc"));
-         rule.add(new Atom("ReplacementElementMaybeMore"));
-      ruleset.add(rule);
+    .with("ReplacementDefn", new RuleSet("ReplacementDefn", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("OptSpc"), new Atom("ReplacementElement"), new Atom("OptSpc"), new Atom("ReplacementElementMaybeMore") } )
+      )
+    ))
 
+    .with("ReplacementElementMaybeMore", new RuleSet("ReplacementElementMaybeMore", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("OptSpc"), new Atom("ReplacementElementMore") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
-    ruleset=new RuleSet("ReplacementElementMaybeMore");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OptSpc"));
-         rule.add(new Atom("ReplacementElementMore"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("ReplacementElementMore", new RuleSet("ReplacementElementMore", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("ReplacementDefn") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("javadecl", Arrays.asList(new Text(", ") , new Atom("ReplacementDefn")))
 
+    ))
 
-    ruleset=new RuleSet("ReplacementElementMore");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("ReplacementDefn"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text(", "));
-         rule.add(new Atom("ReplacementDefn"));
-    ruleset.replacements.put("javadecl",rule);
-
-
-    ruleset=new RuleSet("ReplacementElement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("ArgReplacement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("RelativeElement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("ActiveReplacement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("VarRef"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Text"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("AtomRef"));
-      ruleset.add(rule);
-
+    .with("ReplacementElement", new RuleSet("ReplacementElement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("ArgReplacement") } ),
+      Arrays.asList( new Type[]{ new Atom("RelativeElement") } ),
+      Arrays.asList( new Type[]{ new Atom("ActiveReplacement") } ),
+      Arrays.asList( new Type[]{ new Atom("VarRef") } ),
+      Arrays.asList( new Type[]{ new Atom("Text") } ),
+      Arrays.asList( new Type[]{ new Atom("AtomRef") } )
+      )
+    ))
 
     // CONSIDER: Could we put = BasicElement RepeatMarker | ... at the top?
     // No, again that's inf recursive.  But we could try:
@@ -825,29 +528,19 @@ public class grmGrm extends GrammarHelper {
     // The difference sounds like we need to "commit" to a rule, say "if we get here
     // then we must not fail".
 
-    ruleset=new RuleSet("MagicSymbol");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("MagicTokenOfDoom"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("%"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("$"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("MagicTokenOfCommitment"));
-      ruleset.add(rule);
-
+    .with("MagicSymbol", new RuleSet("MagicSymbol", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("MagicTokenOfDoom") } ),
+      Arrays.asList( new Type[]{ new Text("%") } ),
+      Arrays.asList( new Type[]{ new Text("$") } ),
+      Arrays.asList( new Type[]{ new Atom("MagicTokenOfCommitment") } )
+      )
+    ))
     // Don't put "#" here - it may eat through comments!
 
-    ruleset=new RuleSet("MagicTokenOfDoom");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("!"));
-      ruleset.add(rule);
-
+    .with("MagicTokenOfDoom", new RuleSet("MagicTokenOfDoom", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("!") } )
+      )
+    ))
 
     // Token "." or ";" could mean "definite".  If reached, it indicates everything
     // before it has been parsed correctly, and there should be no alternative to
@@ -879,147 +572,95 @@ public class grmGrm extends GrammarHelper {
 
     // OK I'm calling our parse-error hinter MagicTokenOfCommitment
 
-    ruleset=new RuleSet("MagicTokenOfCommitment");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text(";"));
-      ruleset.add(rule);
+    .with("MagicTokenOfCommitment", new RuleSet("MagicTokenOfCommitment", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text(";") } )
+      )
+    ))
 
+    .with("GroupElement", new RuleSet("GroupElement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("("), new Atom("OWS"), new Atom("RuleSet"), new Atom("OWS"), new Text(")") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(\"Anonymous\");\n        Vector<Type> rule = new Vector<Type>();\n") , new Atom("Defn") , new Text("        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n")))
 
-    ruleset=new RuleSet("GroupElement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("("));
-         rule.add(new Atom("OWS"));
-         rule.add(new Atom("RuleSet"));
-         rule.add(new Atom("OWS"));
-         rule.add(new Text(")"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(\"Anonymous\");\n        Vector<Type> rule = new Vector<Type>();\n"));
-         rule.add(new Atom("Defn"));
-         rule.add(new Text("        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"));
-    ruleset.replacements.put("java",rule);
+        .with("javadeclold", Arrays.asList(new Text("new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          return new RuleSet(\"Anonymous\", ") , new Atom("RuleSet") , new Text(");\n        } }.run() )")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          return new RuleSet(\"Anonymous\", "));
-         rule.add(new Atom("RuleSet"));
-         rule.add(new Text(");\n        } }.run() )"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new GroupedDefn(new RuleSet(\"Anonymous\", ") , new Atom("RuleSet") , new Text("))")))
 
+    ))
 
-    ruleset=new RuleSet("RepeatedElement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("BasicElement"));
-         rule.add(new Atom("RepeatMarker"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("BasicElement"));
-         rule.add(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),\""));
-         rule.add(new Atom("RepeatMarker"));
-         rule.add(new Text("\"));\n"));
-    ruleset.replacements.put("java",rule);
+    .with("RepeatedElement", new RuleSet("RepeatedElement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("BasicElement"), new Atom("RepeatMarker") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Atom("BasicElement") , new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),\"") , new Atom("RepeatMarker") , new Text("\"));\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new RepeatedRule("));
-         rule.add(new Atom("BasicElement"));
-         rule.add(new Text(",\""));
-         rule.add(new Atom("RepeatMarker"));
-         rule.add(new Text("\")"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new RepeatedRule(") , new Atom("BasicElement") , new Text(",\"") , new Atom("RepeatMarker") , new Text("\")")))
 
+    ))
 
-    ruleset=new RuleSet("OptionalElement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("["));
-         rule.add(new Atom("OWS"));
-         rule.add(new Atom("Defn"));
-         rule.add(new Atom("OWS"));
-         rule.add(new Text("]"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("Defn"));
-         rule.add(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n"));
-    ruleset.replacements.put("java",rule);
+    // TODO: Surely like GroupElement, OptionalElement should be able to contain a
+    // detailed Defn, not just one lone element.  This needs fixing in the
+    // RepeatedRule class!
+    .with("OptionalElement", new RuleSet("OptionalElement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("["), new Atom("OWS"), new Atom("BasicElement"), new Atom("OWS"), new Text("]") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Atom("Defn") , new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n")))
 
-    // java: "        rule.add(new RepeatedRule(" Defn ",0,1));\n"
-    rule=new Vector<Type>();
-        rule.add(new Text("new RepeatedRule("));
-         rule.add(new Atom("Defn"));
-         rule.add(new Text(",0,1))"));
-    ruleset.replacements.put("javadecl",rule);
+    // java: "        rule.add(new RepeatedRule(" BasicElement ",0,1));\n"
+        .with("javadecl", Arrays.asList(new Text("new RepeatedRule(") , new Atom("BasicElement") , new Text(",0,1)")))
 
+    ))
 
-    ruleset=new RuleSet("RepeatMarker");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("ZeroOrMore"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OneOrMore"));
-      ruleset.add(rule);
+    .with("RepeatMarker", new RuleSet("RepeatMarker", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("ZeroOrMore") } ),
+      Arrays.asList( new Type[]{ new Atom("OneOrMore") } )
+      )
+    ))
 
+    .with("OptRepeatMarker", new RuleSet("OptRepeatMarker", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("RepeatMarkerOld") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
-    ruleset=new RuleSet("OptRepeatMarker");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("RepeatMarkerOld"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("RepeatMarkerOld", new RuleSet("RepeatMarkerOld", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("RepeatMarker2") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),\"") , new Atom("RepeatMarker2") , new Text("\"));\n")))
 
+    ))
 
-    ruleset=new RuleSet("RepeatMarkerOld");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("RepeatMarker2"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),\""));
-         rule.add(new Atom("RepeatMarker2"));
-         rule.add(new Text("\"));\n"));
-    ruleset.replacements.put("java",rule);
+    .with("RepeatMarker2", new RuleSet("RepeatMarker2", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("ZeroOrMore") } ),
+      Arrays.asList( new Type[]{ new Atom("OneOrMore") } )
+      )
+    ))
 
+    .with("ZeroOrMore", new RuleSet("ZeroOrMore", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("*") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("*")))
 
-    ruleset=new RuleSet("RepeatMarker2");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("ZeroOrMore"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OneOrMore"));
-      ruleset.add(rule);
-
-
-    ruleset=new RuleSet("ZeroOrMore");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("*"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("*"));
-    ruleset.replacements.put("java",rule);
-
+    ))
     // javaB: 0,-1
 
-    ruleset=new RuleSet("OneOrMore");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("+"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("+"));
-    ruleset.replacements.put("java",rule);
+    .with("OneOrMore", new RuleSet("OneOrMore", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("+") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("+")))
 
+    ))
     // javaB: 1,-1
 
     //# I am not sure whether to include ZeroOrOne in the grammar, since
@@ -1034,151 +675,65 @@ public class grmGrm extends GrammarHelper {
     // I think Var is a VarReference - cannot be used for parsing (no terminal
     // condition!) but is used in replacements.
 
-    ruleset=new RuleSet("VarRef");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("<"));
-         rule.add(new Var("varname","<>\n\"/ ~"));
-         rule.add(new Text(">"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        rule.add(new Var(\""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\"));\n"));
-    ruleset.replacements.put("java",rule);
+    .with("VarRef", new RuleSet("VarRef", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("<"), new Var("varname","<>\n\"/ ~"), new Text(">") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        rule.add(new Var(\"") , new Var("varname") , new Text("\"));\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("Var \""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\""));
-    ruleset.replacements.put("hugs",rule);
+        .with("hugs", Arrays.asList(new Text("Var \"") , new Var("varname") , new Text("\"")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("    String "));
-         rule.add(new Var("varname"));
-         rule.add(new Text(";\n"));
-    ruleset.replacements.put("pojo",rule);
+        .with("pojo", Arrays.asList(new Text("    String ") , new Var("varname") , new Text(";\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new Var(\""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\")"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new Var(\"") , new Var("varname") , new Text("\")")))
 
+    ))
 
-    ruleset=new RuleSet("VarDeny");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("<"));
-         rule.add(new Var("varname","<>\n\"/ ~"));
-         rule.add(new Text("/\""));
-         rule.add(new Var("denied","\""));
-         rule.add(new Text("\">"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        rule.add(new Var(\""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\",\""));
-         rule.add(new Var("denied"));
-         rule.add(new Text("\"));\n"));
-    ruleset.replacements.put("java",rule);
+    .with("VarDeny", new RuleSet("VarDeny", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("<"), new Var("varname","<>\n\"/ ~"), new Text("/\""), new Var("denied","\""), new Text("\">") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        rule.add(new Var(\"") , new Var("varname") , new Text("\",\"") , new Var("denied") , new Text("\"));\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("VarExcl \""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\" \""));
-         rule.add(new Var("denied"));
-         rule.add(new Text("\""));
-    ruleset.replacements.put("hugs",rule);
+        .with("hugs", Arrays.asList(new Text("VarExcl \"") , new Var("varname") , new Text("\" \"") , new Var("denied") , new Text("\"")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("    String "));
-         rule.add(new Var("varname"));
-         rule.add(new Text(";\n"));
-    ruleset.replacements.put("pojo",rule);
+        .with("pojo", Arrays.asList(new Text("    String ") , new Var("varname") , new Text(";\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new Var(\""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\",\""));
-         rule.add(new Var("denied"));
-         rule.add(new Text("\")"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new Var(\"") , new Var("varname") , new Text("\",\"") , new Var("denied") , new Text("\")")))
 
+    ))
 
-    ruleset=new RuleSet("VarAccept");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("<"));
-         rule.add(new Var("varname","<>\n\"/ ~"));
-         rule.add(new Text("~\""));
-         rule.add(new Var("accepted","\""));
-         rule.add(new Text("\">"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        rule.add(new Var(\""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\",null,\""));
-         rule.add(new Var("accepted"));
-         rule.add(new Text("\"));\n"));
-    ruleset.replacements.put("java",rule);
+    .with("VarAccept", new RuleSet("VarAccept", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("<"), new Var("varname","<>\n\"/ ~"), new Text("~\""), new Var("accepted","\""), new Text("\">") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        rule.add(new Var(\"") , new Var("varname") , new Text("\",null,\"") , new Var("accepted") , new Text("\"));\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("VarIncl \""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\" \""));
-         rule.add(new Var("denied"));
-         rule.add(new Text("\""));
-    ruleset.replacements.put("hugs",rule);
+        .with("hugs", Arrays.asList(new Text("VarIncl \"") , new Var("varname") , new Text("\" \"") , new Var("denied") , new Text("\"")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("    String "));
-         rule.add(new Var("varname"));
-         rule.add(new Text(";\n"));
-    ruleset.replacements.put("pojo",rule);
+        .with("pojo", Arrays.asList(new Text("    String ") , new Var("varname") , new Text(";\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new Var(\""));
-         rule.add(new Var("varname"));
-         rule.add(new Text("\",null,\""));
-         rule.add(new Var("accepted"));
-         rule.add(new Text("\")"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new Var(\"") , new Var("varname") , new Text("\",null,\"") , new Var("accepted") , new Text("\")")))
 
+    ))
 
-    ruleset=new RuleSet("AtomRef");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("AtomName"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        rule.add(new Atom(\""));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text("\"));\n"));
-    ruleset.replacements.put("java",rule);
+    .with("AtomRef", new RuleSet("AtomRef", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("AtomName") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        rule.add(new Atom(\"") , new Atom("AtomName") , new Text("\"));\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("Atom \""));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text("\""));
-    ruleset.replacements.put("hugs",rule);
+        .with("hugs", Arrays.asList(new Text("Atom \"") , new Atom("AtomName") , new Text("\"")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("    "));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text(" arg1;\n"));
-    ruleset.replacements.put("pojo",rule);
+        .with("pojo", Arrays.asList(new Text("    ") , new Atom("AtomName") , new Text(" arg1;\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new Atom(\""));
-         rule.add(new Atom("AtomName"));
-         rule.add(new Text("\")"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new Atom(\"") , new Atom("AtomName") , new Text("\")")))
 
+    ))
 
     // pojo: "  /* Possible " <atomtype> " */\n"
 
@@ -1193,132 +748,80 @@ public class grmGrm extends GrammarHelper {
     // Introduction of '...' seems unneccessary, and could be saved for something
     // special!  But replacement of \" with \" seems desirable.
 
-    ruleset=new RuleSet("Text");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("\""));
-         rule.add(new Var("text","\""));
-         rule.add(new Text("\""));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("\"\""));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        rule.add(new Text(\""));
-         rule.add(new Var("text"));
-         rule.add(new Text("\"));\n"));
-    ruleset.replacements.put("java",rule);
+    .with("Text", new RuleSet("Text", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("\""), new Var("text","\""), new Text("\"") } ),
+      Arrays.asList( new Type[]{ new Text("\"\"") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        rule.add(new Text(\"") , new Var("text") , new Text("\"));\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("Str \""));
-         rule.add(new Var("text"));
-         rule.add(new Text("\""));
-    ruleset.replacements.put("hugs",rule);
+        .with("hugs", Arrays.asList(new Text("Str \"") , new Var("text") , new Text("\"")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("    /* Matched: \""));
-         rule.add(new Var("text"));
-         rule.add(new Text("\" */\n"));
-    ruleset.replacements.put("pojo",rule);
+        .with("pojo", Arrays.asList(new Text("    /* Matched: \"") , new Var("text") , new Text("\" */\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new Text(\""));
-         rule.add(new Var("text"));
-         rule.add(new Text("\")"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new Text(\"") , new Var("text") , new Text("\")")))
+
+    ))
 
 
 
-
-    ruleset=new RuleSet("NL");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("\r\n"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("\n"));
-      ruleset.add(rule);
-
+    .with("NL", new RuleSet("NL", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("\r\n") } ),
+      Arrays.asList( new Type[]{ new Text("\n") } )
+      )
+    ))
 
     // HorizSpace = " " | "\t"
-    ruleset=new RuleSet("HorizSpace");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Var("horizspace",null," \t"));
-      ruleset.add(rule);
+    .with("HorizSpace", new RuleSet("HorizSpace", Arrays.asList(
+        Arrays.asList( new Type[]{ new Var("horizspace",null," \t") } )
+      )
+    ))
 
+    .with("OptHorizSpace", new RuleSet("OptHorizSpace", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("HorizSpace") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
-    ruleset=new RuleSet("OptHorizSpace");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("HorizSpace"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("OptSpc", new RuleSet("OptSpc", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("SpcBit"), new Atom("OptSpc") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
+    .with("SpcBit", new RuleSet("SpcBit", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text(" ") } ),
+      Arrays.asList( new Type[]{ new Text("\t") } )
+      )
+    ))
 
-    ruleset=new RuleSet("OptSpc");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("SpcBit"));
-         rule.add(new Atom("OptSpc"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
-
-
-    ruleset=new RuleSet("SpcBit");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text(" "));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("\t"));
-      ruleset.add(rule);
-
-
-    ruleset=new RuleSet("WhitespaceBit");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("\n"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(" "));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("\t"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("\r"));
-      ruleset.add(rule);
-
+    .with("WhitespaceBit", new RuleSet("WhitespaceBit", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("\n") } ),
+      Arrays.asList( new Type[]{ new Text(" ") } ),
+      Arrays.asList( new Type[]{ new Text("\t") } ),
+      Arrays.asList( new Type[]{ new Text("\r") } )
+      )
+    ))
 
     // Whitespace = WhitespaceBit Whitespace
     //            | WhitespaceBit
 
     // Whitespace = WhitespaceBit+
-    ruleset=new RuleSet("Whitespace");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Var("whitespace",null," \n\t\r"));
-      ruleset.add(rule);
-
+    .with("Whitespace", new RuleSet("Whitespace", Arrays.asList(
+        Arrays.asList( new Type[]{ new Var("whitespace",null," \n\t\r") } )
+      )
+    ))
 
     // Optional whitespace:
 
     // OWS = Whitespace
     //     | ""
 
-    ruleset=new RuleSet("OWS");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("WhitespaceBit"));
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
-      ruleset.add(rule);
-
+    .with("OWS", new RuleSet("OWS", Arrays.asList(
+        Arrays.asList( new Type[]{ new RepeatedRule(new Atom("WhitespaceBit"),"*") } )
+      )
+    ))
 
 
 
@@ -1327,217 +830,117 @@ public class grmGrm extends GrammarHelper {
     // This is used in c.grm.  It allows for more complex output, but calling the
     // code inside `...`s with the match Object available as a local field.
 
-    ruleset=new RuleSet("ActiveReplacement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("`"));
-         rule.add(new Var("java","`"));
-         rule.add(new Text("`"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) { "));
-         rule.add(new Var("java"));
-         rule.add(new Text(" } } );\n"));
-    ruleset.replacements.put("java",rule);
+    .with("ActiveReplacement", new RuleSet("ActiveReplacement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("`"), new Var("java","`"), new Text("`") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) { ") , new Var("java") , new Text(" } } );\n")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new ActiveReplacement() { public String replace(OutputContext ctx) { "));
-         rule.add(new Var("java"));
-         rule.add(new Text(" } }"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new ActiveReplacement() { public String replace(OutputContext ctx) { ") , new Var("java") , new Text(" } }")))
 
+    ))
 
     // RelativeElement is a way to access variables in parent/child types.
     // ^SearchUp->SearchDown.DirectDown
 
-    ruleset=new RuleSet("RelativeElement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("RelUp"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("RelDown"));
-      ruleset.add(rule);
+    .with("RelativeElement", new RuleSet("RelativeElement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("RelUp") } ),
+      Arrays.asList( new Type[]{ new Atom("RelDown") } )
+      )
+    ))
 
+    .with("RelUp", new RuleSet("RelUp", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Ref"), new Text("^"), new Atom("ReplacementElement") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        { Vector realrule=rule; rule=new Vector<Type>(); ") , new Atom("BasicElement") , new Text(" realrule.add(new RelElement('^',") , new Atom("Ref") , new Text(",(Type)rule.get(0))); rule=realrule; }\n")))
 
-    ruleset=new RuleSet("RelUp");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Ref"));
-         rule.add(new Text("^"));
-         rule.add(new Atom("ReplacementElement"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        { Vector realrule=rule; rule=new Vector<Type>(); "));
-         rule.add(new Atom("BasicElement"));
-         rule.add(new Text(" realrule.add(new RelElement('^',"));
-         rule.add(new Atom("Ref"));
-         rule.add(new Text(",(Type)rule.get(0))); rule=realrule; }\n"));
-    ruleset.replacements.put("java",rule);
+        .with("javadecl", Arrays.asList(new Text("new RelElement('^',") , new Atom("Ref") , new Text(",") , new Atom("ReplacementElement") , new Text(")")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("{ return new RelElement('^',"));
-         rule.add(new Atom("Ref"));
-         rule.add(new Text(","));
-         rule.add(new Atom("ReplacementElement"));
-         rule.add(new Text("); }"));
-    ruleset.replacements.put("javadecl",rule);
+    ))
 
+    .with("RelDown", new RuleSet("RelDown", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("Ref"), new Text("."), new Atom("ReplacementElement") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        { Vector realrule=rule; rule=new Vector<Type>(); ") , new Atom("BasicElement") , new Text(" realrule.add(new RelElement('.',") , new Atom("Ref") , new Text(",(Type)rule.get(0))); rule=realrule; }\n")))
 
-    ruleset=new RuleSet("RelDown");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Ref"));
-         rule.add(new Text("."));
-         rule.add(new Atom("ReplacementElement"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        { Vector realrule=rule; rule=new Vector<Type>(); "));
-         rule.add(new Atom("BasicElement"));
-         rule.add(new Text(" realrule.add(new RelElement('.',"));
-         rule.add(new Atom("Ref"));
-         rule.add(new Text(",(Type)rule.get(0))); rule=realrule; }\n"));
-    ruleset.replacements.put("java",rule);
+        .with("javadecl", Arrays.asList(new Text("new RelElement('.',") , new Atom("Ref") , new Text(",") , new Atom("ReplacementElement") , new Text(")")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("{ return new RelElement('.',"));
-         rule.add(new Atom("Ref"));
-         rule.add(new Text(","));
-         rule.add(new Atom("ReplacementElement"));
-         rule.add(new Text("); }"));
-    ruleset.replacements.put("javadecl",rule);
+    ))
 
+    .with("Ref", new RuleSet("Ref", Arrays.asList(
+        Arrays.asList( new Type[]{ new Var("ref"," \"\n.^") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("\"") , new Var("ref") , new Text("\"")))
 
-    ruleset=new RuleSet("Ref");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Var("ref"," \"\n.^"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("\""));
-         rule.add(new Var("ref"));
-         rule.add(new Text("\""));
-    ruleset.replacements.put("java",rule);
+        .with("javadecl", Arrays.asList(new Text("\"") , new Var("ref") , new Text("\"")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("\""));
-         rule.add(new Var("ref"));
-         rule.add(new Text("\""));
-    ruleset.replacements.put("javadecl",rule);
+    ))
 
+    .with("ArgReplacement", new RuleSet("ArgReplacement", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("$"), new Var("num",null,"0123456789_") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("        rule.add( new ArgReplacement(") , new Var("num") , new Text(") );\n")))
 
-    ruleset=new RuleSet("ArgReplacement");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("$"));
-         rule.add(new Var("num",null,"0123456789_"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("        rule.add( new ArgReplacement("));
-         rule.add(new Var("num"));
-         rule.add(new Text(") );\n"));
-    ruleset.replacements.put("java",rule);
+        .with("javadecl", Arrays.asList(new Text("new ArgReplacement(") , new Var("num") , new Text(")")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new ArgReplacement("));
-         rule.add(new Var("num"));
-         rule.add(new Text(")"));
-    ruleset.replacements.put("javadecl",rule);
-
+    ))
 
 
 
     // Untested...
 
     // TODO: Gah presumably we need to escape any "s in the output of RegexpBody
-    ruleset=new RuleSet("Regexp");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("/"));
-         rule.add(new Atom("RegexpBody"));
-         rule.add(new Text("/"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("new Regexp(\""));
-         rule.add(new Atom("RegexpBody"));
-         rule.add(new Text("\")"));
-    ruleset.replacements.put("java",rule);
+    .with("Regexp", new RuleSet("Regexp", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("/"), new Atom("RegexpBody"), new Text("/") } )
+      ),
+        /* Replacements */
+        new LiteralMap()
+        .with("java", Arrays.asList(new Text("new Regexp(\"") , new Atom("RegexpBody") , new Text("\")")))
 
-    rule=new Vector<Type>();
-        rule.add(new Text("new Regexp(\""));
-         rule.add(new Atom("RegexpBody"));
-         rule.add(new Text("\")"));
-    ruleset.replacements.put("javadecl",rule);
+        .with("javadecl", Arrays.asList(new Text("new Regexp(\"") , new Atom("RegexpBody") , new Text("\")")))
 
+    ))
 
-    ruleset=new RuleSet("RegexpBody");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("RegexpBit"));
-         rule.add(new Atom("RegexpBody"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("RegexpBody", new RuleSet("RegexpBody", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("RegexpBit"), new Atom("RegexpBody") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
+    .with("RegexpBit", new RuleSet("RegexpBit", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("\\"), new Atom("AnyOneChar"), new Atom("RegexpBit") } ),
+      Arrays.asList( new Type[]{ new Text("["), new Atom("RegexpCharBlock"), new Text("]"), new Atom("RegexpBit") } ),
+      Arrays.asList( new Type[]{ new Var("regexpbit","\\/[\n"), new Atom("RegexpBit") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
-    ruleset=new RuleSet("RegexpBit");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("\\"));
-         rule.add(new Atom("AnyOneChar"));
-         rule.add(new Atom("RegexpBit"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("["));
-         rule.add(new Atom("RegexpCharBlock"));
-         rule.add(new Text("]"));
-         rule.add(new Atom("RegexpBit"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Var("regexpbit","\\/[\n"));
-         rule.add(new Atom("RegexpBit"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("RegexpCharBlock", new RuleSet("RegexpCharBlock", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("\\"), new Atom("AnyOneChar"), new Atom("RegexpCharBlock") } ),
+      Arrays.asList( new Type[]{ new Var("regexpcharblock","]\n"), new Atom("RegexpCharBlock") } ),
+      Arrays.asList( new Type[]{ new Text("") } )
+      )
+    ))
 
 
-    ruleset=new RuleSet("RegexpCharBlock");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("\\"));
-         rule.add(new Atom("AnyOneChar"));
-         rule.add(new Atom("RegexpCharBlock"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Var("regexpcharblock","]\n"));
-         rule.add(new Atom("RegexpCharBlock"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
+    .with("DummyTestRule", new RuleSet("DummyTestRule", Arrays.asList(
+        Arrays.asList( new Type[]{ new GroupedDefn(new RuleSet("Anonymous", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("DummyTestContents") } )
+      ))) } )
+      )
+    ))
 
 
-
-    ruleset=new RuleSet("DummyTestRule");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
-          RuleSet ruleset = new RuleSet("Anonymous");
-        Vector<Type> rule = new Vector<Type>();
-        ruleset.add(rule);
-          return ruleset;
-        } }.run() ) );
-      ruleset.add(rule);
-
-
+    );
     return grammar;
   }
 }

@@ -127,6 +127,7 @@ java: "    grammar.setOption_" <optname> "(" OptOptionArgs ");\n"
 # java: "    grammar.setOption_" <optname> "(" OptionArgs ");\n"
 ## Alternative, less hard-coded into grammar object.
 # java: "    grammar.setOption(!qt!" <optname> "!qt!, { " OptionArgs " } );\n"
+javadecl: "    // @todo grammar.setOption_" <optname> "(" OptOptionArgs ");\n"
 
 OptOptionArgs = ( OptionArgs | HorizSpace | "" )
 
@@ -140,12 +141,14 @@ OptionArg = <arg/" \t\n\r">
 
 GrmImport = "@IMPORT" HorizSpace <namespace/" \t\n\r"> HorizSpace "!qt!" <filename/"!qt!\n"> "!qt!" NL
 java: "    grammar.importNamespace(!qt!" <namespace> "!qt!,!qt!" <filename> "!qt!);\n"
+javadecl: "    // @todo grammar.importNamespace(!qt!" <namespace> "!qt!,!qt!" <filename> "!qt!);\n"
 
 GrmExtend = "@EXTEND" HorizSpace "!qt!" <filename/"!qt!\n"> "!qt!" NL
 
 GrmOtherAt = "@" <option_name/" \n"> OptHorizSpace <rest/"\n"> NL
 ## For prototyping, for now, we allow grammar to insert any Java it likes.
 java: "    " <rest>
+javadecl: "    // @todo " <rest>
 
 # TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
 # No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
@@ -352,16 +355,20 @@ MagicTokenOfCommitment = ";"
 
 GroupElement = "(" OWS RuleSet OWS ")"
 java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(!qt!Anonymous!qt!);\n        Vector<Type> rule = new Vector<Type>();\n" Defn "        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"
-javadecl: "new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          return new RuleSet(!qt!Anonymous!qt!, " RuleSet ");\n        } }.run() )"
+javadeclold: "new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          return new RuleSet(!qt!Anonymous!qt!, " RuleSet ");\n        } }.run() )"
+javadecl: "new GroupedDefn(new RuleSet(!qt!Anonymous!qt!, " RuleSet "))"
 
 RepeatedElement = BasicElement RepeatMarker
 java: BasicElement "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),!qt!" RepeatMarker "!qt!));\n"
 javadecl: "new RepeatedRule(" BasicElement ",!qt!" RepeatMarker "!qt!)"
 
-OptionalElement = "[" OWS Defn OWS "]"
+# TODO: Surely like GroupElement, OptionalElement should be able to contain a
+# detailed Defn, not just one lone element.  This needs fixing in the
+# RepeatedRule class!
+OptionalElement = "[" OWS BasicElement OWS "]"
 java: Defn "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n"
-# java: "        rule.add(new RepeatedRule(" Defn ",0,1));\n"
-javadecl: "new RepeatedRule(" Defn ",0,1))"
+# java: "        rule.add(new RepeatedRule(" BasicElement ",0,1));\n"
+javadecl: "new RepeatedRule(" BasicElement ",0,1)"
 
 RepeatMarker = ZeroOrMore | OneOrMore
 
@@ -484,11 +491,11 @@ RelativeElement = RelUp
 
 RelUp = Ref "^" ReplacementElement
 java: "        { Vector realrule=rule; rule=new Vector<Type>(); " BasicElement " realrule.add(new RelElement('^'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
-javadecl: "{ return new RelElement('^'," Ref "," ReplacementElement "); }"
+javadecl: "new RelElement('^'," Ref "," ReplacementElement ")"
 
 RelDown = Ref "." ReplacementElement
 java: "        { Vector realrule=rule; rule=new Vector<Type>(); " BasicElement " realrule.add(new RelElement('.'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
-javadecl: "{ return new RelElement('.'," Ref "," ReplacementElement "); }"
+javadecl: "new RelElement('.'," Ref "," ReplacementElement ")"
 
 Ref = <ref/" !qt!\n.^">
 java: "!qt!" <ref> "!qt!"
