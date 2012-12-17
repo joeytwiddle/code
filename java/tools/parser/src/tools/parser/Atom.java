@@ -202,8 +202,11 @@ public class Atom implements MagicType {
 					}
 					int charsRemaining = rest.length();
 					if (charsRemaining < ctx.closestToEnd) {
+						// Beware this bit of code may run many times, producing data which is only occasionally used.
+						// So don't do too much work here!
 						ctx.closestToEnd = charsRemaining;
 						ctx.closestFailure = "Failed to match "+t+", argument "+(j+1)+" of "+type+" against "+headSome(s)+" to form "+ctx.path;
+						// @todo Really we want to show the stack not just the leaf element
 					}
 				} else {
 					ms.add(m);

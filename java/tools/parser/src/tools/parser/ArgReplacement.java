@@ -31,7 +31,14 @@ public class ArgReplacement implements Type {
 
    public void renderMatchAs(OutputContext ctx, Match match, String target, PrintStream out) {
 		// Logger.debug("Doing matches.get("+argNum+") inside "+match.type+" with size "+match.matches.size());
-		match.matches.get(argNum).render(ctx, match,target,out);
+	   if (argNum >= match.matches.size()) {
+		   if (ctx.allowOutOfRangeArguments) {
+			   return;
+		   } else {
+			   throw new Error("Replacement tried to use $"+(argNum+1)+" but there were only "+match.matches.size()+" matches. "+ctx+" "+match);
+		   }
+		}
+	   match.matches.get(argNum).render(ctx, match,target,out);
    }
 
 }

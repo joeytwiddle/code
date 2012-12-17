@@ -113,6 +113,7 @@ Main = GrammarDefn
 GrammarDefn = Grm
 java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "    return grammar;\n  }\n}\n"
 hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ " Grm " ]\n"
+javadecl: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Arrays;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\ngrammar = new Grammar(" Grm ");    return grammar;\n  }\n}\n"
 
 Grm = GrmHeaderBit* GrmBit*
 
@@ -157,6 +158,7 @@ Comment = "#" <comment/"\n"> "\n"
         | "#\n"
 java: "    //" <comment> "\n"
 pojo: "    //" <comment> "\n"
+javadecl: "    /*" <comment> "*/\n"
 
 OptComment = Comment | ""
 
@@ -183,6 +185,7 @@ java: "    ruleset=new RuleSet(!qt!" AtomName "!qt!);\n      grammar.addRuleset(
 hugs: "  ( Atom !qt!" AtomName "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
 pojo: "interface " AtomName " {\n\n}\n  class AnImplementation implements " AtomName " {\n" Defn "  }\n\n"
 # BUG: We cannot make a second reference to AtomName
+javadecl: "    ruleset = new RuleSet(!qt!" AtomName "!qt!, " Defn OptReplacements ");\n"
 
 # Replacements are the lines defining export targets: java, hugs, pojo
 
@@ -193,6 +196,7 @@ java: "    // Replacements\n" Replacements
 Replacements = ManyReplacements
              | Comment Replacements
              | Replacement
+javadecl: ",\n        /* Replacements */\n        Arrays.asList(" $1 $2 ")"
 
 ManyReplacements = Replacement "\n" Replacements
 hugs: Replacement ",\n" Replacements
@@ -208,19 +212,44 @@ hugs: Replacement ",\n" Replacements
 Replacement = <target/"<>\n!qt! :"> ": " ReplacementDefn
 java: "    rule=new Vector<Type>();\n" ReplacementDefn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
 hugs: "      ( !qt!" <target> "!qt! , [ " ReplacementDefn " ] ) "
+javadecl: ReplacementDefn
 
 Defn = DefnOr
-     | DefnAnd
-     | DefnBit
 
-DefnOr = DefnBit Whitespace "|" Whitespace Defn
-java: DefnBit "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" Defn
-hugs: DefnBit "] ,\n      [ " Defn
-pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
+## We had to split DefnAnd and DefnOr into chains, so we can output separated by commas.
+## TODO: A convenience way to do this to any RepeatElement e.g. (A B)+ is desirable!  At the moment we don't even have any way to refer to a matched list.  Perhaps $* iff the whole rule is one list...?  :f  Perhaps ReplacementArgs $1 $2 could refer to items in the rule not in the match?  Mmm there's really no difference.  :P  So we *can* refer to a list with $n?  So our goal is ... $3.join(", ") or join($3,", ") ?  Somehow I prefer the former; we can throw a "method join not found" error rather than "wrong args for join call".
+## Now DefnAnd and DefnOr can both return a single DefnBit, it is not a special case.  (DefnOr can return a single DefnAnd.)
+#     | DefnAnd
+#     | DefnBit
 
-DefnAnd = DefnBit " "+ Defn
-java: DefnBit Defn
-hugs: DefnBit ", " Defn
+# DefnOr = DefnBit OWS "|" OWS Defn
+# java: DefnBit "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" Defn
+# hugs: DefnBit "] ,\n      [ " Defn
+# pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
+
+DefnOr = DefnAnd DefnOrMaybeMore
+javadecl: "Arrays.asList(" DefnAnd DefnOrMaybeMore ")"
+
+DefnOrMaybeMore = DefnOrMore | ""
+
+DefnOrMore = OWS "|" OWS DefnOr
+java: "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" DefnOr
+hugs: "] ,\n      [ " DefnOr
+pojo: "  }\n  class AnotherImplementation {\n" DefnOr
+javadecl: ", " DefnOr
+
+# DefnAnd = DefnBit " "+ Defn
+# java: DefnBit Defn
+# hugs: DefnBit ", " Defn
+# javadecl: ", " DefnAnd
+DefnAnd = DefnBit MaybeMore
+
+MaybeMore = MoreAnd | ""
+
+MoreAnd = " "+ Defn
+Java: Defn
+hugs: ", " Defn
+javadecl: ", " Defn
 
 # ReplacementElement is only used for output/replacement lines, not the rule definition.
 # However at the moment we have included it in DefnBit.
@@ -270,7 +299,7 @@ ReplacementElement = ArgReplacement
 # The difference sounds like we need to "commit" to a rule, say "if we get here
 # then we must not fail".
 
-MagicSymbol = MagicTokenOfDoom | "%" | "$"
+MagicSymbol = MagicTokenOfDoom | "%" | "$" | MagicTokenOfCommitment
 # Don't put "#" here - it may eat through comments!
 
 MagicTokenOfDoom = "!"
@@ -302,6 +331,10 @@ MagicTokenOfDoom = "!"
 # first.
 
 # Perhaps ! should be renamed . so % can be renamed ! (since it basically means "not").
+
+# OK I'm calling our parse-error hinter MagicTokenOfCommitment
+
+MagicTokenOfCommitment = ";"
 
 GroupElement = "(" OWS Defn OWS ")"
 java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(!qt!Anonymous!qt!);\n        Vector<Type> rule = new Vector<Type>();\n" Defn "        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"
