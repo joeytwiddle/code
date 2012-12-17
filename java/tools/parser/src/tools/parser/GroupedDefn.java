@@ -35,11 +35,14 @@ public class GroupedDefn implements Type {
 	   return Atom.matchAgainstRuleset(type, this, ruleset, s, ctx);
    }
 
-	// @Override
+
+	/* Only relevant in MagicType
+   // @Override
    public boolean replacementfor(Type o) {
 	   // TODO Auto-generated method stub
 	   return o instanceof GroupedDefn;
    }
+   */
 
 	// @Override
    public String toString() {

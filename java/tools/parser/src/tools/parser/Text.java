@@ -45,11 +45,13 @@ public class Text implements Type {
 		return "\"" + Atom.strip(text) + "\"";
 	}
 
+	/* Only relevant in MagicType
 	public boolean replacementfor(Type o) {
 		System.out.println("Shouldn't be running Text.replacementfor()!");
 		System.exit(1);
 		return false;
 	}
+	*/
 
 	public String rendertext() {
 		// if (text.startsWith("\""))

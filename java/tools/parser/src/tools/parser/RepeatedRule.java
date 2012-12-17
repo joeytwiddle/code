@@ -26,6 +26,9 @@ public class RepeatedRule implements Type {
 		} else if (ruleStr.equals("+")) {
 			this.minMatches = 1;
 			this.maxMatches = -1;
+		} else if (ruleStr.equals("?")) {
+			this.minMatches = 0;
+			this.maxMatches = 1;
 		} else {
 			throw new Error("Incorrect ruleStr argument to RepeatedRule: '"+ruleStr+"' should be '*' or '+'.");
 		}
@@ -79,10 +82,12 @@ public class RepeatedRule implements Type {
 		return repeatedMatch;
 	}
 
-	// @Override
+	/* Only relevant in MagicType
+	// @Override Um, this is never gonna happen, right?
 	public boolean replacementfor(Type o) {
 		return o instanceof RepeatedRule;
 	}
+	*/
 
 	@Override
    public String toString() {

@@ -619,6 +619,7 @@ public class grmGrm extends GrammarHelper {
     // few extra rules which can only be used for outputs.
     // Yes we should.
 
+    // Efficient
     ruleset=new RuleSet("DefnBit");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
@@ -627,6 +628,13 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
 
+
+    // Inefficient but atomic output
+    // DefnBit = RepeatElement
+    //         | BasicElement
+
+    // Would-be best-of-both but not yet supported
+    // DefnBit = BasicElement OptRepeatMarker
 
     ruleset=new RuleSet("BasicElement");
       grammar.addRuleset(ruleset);
@@ -697,15 +705,19 @@ public class grmGrm extends GrammarHelper {
     // Replacements
 
 
-    //              | RepeatElement
-
-    // CONSIDER: Could be put = BasicElement RepeatMarker | ... at the top?
+    // CONSIDER: Could we put = BasicElement RepeatMarker | ... at the top?
     // No, again that's inf recursive.  But we could try:
     // BasicElement = BasicElement2 RepeatMarker | BasicElement2
 
-    // This might be called "exclusion" in Prolog.  *yawn*
     // If the magic token is reached, none of later options in a DefnBit will be attempted.
     // In other words, ! commits us to the current line, or failure.
+    // Prolog has something similar called "cut", but that prevents backtracking to
+    // the left of it, whilst allowing re-attempts on elements to its right.
+
+    // Prolog's cut affects search strategy (excluding some parts of the tree), but
+    // my current concern is in producing parse errors as opposed to parse failures.
+    // The difference sounds like we need to "commit" to a rule, say "if we get here
+    // then we must not fail".
 
     ruleset=new RuleSet("MagicSymbol");
       grammar.addRuleset(ruleset);
@@ -720,7 +732,7 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
 
-    // Don't put "#" here - it will eat through comments!
+    // Don't put "#" here - it may eat through comments!
 
     ruleset=new RuleSet("MagicTokenOfDoom");
       grammar.addRuleset(ruleset);
@@ -742,6 +754,10 @@ public class grmGrm extends GrammarHelper {
     // But should it be a full commit?  I.e.:
     //   1) If rest of arguments fail, fall back out and try next in parent.
     //   2) If rest of arguments fail, report error and stop parsing!
+
+    // Alternatively, "=!" could mean "=" but if a match is found, it should never
+    // be un-done!  It is simpler but knows only itself, not the context in which it
+    // was included.
 
     // I can envisage another token which might be useful.  Let's call it % for now.
     // It can be used to mark a force-fail match, e.g. in the following
@@ -771,10 +787,14 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("java",rule);
 
 
-    // Too recursive I suspect:
-    //RepeatElement = DefnBit "*"
-    // Since RepeatElement was hard to define for "*" and "+", we parse repeat
-    // through OptRepeatMarker, a single char after an atom match.
+    ruleset=new RuleSet("RepeatElement");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("BasicElement"));
+        rule.add(new Atom("RepeatMarker"));
+      ruleset.add(rule);
+    // Replacements
+
 
     ruleset=new RuleSet("OptionalElement");
       grammar.addRuleset(ruleset);
@@ -851,13 +871,11 @@ public class grmGrm extends GrammarHelper {
 
     // javaB: 1,-1
 
-    ruleset=new RuleSet("ZeroOrOne");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("OptionalElement"));
-      ruleset.add(rule);
-    // Replacements
-
+    //# I am not sure whether to include ZeroOrOne in the grammar, since
+    //# OptionalElement already performs this function.
+    //# E.g. [X] achieves what X? would.
+    // ZeroOrOne = "?"
+    // java: "?"
     // javaB: 0,1
 
     // javaB: unused example of passing min and max rather than symbols
@@ -865,13 +883,11 @@ public class grmGrm extends GrammarHelper {
     // I think Var is a VarReference - cannot be used for parsing (no terminal
     // condition!) but is used in replacements.
 
-    // TODO: Perhaps make it explicit that Var and Re
-
     ruleset=new RuleSet("VarRef");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Text("<"));
-        rule.add(new Var("varname","<>\n\"/ "));
+        rule.add(new Var("varname","<>\n\"/ ~"));
         rule.add(new Text(">"));
       ruleset.add(rule);
     // Replacements

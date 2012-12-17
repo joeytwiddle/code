@@ -17,9 +17,11 @@ public class ArgReplacement implements Type {
 		this.argNum = argNum - 1;
 	}
 	
+	/* Only relevant in MagicType
 	public boolean replacementfor(Type o) {
 		return o instanceof ArgReplacement;
 	}
+	*/
 
 	// @Override
    public Match match(SomeString s, ParseContext ctx) {

@@ -48,13 +48,15 @@ public class RelElement implements Type {
 		return "RelElement(" + to + dir + leaf + ")";
 	}
 
+	/* Only relevant in MagicType
 	public boolean replacementfor(Type o) {
-		/*
-		 * if (o instanceof Type) { Type v=(Type)o; if (name.equals(v.name))
-		 * return true; }
-		 */
+		
+		// if (o instanceof Type) { Type v=(Type)o; if (name.equals(v.name))
+		// return true; }
+		
 		return true;
 	}
+	*/
 
 	public void render(OutputContext ctx, Match btwyourdadis, String target, PrintStream out) {
 		if (dir == '^') {

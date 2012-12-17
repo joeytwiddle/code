@@ -228,7 +228,15 @@ hugs: DefnBit ", " Defn
 # few extra rules which can only be used for outputs.
 # Yes we should.
 
+# Efficient
 DefnBit = BasicElement OptRepeatMarker
+
+# Inefficient but atomic output
+# DefnBit = RepeatElement
+#         | BasicElement
+
+# Would-be best-of-both but not yet supported
+# DefnBit = BasicElement OptRepeatMarker
 
 BasicElement = VarAccept
              | VarDeny
@@ -248,18 +256,22 @@ ReplacementElement = ArgReplacement
                    | Text
                    | AtomRef
 
-#              | RepeatElement
-
-# CONSIDER: Could be put = BasicElement RepeatMarker | ... at the top?
+# CONSIDER: Could we put = BasicElement RepeatMarker | ... at the top?
 # No, again that's inf recursive.  But we could try:
 # BasicElement = BasicElement2 RepeatMarker | BasicElement2
 
-# This might be called "exclusion" in Prolog.  *yawn*
 # If the magic token is reached, none of later options in a DefnBit will be attempted.
 # In other words, ! commits us to the current line, or failure.
+# Prolog has something similar called "cut", but that prevents backtracking to
+# the left of it, whilst allowing re-attempts on elements to its right.
+
+# Prolog's cut affects search strategy (excluding some parts of the tree), but
+# my current concern is in producing parse errors as opposed to parse failures.
+# The difference sounds like we need to "commit" to a rule, say "if we get here
+# then we must not fail".
 
 MagicSymbol = MagicTokenOfDoom | "%" | "$"
-# Don't put "#" here - it will eat through comments!
+# Don't put "#" here - it may eat through comments!
 
 MagicTokenOfDoom = "!"
 
@@ -276,6 +288,10 @@ MagicTokenOfDoom = "!"
 #   1) If rest of arguments fail, fall back out and try next in parent.
 #   2) If rest of arguments fail, report error and stop parsing!
 
+# Alternatively, "=!" could mean "=" but if a match is found, it should never
+# be un-done!  It is simpler but knows only itself, not the context in which it
+# was included.
+
 # I can envisage another token which might be useful.  Let's call it % for now.
 # It can be used to mark a force-fail match, e.g. in the following
 #   cat = % Dog
@@ -290,10 +306,7 @@ MagicTokenOfDoom = "!"
 GroupElement = "(" OWS Defn OWS ")"
 java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(!qt!Anonymous!qt!);\n        Vector<Type> rule = new Vector<Type>();\n" Defn "        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"
 
-# Too recursive I suspect:
-#RepeatElement = DefnBit "*"
-# Since RepeatElement was hard to define for "*" and "+", we parse repeat
-# through OptRepeatMarker, a single char after an atom match.
+RepeatElement = BasicElement RepeatMarker
 
 OptionalElement = "[" OWS Defn OWS "]"
 java: Defn "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n"
@@ -313,7 +326,11 @@ OneOrMore = "+"
 java: "+"
 # javaB: 1,-1
 
-ZeroOrOne = OptionalElement
+## I am not sure whether to include ZeroOrOne in the grammar, since
+## OptionalElement already performs this function.
+## E.g. [X] achieves what X? would.
+# ZeroOrOne = "?"
+# java: "?"
 # javaB: 0,1
 
 # javaB: unused example of passing min and max rather than symbols
@@ -321,9 +338,7 @@ ZeroOrOne = OptionalElement
 # I think Var is a VarReference - cannot be used for parsing (no terminal
 # condition!) but is used in replacements.
 
-# TODO: Perhaps make it explicit that Var and Re
-
-VarRef = "<" <varname/"<>\n!qt!/ "> ">"
+VarRef = "<" <varname/"<>\n!qt!/ ~"> ">"
 java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"
 hugs: "Var !qt!" <varname> "!qt!"
 pojo: "    String " <varname> ";\n"

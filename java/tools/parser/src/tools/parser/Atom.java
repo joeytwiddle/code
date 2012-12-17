@@ -145,12 +145,12 @@ public class Atom implements MagicType {
 	public static Match matchAgainstRuleset(String type, Type realType, RuleSet rs, SomeString s, ParseContext ctx) {
 		String profileName = "Atom.matchAgainstRuleset()"; 
 		Profile.start(profileName);
-	   if (Parser.debugging) {
+		if (Parser.debugging) {
 			Logger.log(indent()+" Entered atom " + type + " with " + rs.rules.size()
 			      + " rules...");
 		}
 		for (int i = 0; i < rs.rules.size(); i++) {
-//			Profile.start("Atom.match: Outside loop");
+			// Profile.start("Atom.match: Outside loop");
 			Vector rules = (Vector) rs.rules.get(i);
 			if (rules.size() == 0) {
 				System.err.println("rulesetforatom(" + type + ") number " + i
@@ -176,9 +176,9 @@ public class Atom implements MagicType {
 			depth++;
 			path.add(type);
 			for (int j = 0; j < rules.size() && !failure; j++) {
-//				Profile.start("Atom.match: Inside loop");
+				// Profile.start("Atom.match: Inside loop");
 				Type t = (Type) rules.get(j);
-//				Profile.start("Atom.match: inner inner");
+				// Profile.start("Atom.match: inner inner");
 				// Profile.start(t.getClass().getName()+".match()"); // heavy
 				if (Parser.debugPath) {
 					ctx.path.add(t);
@@ -192,7 +192,7 @@ public class Atom implements MagicType {
 					ctx.path.remove(ctx.path.size() - 1);
 				}
 				// Profile.stop(t.getClass().getName()+".match()"); // heavy
-//				Profile.stop("Atom.match: inner inner");
+				// Profile.stop("Atom.match: inner inner");
 				if (m == null) {
 					failure = true;
 					if (Parser.debugging) {
@@ -211,7 +211,7 @@ public class Atom implements MagicType {
 					rest = m.left;
 					// System.out.println("       New: "+strip(left));
 				}
-//				Profile.stop("Atom.match: Inside loop");
+				// Profile.stop("Atom.match: Inside loop");
 				if (Parser.debuggingWin) {
 					Parser.doing(Parser.all.length() - s.length(), Parser.all.length() - rest.length());
 					// try { Thread.sleep(2); } catch (Exception e) { }
@@ -225,16 +225,16 @@ public class Atom implements MagicType {
 					Logger.log(indent()+" Succeeded: " + rules +" swallows: "+headSome(matchedString)+" ["+matchedString.length()+" chars]");
 				}
 				Match m = new Match(realType, matchedString, ms, rest);
-//				Profile.stop("Atom.match: Outside loop");
-//				Profile.stop("Atom.match: Elsewhere");
+				// Profile.stop("Atom.match: Outside loop");
+				// Profile.stop("Atom.match: Elsewhere");
 				return m;
 			} else {
 			}
-//			Profile.stop("Atom.match: Outside loop");
+			// Profile.stop("Atom.match: Outside loop");
 		}
 		Profile.stop(profileName);
 		return null;
-   }
+	}
 
 	public String toString() {
 		return type;
@@ -255,11 +255,11 @@ public class Atom implements MagicType {
 	}
 
 	public static String headSome(SomeString s) {
-	   int lastchar = s.length() < 40 ? s.length() : 40;
-	   // @todo See also Atom.strip() - these two should probably be merged
-	   String head = StringUtils.escapeSpecialChars(s.substring(0, lastchar));
-	   return head;
-   }
+		int lastchar = s.length() < 40 ? s.length() : 40;
+		// @todo See also Atom.strip() - these two should probably be merged
+		String head = StringUtils.escapeSpecialChars(s.substring(0, lastchar));
+		return head;
+	}
 
 	public void renderMatchAs(OutputContext ctx, Match parentMatch, String target, PrintStream out) {
 		Match m = parentMatch.grabUnusedMatchMatching(this);
@@ -272,6 +272,6 @@ public class Atom implements MagicType {
 			return;
 		}
 		m.render(ctx, parentMatch, target, out);
-   }
+	}
 
 }

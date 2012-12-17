@@ -40,9 +40,11 @@ public class ActiveReplacement implements /*Replacement*/Type {
 		return "Must be overwritten by grammar!";
 	}
 
+	/* Only relevant in MagicType
 	public boolean replacementfor(Type o) {
 		return o instanceof ActiveReplacement;
 	}
+	*/
 
 	// @Override
    public Match match(SomeString s, ParseContext ctx) {
