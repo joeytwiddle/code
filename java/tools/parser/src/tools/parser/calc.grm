@@ -20,9 +20,15 @@ Main=Expr _
 # keep together.  (See attempt 2 below.)  Whilst it may be possible to find
 # related elements in the tree, it's not friendly.
 
+# Discoveries: It is dangerous to use recursive rules which do not consume any
+# chars from the stream!  This behaviour could be detected at runtime, with a
+# little overhead, or possibly detected at grammar building time with some
+# logical analysis.
+
 
 
 ## First attempt: Simple intuitive approach
+## Causes a StackOverflow by recursively trying to match Add without consuming anything.
 #
 # Expr = Add
      # | Subtract
@@ -46,7 +52,7 @@ Main=Expr _
 
 ## Second attempt: Lets make sure we consume something!
 ## The problem is, matching the operator separately from its operands will make
-## it hard to do meaningful actions.
+## it harder to do meaningful actions.
 # 
 # Expr = Bit ( Operator Expr )*
 # 
@@ -59,7 +65,18 @@ Main=Expr _
 
 
 
-## Third attempt: Simple intuitive approach
+## Third attempt: Force each operator to consume something.
+##
+## Note that this still brings back the inefficiency issue, an issue which
+## becomes more problematic the larger the LHS is.
+##
+## By the time "(1+2*3) / 4" is matched, we will have already had to parse the
+## "(1+2*3)" three times previously, when testing for + - and *.
+##
+## A simple cache/memo may successfully address this, although its neccessary
+## minimum size will depend on the file at hand.  (Should we cache failures as
+## well as successful matches?  Presumably we should throw them away according
+## to cost as much as to age.)
 
 Expr = Add
      | Subtract
@@ -98,4 +115,5 @@ build: "new Number(" $2 ")"
 JustNumber = <numstr~"0123456789.">
 
 _ = (" "|"\n")*
+build: ""
 
