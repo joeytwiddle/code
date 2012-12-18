@@ -1,0 +1,101 @@
+Main=Expr _
+
+# So it turns out, after reigning in the backtrack algorithm, whilst we can
+# parse some advanced languages fine, parsing a simple infix calculator is not
+# so trivial!
+
+# How would we like to solve it?  Can we express the algorithmic approach
+# required in our grammar file?
+
+# One simple way to avoid the stack overflow would be to say "we will not look
+# for another Add if we are inside the stack of a match against Add and we
+# haven't matched anything yet!".  This might still allow 1 + 2 + 3 + 4 on the
+# RHS just not the LHS.
+
+# This may also be an opportunity to face up to the inefficiency problem of
+# repeatedly matching Expr against the first token, when testing for rules
+# which contain it (Add, Subtract, ...).
+#
+# However avoiding that repetition will separate some tokens we may want to
+# keep together.  (See attempt 2 below.)  Whilst it may be possible to find
+# related elements in the tree, it's not friendly.
+
+
+
+## First attempt: Simple intuitive approach
+#
+# Expr = Add
+     # | Subtract
+     # | Multiply
+     # | Divide
+     # | Bit
+# 
+# Add = Expr "+" Expr
+# build: "new Addition(" $1 "," $3 ")"
+# 
+# Subtract = Expr "-" Expr
+# build: "new Subtraction(" $1 "," $3 ")"
+# 
+# Multiply = Expr "*" Expr
+# build: "new Multiplication(" $1 "," $3 ")"
+# 
+# Divide = Expr "/" Expr
+# build: "new Division(" $1 "," $3 ")"
+
+
+
+## Second attempt: Lets make sure we consume something!
+## The problem is, matching the operator separately from its operands will make
+## it hard to do meaningful actions.
+# 
+# Expr = Bit ( Operator Expr )*
+# 
+# Operator = AddOp | SubOp | MultOp | DivOp
+# 
+# AddOp = "+"
+# SubOp = "-"
+# MultOp = "*"
+# DivOp = "/"
+
+
+
+## Third attempt: Simple intuitive approach
+
+Expr = Add
+     | Subtract
+     | Multiply
+     | Divide
+     | Bit
+
+Add = Bit "+" Expr
+build: "new Addition(" $1 "," $3 ")"
+
+Subtract = Bit "-" Expr
+build: "new Subtraction(" $1 "," $3 ")"
+
+Multiply = Bit "*" Expr
+build: "new Multiplication(" $1 "," $3 ")"
+
+Divide = Bit "/" Expr
+build: "new Division(" $1 "," $3 ")"
+
+
+
+Bit = _ Number _
+    | _ BracedExpr _
+
+BracedExpr = "(" Expr ")"
+build: "new GroupedExpr(" $2 ")"
+
+Number = NegativeNumber | PositiveNumber | JustNumber
+
+NegativeNumber = "-" JustNumber
+build: "new Number(-" $2 ")"
+
+PositiveNumber = "+" JustNumber
+build: "new Number(" $2 ")"
+
+JustNumber = <numstr~"0123456789.">
+
+_ = (" "|"\n")*
+
