@@ -70,18 +70,24 @@ Main=Expr _
 ## Note that this still brings back the inefficiency issue, an issue which
 ## becomes more problematic the larger the LHS is.
 ##
-## By the time "(1+2*3) / 4" is matched, we will have already had to parse the
-## "(1+2*3)" three times previously, when testing for + - and *.
+## By the time "(1+2*3) - 4" is matched, we will have already had to parse the
+## "(1+2*3)" three times previously, when testing for * / and +.
 ##
 ## A simple cache/memo may successfully address this, although its neccessary
 ## minimum size will depend on the file at hand.  (Should we cache failures as
 ## well as successful matches?  Presumably we should throw them away according
 ## to cost as much as to age.)
 
-Expr = Add
-     | Subtract
-     | Multiply
+## BUG TODO: 1 + 5*3 + 4 will group 3+4 into an Expr - oh no precedence!
+
+## If we consume Bit on the RHS of Multiply and Divide, this should grab what
+## is needed.  But then we would need to build an Add(Add( structure, which is
+## blocked because we dropped Expr from Add's LHS.
+
+Expr = Multiply
      | Divide
+     | Add
+     | Subtract
      | Bit
 
 Add = Bit "+" Expr
