@@ -281,7 +281,7 @@ public class grmGrm extends GrammarHelper {
     // Note that two AtomDefs without an empty line between them will not parse!
 
     .with("AtomDef", new RuleSet("AtomDef", Arrays.asList(
-        Arrays.asList( new Type[]{ new Atom("AtomName"), new Text(" = "), new Atom("RuleSet"), new Atom("OptReplacements"), new Atom("NL") } )
+        Arrays.asList( new Type[]{ new Atom("AtomName"), new Atom("OptHorizSpace"), new Text("="), new Atom("OptHorizSpace"), new Atom("RuleSet"), new Atom("OptReplacements"), new Atom("NL") } )
       ),
         /* Replacements */
         new LiteralMap()
@@ -367,6 +367,7 @@ public class grmGrm extends GrammarHelper {
     // hugs: DefnBit "] ,\n      [ " Defn
     // pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
 
+    //# CONSIDER: Rename DefnOr to RuleBody and DefnAnd to RuleClause?
     .with("DefnOr", new RuleSet("DefnOr", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("DefnAnd"), new Atom("DefnOrMaybeMore") } )
       ),
@@ -472,14 +473,69 @@ public class grmGrm extends GrammarHelper {
     ))
 
     .with("ReplacementElement", new RuleSet("ReplacementElement", Arrays.asList(
-        Arrays.asList( new Type[]{ new Atom("ArgReplacement") } ),
-        Arrays.asList( new Type[]{ new Atom("RelativeElement") } ),
+        Arrays.asList( new Type[]{ new Atom("ReplacementExpression") } ),
+        Arrays.asList( new Type[]{ new Atom("ReplacementObject") } ),
         Arrays.asList( new Type[]{ new Atom("ActiveReplacement") } ),
         Arrays.asList( new Type[]{ new Atom("VarRef") } ),
-        Arrays.asList( new Type[]{ new Atom("Text") } ),
+        Arrays.asList( new Type[]{ new Atom("Text") } )
+      )
+    ))
+
+    // A sub-class of ReplacementElement, those which may match a complex object in
+    // the original rule (which may expose helper child functions).
+    .with("ReplacementObject", new RuleSet("ReplacementObject", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("ArgReplacement") } ),
+        Arrays.asList( new Type[]{ new Atom("RelativeElement") } ),
         Arrays.asList( new Type[]{ new Atom("AtomRef") } )
       )
     ))
+
+    // ReplacementExpression.  E.g. $1.join(", ") or InputAtom.toLowerCase()
+    // ReplacementExpression is controversial in terms of complexity, but it should
+    // allow us to output delimited lists without having to split rules into chains,
+    // which is ugly and verbose and makes grammars less intuitive.
+    // BUG TODO: Beware different meanings of "." e.g. OtherModule.InputAtom.toLowerCase()
+    //           When trying to parse the AtomRef, it should take the first two
+    //           words but actively reject the last word "toLowerCase" because of
+    //           the presence of "(".  This will require a lookahead feature, to
+    //           check the char following the atomref without consuming it.  :f
+    //           A space then a "(" indicates not a call but a following GroupElement.
+    .with("ReplacementExpression", new RuleSet("ReplacementExpression", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("not_yet_supported") } )
+      )
+    ))
+    // ReplacementExpression = ReplacementObject "." FunctionCall
+
+    // FunctionCall = <funcname/"("> "(" FuncArgs ")"
+
+    // FuncArgs = OptHorizSpace (OneFuncArg OptHorizSpace "," OptHorizSpace)* OneFuncArg | OptHorizSpace
+    // FuncArgs = OptHorizSpace (OneFuncArg OptHorizSpace [","] OptHorizSpace)*
+    // This last rule appears simpler.  The optional "," allows parsing of the last
+    // arg the same as all previous args.  It is sort-of safe in that it won't be
+    // backtracked over due to being inside the ()s.  However it would happily
+    // parse multiple UNdelimited args, which should not really be considered valid.
+
+    // So TODO:
+    // It seems we need a delimited-list-parsing construct as well as a
+    // delimited-list-producing replacement.  For example:
+    //
+    //   FuncArgs = listOf(OptHorizSpace OneFuncArg, OptHorizSpace ",")
+    //
+    // means "parse a list of the first rule, delimited by instances of the last
+    // rule".  Some alternative syntax:
+    //
+    //   FuncArgs = [[ OptHorizSpace OneFuncArg , OptHorizSpace "," ]]
+    //
+    //   FuncArgs = [[ OptHorizSpace OneFuncArg :: OptHorizSpace "," ]]
+    //
+    // How would the replacement for this look?
+    //
+    //   target: [[ OneFuncArg , ";\n" ]]
+    //
+    // For the first arg, we will have to match against each instance of the
+    // OneFuncArg atom in the sub-matches found.  The secondary arg can act the same
+    // way, making it more powerful than join(";\n") which can only output a string.
+    // (In other words our delimiters can be complex rules, and their output too.)
 
     // CONSIDER: Could we put = BasicElement RepeatMarker | ... at the top?
     // No, again that's inf recursive.  But we could try:
@@ -496,13 +552,20 @@ public class grmGrm extends GrammarHelper {
     // then we must not fail".
 
     .with("MagicSymbol", new RuleSet("MagicSymbol", Arrays.asList(
-        Arrays.asList( new Type[]{ new Atom("MagicTokenOfDoom") } ),
-        Arrays.asList( new Type[]{ new Text("%") } ),
-        Arrays.asList( new Type[]{ new Text("$") } ),
-        Arrays.asList( new Type[]{ new Atom("MagicTokenOfCommitment") } )
+        Arrays.asList( new Type[]{ new Atom("MagicTokenOfCommitment") } ),
+        Arrays.asList( new Type[]{ new Atom("ReservedMagicSymbols") } )
       )
     ))
     // Don't put "#" here - it may eat through comments!
+
+    // These are symbols we may want to use in future
+    .with("ReservedMagicSymbols", new RuleSet("ReservedMagicSymbols", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text(":") } ),
+        Arrays.asList( new Type[]{ new Text("%") } ),
+        Arrays.asList( new Type[]{ new Text("$") } ),
+        Arrays.asList( new Type[]{ new Atom("MagicTokenOfDoom") } )
+      )
+    ))
 
     .with("MagicTokenOfDoom", new RuleSet("MagicTokenOfDoom", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("!") } )
@@ -552,7 +615,7 @@ public class grmGrm extends GrammarHelper {
       ),
         /* Replacements */
         new LiteralMap()
-        .with("java", Arrays.asList(new Text("        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(\"Anonymous\");\n        Vector<Type> rule = new Vector<Type>();\n") , new Atom("Defn") , new Text("        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n")))
+        .with("java", Arrays.asList(new Text("        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(\"Anonymous\");\n        Vector<Type> rule = new Vector<Type>();\n") , new Atom("RuleSet") , new Text("        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n")))
         .with("javadeclold", Arrays.asList(new Text("new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          return new RuleSet(\"Anonymous\", ") , new Atom("RuleSet") , new Text(");\n        } }.run() )")))
         .with("javadecl", Arrays.asList(new Text("new GroupedDefn(new RuleSet(\"Anonymous\", ") , new Atom("RuleSet") , new Text("))")))
     ))
@@ -860,10 +923,18 @@ public class grmGrm extends GrammarHelper {
     ))
 
 
+
+    // TESTS
+
     .with("DummyTestRule", new RuleSet("DummyTestRule", Arrays.asList(
         Arrays.asList( new Type[]{ new GroupedDefn(new RuleSet("Anonymous", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("DummyTestContents") } )
       ))) } )
+      )
+    ))
+
+    .with("ManyNothingsProbablyStackOverflow", new RuleSet("ManyNothingsProbablyStackOverflow", Arrays.asList(
+        Arrays.asList( new Type[]{ new RepeatedRule(new RepeatedRule(new Atom("Something"),0,1),"*") } )
       )
     ))
 

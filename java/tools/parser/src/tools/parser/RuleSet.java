@@ -1,10 +1,23 @@
 package tools.parser;
 
 import java.lang.String;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import java.util.Hashtable;
 import java.util.Map;
+
+/** Note that a RuleSet is not a set of many atom rules, like a whole
+ * grammar, but just the rule definition for one atom.  Therefore it is
+ * actually an OR rule (possibly with only one entry), containing many (or
+ * one) AND clauses.
+ *
+ * Whether or not it has a name or replacements should be moved into a separate
+ * class.
+ *
+ * TODO: These could be easier to follow if defined in their own classes, e.g.
+ * MultiRule and SingleRule, or RuleBody and RuleClause.
+ */
 
 public class RuleSet {
 
@@ -26,6 +39,17 @@ public class RuleSet {
 		this.replacements = replacements;
 	}
 
+	// These are supposed to be a nice easy way for the grammar to initialise a ruleset and populate its list.
+	// However they produce an inconsistency.  What if we want to pass a replacement map too?!
+	// Recommendation: Separate the "rules" list into a separate class (e.g. RuleBody), so it can be instantiated separately and passed as one arg to RuleSet's constructor.
+	// RuleSet could be renamed NamedRule (assuming only named rules have replacements) or AdvancedRule meaning a rule with replacements. 
+	public RuleSet(String t, List<Type>... ls) {
+		this(t, Arrays.asList(ls));
+	}
+	public RuleSet(List<Type>... ls) {
+		this("Anonymous", ls);
+	}
+	
 	void add(List<Type> pattern) {
 		rules.add(pattern);
 	}

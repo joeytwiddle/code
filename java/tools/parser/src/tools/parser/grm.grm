@@ -183,7 +183,7 @@ Identifier = <identifier~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01
 
 # Note that two AtomDefs without an empty line between them will not parse!
 
-AtomDef = AtomName " = " RuleSet OptReplacements NL
+AtomDef = AtomName OptHorizSpace "=" OptHorizSpace RuleSet OptReplacements NL
 java: "    ruleset=new RuleSet(!qt!" AtomName "!qt!);\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n" RuleSet "      ruleset.add(rule);\n" OptReplacements "\n"
 hugs: "  ( Atom !qt!" AtomName "!qt!,[\n    [ " RuleSet " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
 pojo: "interface " AtomName " {\n\n}\n  class AnImplementation implements " AtomName " {\n" RuleSet "  }\n\n"
@@ -235,6 +235,7 @@ Defn = DefnOr
 # hugs: DefnBit "] ,\n      [ " Defn
 # pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
 
+## CONSIDER: Rename DefnOr to RuleBody and DefnAnd to RuleClause?
 DefnOr = DefnAnd DefnOrMaybeMore
 javadecl: "Arrays.asList( new Type[]{ " DefnAnd " } )" DefnOrMaybeMore
 # Java requires us to be specific about the array types here.
@@ -295,12 +296,61 @@ ReplacementElementMaybeMore = OptSpc ReplacementElementMore | ""
 ReplacementElementMore = ReplacementDefn
 javadecl: ", " ReplacementDefn
 
-ReplacementElement = ArgReplacement
-                   | RelativeElement
+ReplacementElement = ReplacementExpression
+                   | ReplacementObject
                    | ActiveReplacement
                    | VarRef
                    | Text
-                   | AtomRef
+
+# A sub-class of ReplacementElement, those which may match a complex object in
+# the original rule (which may expose helper child functions).
+ReplacementObject = ArgReplacement
+                  | RelativeElement
+                  | AtomRef
+
+# ReplacementExpression.  E.g. $1.join(", ") or InputAtom.toLowerCase()
+# ReplacementExpression is controversial in terms of complexity, but it should
+# allow us to output delimited lists without having to split rules into chains,
+# which is ugly and verbose and makes grammars less intuitive.
+# BUG TODO: Beware different meanings of "." e.g. OtherModule.InputAtom.toLowerCase()
+#           When trying to parse the AtomRef, it should take the first two
+#           words but actively reject the last word "toLowerCase" because of
+#           the presence of "(".  This will require a lookahead feature, to
+#           check the char following the atomref without consuming it.  :f
+#           A space then a "(" indicates not a call but a following GroupElement.
+ReplacementExpression = "not_yet_supported"
+# ReplacementExpression = ReplacementObject "." FunctionCall
+
+# FunctionCall = <funcname/"("> "(" FuncArgs ")"
+
+# FuncArgs = OptHorizSpace (OneFuncArg OptHorizSpace "," OptHorizSpace)* OneFuncArg | OptHorizSpace
+# FuncArgs = OptHorizSpace (OneFuncArg OptHorizSpace [","] OptHorizSpace)*
+# This last rule appears simpler.  The optional "," allows parsing of the last
+# arg the same as all previous args.  It is sort-of safe in that it won't be
+# backtracked over due to being inside the ()s.  However it would happily
+# parse multiple UNdelimited args, which should not really be considered valid.
+
+# So TODO:
+# It seems we need a delimited-list-parsing construct as well as a
+# delimited-list-producing replacement.  For example:
+#
+#   FuncArgs = listOf(OptHorizSpace OneFuncArg, OptHorizSpace ",")
+#
+# means "parse a list of the first rule, delimited by instances of the last
+# rule".  Some alternative syntax:
+#
+#   FuncArgs = [[ OptHorizSpace OneFuncArg , OptHorizSpace "," ]]
+#
+#   FuncArgs = [[ OptHorizSpace OneFuncArg :: OptHorizSpace "," ]]
+#
+# How would the replacement for this look?
+#
+#   target: [[ OneFuncArg , ";\n" ]]
+#
+# For the first arg, we will have to match against each instance of the
+# OneFuncArg atom in the sub-matches found.  The secondary arg can act the same
+# way, making it more powerful than join(";\n") which can only output a string.
+# (In other words our delimiters can be complex rules, and their output too.)
 
 # CONSIDER: Could we put = BasicElement RepeatMarker | ... at the top?
 # No, again that's inf recursive.  But we could try:
@@ -316,8 +366,11 @@ ReplacementElement = ArgReplacement
 # The difference sounds like we need to "commit" to a rule, say "if we get here
 # then we must not fail".
 
-MagicSymbol = MagicTokenOfDoom | "%" | "$" | MagicTokenOfCommitment
+MagicSymbol = MagicTokenOfCommitment | ReservedMagicSymbols
 # Don't put "#" here - it may eat through comments!
+
+# These are symbols we may want to use in future
+ReservedMagicSymbols = ":" | "%" | "$" | MagicTokenOfDoom
 
 MagicTokenOfDoom = "!"
 
@@ -357,7 +410,7 @@ MagicTokenOfDoom = "!"
 MagicTokenOfCommitment = ";"
 
 GroupElement = "(" OWS RuleSet OWS ")"
-java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(!qt!Anonymous!qt!);\n        Vector<Type> rule = new Vector<Type>();\n" Defn "        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"
+java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(!qt!Anonymous!qt!);\n        Vector<Type> rule = new Vector<Type>();\n" RuleSet "        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"
 javadeclold: "new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          return new RuleSet(!qt!Anonymous!qt!, " RuleSet ");\n        } }.run() )"
 javadecl: "new GroupedDefn(new RuleSet(!qt!Anonymous!qt!, " RuleSet "))"
 
@@ -530,5 +583,10 @@ RegexpCharBlock = "\\" AnyOneChar RegexpCharBlock
                 | ""
 
 
+
+# TESTS
+
 DummyTestRule = ( DummyTestContents )
+
+ManyNothingsProbablyStackOverflow = [ Something ]*
 
