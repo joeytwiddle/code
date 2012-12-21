@@ -29,22 +29,28 @@ Main=Expr _
 
 ## First attempt: Simple intuitive approach
 ## Causes a StackOverflow by recursively trying to match Add without consuming anything.
+##
+## However this is a correct description of the syntax.  The problem is our
+## search algorithm.
+##
+## A breadth-first search could find a solution before Add stack overflows, but
+## that does not fit with how we've been using the grammar for other languages.
 #
 # Expr = Add
-     # | Subtract
-     # | Multiply
-     # | Divide
-     # | Bit
-# 
+#      | Subtract
+#      | Multiply
+#      | Divide
+#      | Bit
+#
 # Add = Expr "+" Expr
 # build: "new Addition(" $1 "," $3 ")"
-# 
+#
 # Subtract = Expr "-" Expr
 # build: "new Subtraction(" $1 "," $3 ")"
-# 
+#
 # Multiply = Expr "*" Expr
 # build: "new Multiplication(" $1 "," $3 ")"
-# 
+#
 # Divide = Expr "/" Expr
 # build: "new Division(" $1 "," $3 ")"
 
@@ -53,11 +59,11 @@ Main=Expr _
 ## Second attempt: Lets make sure we consume something!
 ## The problem is, matching the operator separately from its operands will make
 ## it harder to do meaningful actions.
-# 
+#
 # Expr = Bit ( Operator Expr )*
-# 
+#
 # Operator = AddOp | SubOp | MultOp | DivOp
-# 
+#
 # AddOp = "+"
 # SubOp = "-"
 # MultOp = "*"
@@ -83,6 +89,20 @@ Main=Expr _
 ## If we consume Bit on the RHS of Multiply and Divide, this should grab what
 ## is needed.  But then we would need to build an Add(Add( structure, which is
 ## blocked because we dropped Expr from Add's LHS.
+
+## Our options for building that expression are:
+##
+##   Add( Add(1,Mult(5,3)), 4 )
+##
+##   Add( 1, Add(Mult(5,3),4) )
+##
+## Either way, we need to build an Add before (outside) the Mult.
+##
+## So we could allow Add on its LHS to look for the high-order precendence Mult.
+## But what if that Mult needs to consume an Add?  :f
+
+## This problem of needing to consume tokens before deciding what to do with
+## them appears in other parsers.  A common solution is to use lookahead.
 
 Expr = Multiply
      | Divide
@@ -110,13 +130,16 @@ Bit = _ Number _
 BracedExpr = "(" Expr ")"
 build: "new GroupedExpr(" $2 ")"
 
-Number = NegativeNumber | PositiveNumber | JustNumber
+Number = NegativeNumber | PositiveNumber | PlainNumber
 
 NegativeNumber = "-" JustNumber
 build: "new Number(-" $2 ")"
 
 PositiveNumber = "+" JustNumber
 build: "new Number(" $2 ")"
+
+PlainNumber = JustNumber
+build: "new Number(-" $1 ")"
 
 JustNumber = <numstr~"0123456789.">
 
