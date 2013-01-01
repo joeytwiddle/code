@@ -147,6 +147,23 @@ can pick up and work on the .uc, or squeeze "gcc -E" into your build process.
   actually it just logs to the standard log.  You have to grep out the
   [ChatLog] lines. :)
 
++ FixWeaponBalance (3rd generation)
+
+  Allows admin to tweak the damage dealt by various weapons.  Now applies
+  changes *before* armor absorption.
+
+  Admins who are logged in can try "mutate help".  The mod can be toggled with
+  "mutate fwb" and display live damage changes with "mutate fwbreport".
+  A summary of the current configuration is available on "mutate status".
+
+  All normal weapon damage can be configured in terms of "scaling".  There is
+  also a new feature bScaleSniperByDistance which aims to reward close-range
+  snipers and discourage long-range sniping.
+
+  See the mod's README for more info.
+
+  Released into the wild late Nov 2012.  Bugfixes may need to follow...  :)
+
 + PainSounds
 
   Hitsounds made from grunts and groans in the male and female sound packs.
@@ -192,59 +209,6 @@ can pick up and work on the .uc, or squeeze "gcc -E" into your build process.
   This means they will remain muted if they rejoin, and after mapswitch.
 
   Did not call it V17 - he can suck in my changes if he wants.
-
-~ FixWeaponBalance (3rd generation)
-
-  Allows admin to tweak the damage dealt by various weapons.  Note that as a
-  damage mutator it cannot affect armour absorption which remains normal, only
-  health damage remaining after absorption is affected.  A fix for that may
-  come soon.
-
-  FixWeaponBalance.FixWeaponBalance and FixWeaponBalance.FixWeaponBalanceZP
-  are identical mutators, but with different configurations, so on a server
-  with multiple modes you can use two different settings.
-
-  The defaults for FixWeaponBalance are for hardcore games (e.g. CTF) without
-  zeroping.  All weapons are left at 100% (use PureStats for TRI!) except for
-  the sniper which has reduced damage according to distance.  Withing 384um of
-  a player sniper damage remains normal; beyond 6144um sniper damage is fixed
-  at 12.  This reduces power to the minimum over the midfield of CTF-CelticLair
-  (a long open CTF map), and deals half damage to players half-way across.
-
-  The defaults for FixWeaponBalanceZP are intended for games with Zeroping and
-  non-hardcore mode (i.e. Siege).  Most projectile weapon damage is increased
-  by 10% whilst minugun and pulse are reduced (too powerful near superpros) and
-  sniper is also reduced (too powerful in zeroping).  Enforcer, shock and
-  ripper primary are left unaffected.  Damage done to buildings is unaffected.
-
-  If you think that's too much, try putting everything back to 100% but leaving
-  in the sniper distance dropoff and crouch bug fix.  This will stop rewarding
-  campers/retreaters and instead reward snipers who *move in for the kill*.
-
-  You could even increase sniper damage to hardcore level 150 at very close
-  range, whilst reducing the max range to remove that power from mid-range:
-
-    ; For non-hardcore mode, get hardcore power at close range,
-    ; then steady drop through the mid-range, then deal 16 beyond it.
-    SniperDamageScale=1.50   ; Scale Siege's 100 headshot up to 150
-    SniperPowerRange=256     ; Deal full damage within this range
-    SniperMaxRange=3072      ; Drop damage to minimum over mid range
-    SniperMinDamage=16       ; All long range shots deal this
-
-  Perhaps I should make the dropoff properly exponential.
-  To disable distance dropoff entirely, set SniperMaxRange=0
-
-  Admins who are logged in can try "mutate help".  The mod can be toggled with
-  "mutate fwb" and display live damage changes with "mutate fwbreport".
-
-  NewNet/UTProMod is also attempting to rebalance the weapons:
-
-    http://www.prounreal.org/forums/viewtopic.php?t=81140&postdays=0&postorder=asc&start=0&sid=831433b665e346683c2b24a6345777bd
-
-  Alternatives?  Another idea to rebalance weapons might be to change their
-  re-fire time.  That could be a separate mutator called WeaponsOverheat.
-
-  Also see NerfAmmo...
 
 ~ NerfAmmo
 
@@ -338,7 +302,7 @@ can pick up and work on the .uc, or squeeze "gcc -E" into your build process.
   A crazy weapon which allows you to pick up weapons, siege buildings and bots,
   and move them to other places (or throw them into space!).  Like the gun from
   Half Life.  Still some bugs in Siege (meshes do not update for other
-  players), and bots get stuck.
+  players), and bots get stuck.  No sound effects, but a proof-of-concept.
 
 ~ sgGrapple
 
