@@ -15,6 +15,14 @@
 #   Loops
 #   Define terminator symbol, e.g. "\n" | ";"
 
+# TODO:
+#
+# A nice parser might allow:
+#
+#     Aspect = "aspect" ! _ AspectName _* "{"
+#     error: "aspect should be followed by aspect's name then a curly"
+#     If we pass the ! but one of the later things fails, we will report the error.
+
 # This is not exactly minimal, but we'd like a nicer way to access the last
 # element in an array than l[l.length-1]
 
@@ -68,6 +76,7 @@ dintj: "\n/*" <comment> " */\n"
 # TODO: Parametrised classes (templates)
 ClassDefinition = "class" Space <className/" \n"> OptClassMods NL ClassBody
 dintj: "new ClassDefinition(!qt!" className "!qt!, " ClassBody ", !qt!" OptClassMods "!qt!)"
+java: "public class " <className> OptClassMods NL ClassBody
 
 OptClassMods = Space "extends" Space ClassRef
              | Space "implements" Space ClassRef
@@ -81,8 +90,15 @@ dintj: "[]"
 # TODO: I guess it will be "{" OWS DLangFileSome OWS "}"
 IndentedDLangBlock = DLangFileSome
 
-FunctionDefinition = <fnname/" ("> "(" ArgumentSignatureList ")" WS "=" WS FunctionBody
+FunctionDefinition = FunctionModifiers <fnname/" ("> "(" ArgumentSignatureList ")" WS "=" WS FunctionBody
 dintj: "new Function(!qt!" <fnname> "!qt!, {" ArgumentSignatureList "}, " FunctionBody ")"
+
+FunctionModifiers = PrivateFunctionModifier
+                  | NoFunctionModifier
+
+PrivateFunctionModifier = "private" Space
+
+NoFunctionModifier = WS
 
 FunctionBody = NiceCode | MutableCodeBlock
 
