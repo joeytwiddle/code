@@ -80,7 +80,11 @@ public class grmGrm extends GrammarHelper {
     //   Taken: * + ( ) [ ] $ = # @
     //   Available: ! ^ % & ~ _ - /
     // ^ is light on the eye (except in Lucida), so may be suitable for the most common MagicTokenOfEfficiency.
+    // ^ is used in RelUp, so may need to be treated differently in rules vs replacements.
     // But - _ and ~ are also quite light, and & is friendly and suggestive of continuation
+    // _ should probably be left as the user-definable whitespace (the language may or may not want to consume '\n' here)
+    // Then we might want to leave - also, as the user-definable non-optional whitespace?
+    // NL seems sensible for forced-newline (Grammar Authors: use this as a command separator, not a command *terminator*, or you may fail to consume the last line of a file if it EOFs without newlining!)  Perhaps one day we might allow an EOF symbol, allowing: NL = "\r" | "\n" | EOF
     // ! and ^ are suitable for the DoNotMatch condition.
     // The association of ! with warnings makes it a good candidate for MagicTokenOfDoom.
     // We can also consider different meanings for &, && and &&&.
@@ -117,6 +121,11 @@ public class grmGrm extends GrammarHelper {
     // OptDefnPostAndOr = DefnPostOr | DefnPostAnd | ""
     // DefnPostOr = "|" Defn
     // DefnPostAnd = Defn
+
+    // TODO: A meta tag such as @bean or @expose could specify that a class should
+    // be generated for this particular Atom, which will be populated if the parser
+    // is run in that mode.  Fields could be marked with a magic char e.g. % to
+    // indicate they should be exposed (and unmarked ones not).
 
     .with("Main", new RuleSet("Main", Arrays.asList(
         Arrays.asList( new Type[]{ new Atom("GrammarDefn") } )
@@ -536,6 +545,16 @@ public class grmGrm extends GrammarHelper {
     // OneFuncArg atom in the sub-matches found.  The secondary arg can act the same
     // way, making it more powerful than join(";\n") which can only output a string.
     // (In other words our delimiters can be complex rules, and their output too.)
+    //
+    // In Java's parser they use:
+    //
+    //   {"," TypeParameter}
+    //
+    // I guess that's equivalent to our:
+    //
+    //   ("," TypeParameter)*
+    //
+    // but this does consume the first param, which is what I wanted.
 
     // CONSIDER: Could we put = BasicElement RepeatMarker | ... at the top?
     // No, again that's inf recursive.  But we could try:
@@ -697,6 +716,10 @@ public class grmGrm extends GrammarHelper {
 
     // I think Var is a VarReference - cannot be used for parsing (no terminal
     // condition!) but is used in replacements.
+
+    // Hmmm really a VarRef might contain "." as it may be a reference to a packaged
+    // var, whereas a VarIndentifier may not contain a "."  Hmm see AtomRef AtomName
+    // and PackagedAtomName already!
 
     .with("VarRef", new RuleSet("VarRef", Arrays.asList(
         Arrays.asList( new Type[]{ new Text("<"), new Var("varname","<>\n\"/ ~"), new Text(">") } )
@@ -933,10 +956,8 @@ public class grmGrm extends GrammarHelper {
       )
     ))
 
-    .with("ManyNothingsProbablyStackOverflow", new RuleSet("ManyNothingsProbablyStackOverflow", Arrays.asList(
-        Arrays.asList( new Type[]{ new RepeatedRule(new RepeatedRule(new Atom("Something"),0,1),"*") } )
-      )
-    ))
+    // ManyNothingsProbablyStackOverflow = [ Something ]*
+    // java: `System.out.println("Hello World!");`
 
 
     );

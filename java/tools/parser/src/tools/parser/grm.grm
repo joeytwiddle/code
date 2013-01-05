@@ -68,7 +68,11 @@
 #   Taken: * + ( ) [ ] $ = # @
 #   Available: ! ^ % & ~ _ - /
 # ^ is light on the eye (except in Lucida), so may be suitable for the most common MagicTokenOfEfficiency.
+# ^ is used in RelUp, so may need to be treated differently in rules vs replacements.
 # But - _ and ~ are also quite light, and & is friendly and suggestive of continuation
+# _ should probably be left as the user-definable whitespace (the language may or may not want to consume '\n' here)
+# Then we might want to leave - also, as the user-definable non-optional whitespace?
+# NL seems sensible for forced-newline (Grammar Authors: use this as a command separator, not a command *terminator*, or you may fail to consume the last line of a file if it EOFs without newlining!)  Perhaps one day we might allow an EOF symbol, allowing: NL = "\r" | "\n" | EOF
 # ! and ^ are suitable for the DoNotMatch condition.
 # The association of ! with warnings makes it a good candidate for MagicTokenOfDoom.
 # We can also consider different meanings for &, && and &&&.
@@ -470,6 +474,10 @@ java: "+"
 # I think Var is a VarReference - cannot be used for parsing (no terminal
 # condition!) but is used in replacements.
 
+# Hmmm really a VarRef might contain "." as it may be a reference to a packaged
+# var, whereas a VarIndentifier may not contain a "."  Hmm see AtomRef AtomName
+# and PackagedAtomName already!
+
 VarRef = "<" <varname/"<>\n!qt!/ ~"> ">"
 java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"
 hugs: "Var !qt!" <varname> "!qt!"
@@ -603,6 +611,6 @@ RegexpCharBlock = "\\" AnyOneChar RegexpCharBlock
 
 DummyTestRule = ( DummyTestContents )
 
-ManyNothingsProbablyStackOverflow = [ Something ]*
-java: `System.out.println("Hello World!");`
+# ManyNothingsProbablyStackOverflow = [ Something ]*
+# java: `System.out.println("Hello World!");`
 
