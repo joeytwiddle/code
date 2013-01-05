@@ -27,6 +27,14 @@ public class dlangGrm extends GrammarHelper {
     //   Loops
     //   Define terminator symbol, e.g. "\n" | ";"
 
+    // TODO:
+    //
+    // A nice parser might allow:
+    //
+    //     Aspect = "aspect" ! _ AspectName _* "{"
+    //     error: "aspect should be followed by aspect's name then a curly"
+    //     If we pass the ! but one of the later things fails, we will report the error.
+
     // This is not exactly minimal, but we'd like a nicer way to access the last
     // element in an array than l[l.length-1]
 
@@ -114,6 +122,7 @@ public class dlangGrm extends GrammarHelper {
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new ClassDefinition(\"") , new Atom("className") , new Text("\", ") , new Atom("ClassBody") , new Text(", \"") , new Atom("OptClassMods") , new Text("\")")))
+        .with("java", Arrays.asList(new Text("public class ") , new Var("className") , new Atom("OptClassMods") , new Atom("NL") , new Atom("ClassBody")))
     ))
 
     .with("OptClassMods", new RuleSet("OptClassMods", Arrays.asList(
@@ -140,11 +149,27 @@ public class dlangGrm extends GrammarHelper {
     ))
 
     .with("FunctionDefinition", new RuleSet("FunctionDefinition", Arrays.asList(
-        Arrays.asList( new Type[]{ new Var("fnname"," ("), new Text("("), new Atom("ArgumentSignatureList"), new Text(")"), new Atom("WS"), new Text("="), new Atom("WS"), new Atom("FunctionBody") } )
+        Arrays.asList( new Type[]{ new Atom("FunctionModifiers"), new Var("fnname"," ("), new Text("("), new Atom("ArgumentSignatureList"), new Text(")"), new Atom("WS"), new Text("="), new Atom("WS"), new Atom("FunctionBody") } )
       ),
         /* Replacements */
         new LiteralMap()
         .with("dintj", Arrays.asList(new Text("new Function(\"") , new Var("fnname") , new Text("\", {") , new Atom("ArgumentSignatureList") , new Text("}, ") , new Atom("FunctionBody") , new Text(")")))
+    ))
+
+    .with("FunctionModifiers", new RuleSet("FunctionModifiers", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("PrivateFunctionModifier") } ),
+        Arrays.asList( new Type[]{ new Atom("NoFunctionModifier") } )
+      )
+    ))
+
+    .with("PrivateFunctionModifier", new RuleSet("PrivateFunctionModifier", Arrays.asList(
+        Arrays.asList( new Type[]{ new Text("private"), new Atom("Space") } )
+      )
+    ))
+
+    .with("NoFunctionModifier", new RuleSet("NoFunctionModifier", Arrays.asList(
+        Arrays.asList( new Type[]{ new Atom("WS") } )
+      )
     ))
 
     .with("FunctionBody", new RuleSet("FunctionBody", Arrays.asList(
