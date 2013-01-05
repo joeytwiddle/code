@@ -110,6 +110,18 @@
 # DefnPostOr = "|" Defn
 # DefnPostAnd = Defn
 
+# We may eventually desire a look-ahead exclusion, i.e. "not".
+# e.g.
+#
+#     VarName = ^ Number+
+#             & (Alphanum)*
+#
+# would mean "if we see a Number+ here, break out of whole rule, otherwise
+# (provided we don't see a Number+) we jump over the & and test the remaining
+# rules.  Prolog can work a bit like this.  There is no reason we shouldn't, if
+# it can be shown to be useful for grammar expression, and/or improve parsing
+# speed.
+
 # TODO: A meta tag such as @bean or @expose could specify that a class should
 # be generated for this particular Atom, which will be populated if the parser
 # is run in that mode.  Fields could be marked with a magic char e.g. % to
