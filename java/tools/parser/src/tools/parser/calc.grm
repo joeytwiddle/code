@@ -103,24 +103,80 @@ Main=Expr _
 
 ## This problem of needing to consume tokens before deciding what to do with
 ## them appears in other parsers.  A common solution is to use lookahead.
+# 
+# Expr = Multiply
+     # | Divide
+     # | Add
+     # | Subtract
+     # | Bit
+# 
+# Add = Bit "+" Expr
+# build: "new Addition(" $1 "," $3 ")"
+# 
+# Subtract = Bit "-" Expr
+# build: "new Subtraction(" $1 "," $3 ")"
+# 
+# Multiply = Bit "*" Expr
+# build: "new Multiplication(" $1 "," $3 ")"
+# 
+# Divide = Bit "/" Expr
+# build: "new Division(" $1 "," $3 ")"
 
-Expr = Multiply
-     | Divide
-     | Add
-     | Subtract
-     | Bit
 
-Add = Bit "+" Expr
-build: "new Addition(" $1 "," $3 ")"
 
-Subtract = Bit "-" Expr
-build: "new Subtraction(" $1 "," $3 ")"
+## Fourth attempt: Try to consume bit first, expression second?
+## This seems to work on valid expressions.  Invalid expressions will drop down
+## and recursively explore Expr with consuming anything, until a stack
+## overflow.  This condition could be detected and aborted by the parser.
+## And if done, we could return to the earlier grammar definitions.
+## Although cycles through Expr are separated by intermediary rules, the key
+## thing to notice is re-evaluation of an Atom type before anything is consumed.
+## We may want to retain such Vectors in case the rule backtracks, but we
+## should also take note of their memory constraints, in case we never clear
+## them!  Perhaps a marker should be used to indicate where they are needed, or
+## where they may be cleared.
+## We can't *just* fail when a cycle is detected, in case it is actually one of
+## the needed cycles.  (E.g. (7*4 + 3) * 9)
 
-Multiply = Bit "*" Expr
-build: "new Multiplication(" $1 "," $3 ")"
+# Expr = Bit "*" Expr
+#      | Bit "/" Expr
+#      | Bit "+" Expr
+#      | Bit "-" Expr
+#      | Bit
+#      | Expr "*" Expr
+#      | Expr "/" Expr
+#      | Expr "+" Expr
+#      | Expr "-" Expr
+# 
+# Multiply = Bit "*" Expr | Expr "*" Expr
+# build: "new Multiplication(" $1 "," $3 ")"
+# 
+# Divide = Bit "/" Expr
+# build: "new Division(" $1 "," $3 ")"
+# 
+# Add = Bit "+" Expr
+# build: "new Addition(" $1 "," $3 ")"
+# 
+# Subtract = Bit "-" Expr
+# build: "new Subtraction(" $1 "," $3 ")"
 
-Divide = Bit "/" Expr
-build: "new Division(" $1 "," $3 ")"
+
+
+## Fifth attempt - Hierarchical
+
+Expr = _ HighOrderThing _ (LowOrderOpGroup)*
+
+LowOrderOpGroup = "+" _ HighOrderThing _
+                | "-" _ HighOrderThing _
+build: "new Operator(" $1 ", " HighOrderThing ")"
+
+HighOrderThing = NotExpr _ (HighOrderOpGroup)*
+
+HighOrderOpGroup = "*" _ NotExpr _
+                 | "/" _ NotExpr _
+build: "new Operator(" $1 ", " NotExpr ")"
+
+NotExpr = "(" _ Expr _ ")" _ | Bit _
 
 
 
@@ -135,11 +191,10 @@ Number = NegativeNumber | PositiveNumber | PlainNumber
 NegativeNumber = "-" JustNumber
 build: "new Number(-" $2 ")"
 
-PositiveNumber = "+" JustNumber
-build: "new Number(" $2 ")"
+PositiveNumber = "+" JustNumber | JustNumber
+build: "new Number(" JustNumber ")"
 
 PlainNumber = JustNumber
-build: "new Number(-" $1 ")"
 
 JustNumber = <numstr~"0123456789.">
 
