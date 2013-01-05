@@ -51,7 +51,7 @@ cp -a "$gdir"/grmGrm.java "$gdir"/grmGrm.java.previous
 rm -f "$gdir"/grmGrm.java.2
 
 info "Converting grammar into javadecl ruleset"
-jparse grm "$gdir"/grm.grm javadecl "$@" > "$gdir"/grmGrm.java || failandquit
+./jparse grm "$gdir"/grm.grm javadecl "$@" > "$gdir"/grmGrm.java || failandquit
 [ "$?" = 0 ] || failandquit
 if [ "$1" = "debug" ]; then
   edit "$gdir"/grmGrm.java
@@ -62,7 +62,7 @@ info "Compiling new grammar"
 ./build.sh || failandquit
 
 info "Test: Converting using new grammar"
-jparse grm "$gdir"/grm.grm javadecl $@ > "$gdir"/grmGrm.java || failandquit
+./jparse grm "$gdir"/grm.grm javadecl $@ > "$gdir"/grmGrm.java || failandquit
 if [ "$1" = "debug" ]; then
   edit "$gdir"/grmGrm.java
 fi
@@ -81,7 +81,7 @@ info "Test: Convert once again"
 ./build.sh || failandquit
 
 info "Creating final ruleset to compare"
-jparse grm "$gdir"/grm.grm javadecl $@ > "$gdir"/grmGrm.java.2 || failandquit "$gdir"/grmGrm.java.2
+./jparse grm "$gdir"/grm.grm javadecl $@ > "$gdir"/grmGrm.java.2 || failandquit "$gdir"/grmGrm.java.2
 if [ "$1" = "debug" ]; then
   edit "$gdir"/grmGrm.java
 fi

@@ -2,21 +2,16 @@
 
 set -e
 
-# I use the jparse wrapper to call the parser.  You may not have it, so...
-if !which jparse >/dev/null 2>&1
-then
-	buildPath="$PWD/build"
-	jparse() {
-		java -cp "$buildPath" tools.parser.Parser "$@"
-	}
-fi
-
 ./newgrammar
 
+echo "Build all the grammars."
+./creategrammar c
+./creategrammar marff
+./creategrammar xml
 # ./creategrammar dlang
-# jparse dlang spiral.d
-
+# ./jparse dlang spiral.d
 ./test_dlang
+./test_calc
 
 echo
 echo
@@ -27,11 +22,4 @@ tar cfz last_working_build.tgz src/ bin/ &
 mkdir -p backups
 cp -f ./last_working_build.tgz backups/last_working_build.tgz
 rotate -keep -nozip -max 5 backups/last_working_build.tgz
-
-echo "Build all the grammars."
-./creategrammar c
-./creategrammar marff
-./creategrammar xml
-# ./creategrammar dlang
-./creategrammar calc && jparse calc testdata/calculator_expression_1.txt build
 
