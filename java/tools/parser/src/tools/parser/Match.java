@@ -66,7 +66,7 @@ public class Match {
 	}
 
 	public String toString() { // temporary (can be removed)
-		return "Match: " + type + " = \"" + Atom.strip(string) + "\"";
+		return "Match: " + type + " = \"" + StringHelpers.strip(string) + "\"";
 		// FakeOutputStream out=new FakeOutputStream();
 		// render(new PrintStream(out),"");
 		// return out.store.toString();
@@ -84,7 +84,7 @@ public class Match {
 		// boolean hideMatchedText = (matches!=null && matches.size()>0);
 		boolean hideMatchedText = false;
 		
-		String matchedText = ( hideMatchedText ? "" : "\"" + Atom.strip("" + string) + "\" " );
+		String matchedText = ( hideMatchedText ? "" : "\"" + StringHelpers.strip("" + string) + "\" " );
 		
 		if (!hideme)
 			out.print(ind + type + " = " + matchedText);

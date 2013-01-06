@@ -42,7 +42,7 @@ public class Text implements Type {
 	}
 
 	public String toString() {
-		return "\"" + Atom.strip(text) + "\"";
+		return "\"" + StringHelpers.strip(text) + "\"";
 	}
 
 	/* Only relevant in MagicType
