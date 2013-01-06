@@ -1,5 +1,32 @@
 Main=Expr _
 
+## Common:
+
+Bit = _ Number _
+    | _ BracedExpr _
+
+BracedExpr = "(" Expr ")"
+build: "new GroupedExpr(" $2 ")"
+
+Number = NegativeNumber | PositiveNumber | PlainNumber
+
+NegativeNumber = "-" JustNumber
+build: "new Number(-" $2 ")"
+
+PositiveNumber = "+" JustNumber | JustNumber
+build: "new Number(" JustNumber ")"
+
+PlainNumber = JustNumber
+
+JustNumber = <numstr~"0123456789.">
+
+_ = (" "|"\n")*
+build: ""
+
+# We just need to do now is define Expr.
+
+
+
 # So it turns out, after reigning in the backtrack algorithm, whilst we can
 # parse some advanced languages fine, parsing a simple infix calculator is not
 # so trivial!
@@ -162,42 +189,49 @@ Main=Expr _
 
 
 
-## Fifth attempt - Hierarchical
+# ## Fifth attempt - Hierarchical
+# 
+# Expr = _ HighOrderThing _ (LowOrderOpGroup)*
+# 
+# LowOrderOpGroup = "+" _ HighOrderThing _
+                # | "-" _ HighOrderThing _
+# 
+# HighOrderThing = NotExpr _ (HighOrderOpGroup)*
+# 
+# HighOrderOpGroup = "*" _ NotExpr _
+                 # | "/" _ NotExpr _
+# new Operator
+# 
+# NotExpr = "(" _ Expr _ ")" _ | Bit _
 
-Expr = _ HighOrderThing _ (LowOrderOpGroup)*
+
+
+## Sixth attempt - Hierarchical reshaped
+
+Expr = LowOrderGroup
+
+LowOrderGroup = _ HighOrderThing _ (LowOrderOpGroup)*
 
 LowOrderOpGroup = "+" _ HighOrderThing _
                 | "-" _ HighOrderThing _
-build: "new Operator(" $1 ", " HighOrderThing ")"
+build: "new LLOperator(" $1 ", " HighOrderThing ")"
 
-HighOrderThing = NotExpr _ (HighOrderOpGroup)*
+HighOrderThing = HighOrderOperation
+               | NotExpr _
+
+HighOrderOperation = NotExpr _ (HighLvlOp _ NotExpr)*
+build: $3 NotExpr ", " $3 "), "
+# Dang.  We want out output the HLOs first, then the first NoExpr, then the other NotExprs
+# Perhaps we could switch target: $3:buildHLOps $1 $3:buildNEs
+# Currently it gets the operators in the right order, yay, but not the NotExprs!
+
+HighLvlOp = ("*"|"/")
+build: "new HLOperator(!qt!" $1 "!qt!, "
 
 HighOrderOpGroup = "*" _ NotExpr _
                  | "/" _ NotExpr _
-build: "new Operator(" $1 ", " NotExpr ")"
 
 NotExpr = "(" _ Expr _ ")" _ | Bit _
 
 
-
-Bit = _ Number _
-    | _ BracedExpr _
-
-BracedExpr = "(" Expr ")"
-build: "new GroupedExpr(" $2 ")"
-
-Number = NegativeNumber | PositiveNumber | PlainNumber
-
-NegativeNumber = "-" JustNumber
-build: "new Number(-" $2 ")"
-
-PositiveNumber = "+" JustNumber | JustNumber
-build: "new Number(" JustNumber ")"
-
-PlainNumber = JustNumber
-
-JustNumber = <numstr~"0123456789.">
-
-_ = (" "|"\n")*
-build: ""
 
