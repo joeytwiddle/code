@@ -219,7 +219,7 @@ build: "new LLOperator(" $1 ", " HighOrderThing ")"
 HighOrderThing = HighOrderOperation
                | NotExpr _
 
-HighOrderOperation = NotExpr _ (HighLvlOp _ NotExpr)*
+HighOrderOperation = NotExpr _ (HighLvlOp _ NotExpr)+
 build: $3 NotExpr ", " $3 "), "
 # Dang.  We want out output the HLOs first, then the first NoExpr, then the other NotExprs
 # Perhaps we could switch target: $3:buildHLOps $1 $3:buildNEs
