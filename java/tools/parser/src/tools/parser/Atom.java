@@ -106,17 +106,21 @@ public class Atom implements MagicType {
 		type = t;
 	}
 
-	public static String strip(SomeString s) {
-		return strip(s.toString());
+
+	public RuleSet getRuleset(ParseContext ctx) {
+		RuleSet rs = ctx.getGrammar().getrulesetforatom(type, ctx);
+		// No.
+		// This is not a resolved Atom. It is an UnresolvedAtom (but for the
+		// moment we shall continue to call it Atom.)
+		// As such it should have been built *with* a context.
+		// Later, things which own UnresolvedAtoms may upgrade them to
+		// ResolvedAtoms (direct logical links, no need for String references),
+		// which are faster. Both could implement Atom interface, or we could
+		// make them separate, if we are resolved to build a new, neater
+		// structure (trickling up through ResolvedRuleset to ResolvedGrammar).
+		return rs;
 	}
 
-	public static String strip(String s) {
-		int max = 20;
-		if (s.length() > max)
-		   s = JString.left(s, max) + "..." + (s.length() - max);
-		s = JString.replace(s, "\n", "\\n");
-		return s;
-	}
 
 	public Match match(SomeString s, ParseContext ctx) {
 		
@@ -133,7 +137,7 @@ public class Atom implements MagicType {
 		// The ruleset could be locally cached, or even loaded in a post-load
 		// stage, but what it can't be is loaded on instantiation, because the
 		// grammar is not complete at that time.
-		RuleSet rs = ctx.getGrammar().getrulesetforatom(type, ctx);
+		RuleSet rs = getRuleset(ctx);
 
 		if (rs == null) {
 			throw new Error("Failed to find ruleset for atom type \""+type+"\"");
