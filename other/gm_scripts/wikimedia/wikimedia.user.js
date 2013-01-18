@@ -21,6 +21,7 @@
 
 var numToRemember = 100;
 var numToShow = 10;
+var minHoursForBreak = 4;
 
 // Release notes
 // =============
@@ -43,25 +44,25 @@ var delayBeforeRunning = 2200;
 // Check if GM_getValue is missing, OR is Chrome's "not supported" function.
 var GM_test;
 try {
-	GM_test = ""+window.GM_getValue;
+   GM_test = ""+window.GM_getValue;
 } catch (e) {
-	// Greasemonkey: can't convert window.GM_getValue to primitive type
-	// because: window.GM_getValue.toString is not a function
-	// GM_log("Getting GM_test: "+e);
+   // Greasemonkey: can't convert window.GM_getValue to primitive type
+   // because: window.GM_getValue.toString is not a function
+   // GM_log("Getting GM_test: "+e);
 }
 if (typeof GM_getValue !== 'function' || (""+GM_test).indexOf("not supported")>=0) {
-	GM_log("[Wikimedia+] Adding localStorage implementation of GMget/setValue for Chrome.");
-	if (localStorage) {
-		// We add and remove leading "s" to match records saved/loaded via FallbackGMAPI.
-		// This stops the bookmarklet-loaded version from trashing the userscript version's values.
-		window.GM_getValue=function (key,def) {
-			return (""+localStorage.getItem(key)).replace(/^s/,'') || def;
-		};
-		this.GM_setValue=function (key,value) {
-			localStorage.setItem(key, "s"+value);
-			return value;
-		};
-	}
+   GM_log("[Wikimedia+] Adding localStorage implementation of GMget/setValue for Chrome.");
+   if (localStorage) {
+      // We add and remove leading "s" to match records saved/loaded via FallbackGMAPI.
+      // This stops the bookmarklet-loaded version from trashing the userscript version's values.
+      this.GM_getValue=function (key,def) {
+         return (""+localStorage.getItem(key)).replace(/^s/,'') || def;
+      };
+      this.GM_setValue=function (key,value) {
+         localStorage.setItem(key, "s"+value);
+         return value;
+      };
+   }
 }
 
 setTimeout(function()
@@ -69,6 +70,7 @@ setTimeout(function()
    var pref = "userscripts.org.wikimediaplus.history";
    var titleKey = pref + ".title.";
    var urlKey = pref + ".url.";
+   var dateKey = pref + ".date.";
    var limit = 12;
    var read = function()
    {
@@ -78,6 +80,7 @@ setTimeout(function()
          var o = new Object();
          o.title = GM_getValue(titleKey + i, null);
          o.url = GM_getValue(urlKey + i, null);
+         o.date = parseFloat(GM_getValue(dateKey + i, null));
          if(o.title == null || o.url == null)
             continue;
          if(o.title.length == 0 || o.url.length == 0)
@@ -96,16 +99,19 @@ setTimeout(function()
             o = new Object();
             o.title = "";
             o.url = "";
+            o.date = 0;
          }
          GM_setValue(titleKey + i, o.title);
          GM_setValue(urlKey + i, o.url);            
+         GM_setValue(dateKey + i, ""+o.date);            
       }
    };
-   var addHist = function(url, title, a)
+   var addHist = function(url, title, date, a)
    {         
       var o = new Object();
       o.url = url;
       o.title = title;
+      o.date = date;
       a.unshift(o);
       var b = new Array();
       for(var i in a)
@@ -134,6 +140,9 @@ setTimeout(function()
       return strValue(loc.protocol) + "//" + strValue(loc.hostname) 
          + strValue(loc.port) + strValue(loc.pathname) + strValue(loc.search);
    };
+   var recordDatesDifferEnough = function(newer,older) {
+      return (newer && older && newer.date && older.date && newer.date - older.date > minHoursForBreak*1000*60*60);
+   }
    var titleStr = document.title;
    var dash = titleStr.indexOf (' - ');
    titleStr = titleStr.substring(0,dash);
@@ -143,7 +152,7 @@ setTimeout(function()
    var hist = read();
    // GM_log("[Wikimedia+] Got "+hist.length+" recent entries.");
    if(document.location.search.indexOf("&action=edit") < 0 && document.location.search.indexOf("&printable=yes") < 0)
-      hist = addHist(newHistoryItem, titleStr, hist);
+      hist = addHist(newHistoryItem, titleStr, new Date().getTime(), hist);
    store(hist);
    function myEscape(str) {
       return str.replace('"','&quot;','g').replace('<','&lt;','g').replace('>','&gt;','g');
@@ -155,12 +164,17 @@ setTimeout(function()
    {
       var o = hist[x];
       if (o) {   // early users have little history
-         s += listItem(o.url, o.title);
+         s += listItem(o.url, o.title, o.date);
+      }
+      if (recordDatesDifferEnough(o,hist[x+1])) {
+         s += "<hr>";
       }
    }
    s += '</ul></div></div>';
    var indentLaterLines = 'padding-left: 1.5em; text-indent: -1.5em;';
-   var reduceSidebarFontSize = 'div#mw-panel div.portal div.body ul li { font-size: 0.8em; }';
+   // Note that MediaWiki sites (but not Wikipedia) augument this rule with: .portlet ul { font-size: 95%; }
+   var reduceSidebarFontSize = 'div#mw-panel div.portal div.body ul li { font-size: 0.7em; }';
+   reduceSidebarFontSize += ' .portlet ul { font-size: 100%; }';
    s += '<style type="text/css"> .pBody { font-size: 0.7em; } div.pBody li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } '+reduceSidebarFontSize+' </style>';
    var e = document.createElement ("div");
    e.innerHTML = s;
@@ -192,8 +206,11 @@ setTimeout(function()
                   // I tried to set innerHTML of the fragment after building a
                   // big string as above, but the items did not appear.
                   var div = document.createElement("div");
-                  div.innerHTML = listItem(o.url, o.title);
+                  div.innerHTML = listItem(o.url, o.title, o.date);
                   fragment.appendChild(div);
+                  if (recordDatesDifferEnough(o,hist[i+1])) {
+                     fragment.appendChild(document.createElement("hr"));
+                  }
                }
             }
             targetUL.appendChild(fragment);
