@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Title Youtube Locations
 // @namespace      TYTLs
-// @description    Forces all YouTube pages to put the video title in the Location Bar.  Now with extra undocumented features addScrollbars and animateThumbnails!
+// @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -78,16 +78,16 @@ if (addScrollbars) {
 		if (document.location.href.indexOf("/all_comments?") >= 0) {
 			return;   // Leave the full comments page alone.
 		}
-		var watchDiscussion = document.getElementById("watch-discussion");
+		var watchDiscussion = document.getElementById("watch-discussion") || document.getElementById("watch7-content");
 		if (watchDiscussion) {
-			var roomForComments = window.innerHeight - 574;
+			var roomForComments = window.innerHeight - 530;
 			if (roomForComments < 200) {
 				roomForComments = 200;
 			}
 			watchDiscussion.style.overflow = "auto";
 			watchDiscussion.style.maxHeight = roomForComments+"px"; /* For a video height 360p */
 		}
-		var watchSidebar = document.getElementById("watch-sidebar");
+		var watchSidebar = document.getElementById("watch-sidebar") || document.getElementById("watch7-sidebar");
 		if (watchSidebar) {
 			watchSidebar.style.overflow = "auto";
 			watchSidebar.style.maxHeight = (window.innerHeight - 26)+"px";
@@ -99,16 +99,19 @@ if (addScrollbars) {
 			// TODO BUG: Why does this work in the console, but not from the userscript?
 			// document.getElementById("watch-main").style.width = (960+24)+"px";
 		}
-		// Title text
-		//document.getElementById("eow-title").scrollIntoView();
-		// Uploader info and videolist popdown.
-		//document.getElementById("watch-headline-user-info").scrollIntoView();
-		// The author's video list (was supposed to be a small gap above the video when collapsed, but it's not)
-		document.getElementById("watch-more-from-user").scrollIntoView();
-		// The video
-		//document.getElementsByTagName("embed")[0].scrollIntoView();
-		// The video
-		//document.getElementById("watch-video").scrollIntoView();
+		//// Title text
+		// document.getElementById("eow-title").scrollIntoView();
+		//// Uploader info and videolist popdown.
+		// document.getElementById("watch-headline-user-info").scrollIntoView();
+		//// The author's video list (was supposed to be a small gap above the video when collapsed, but it's not)
+		// document.getElementById("watch-more-from-user").scrollIntoView();
+		//// The video
+		// document.getElementsByTagName("embed")[0].scrollIntoView();
+		//// The video
+		// document.getElementById("watch-video").scrollIntoView();
+		// document.getElementById("watch7-video").scrollIntoView();
+		//// Slight gap above the video (I prefer that)
+		document.getElementById("watch7-container").scrollIntoView();
 	},1000);
 
 }
