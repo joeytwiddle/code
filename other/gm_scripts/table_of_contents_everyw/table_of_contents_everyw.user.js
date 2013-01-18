@@ -6,7 +6,8 @@
 // @include        https://*/*
 // ==/UserScript==
 
-var minimumItems = 4;   // Don't display a TOC for fewer than this number of entries.
+var minimumItems = 4;    // Don't display a TOC for fewer than this number of entries.
+var maximumItems = 800;  // Don't display a TOC for more than this number of entries.
 var delayBeforeRunning = 1600;
 var showAnchors = true;
 var pushAnchorsToBottom = true;   // They can look messy interspersed amongst TOC tree
@@ -150,8 +151,9 @@ if (!String.prototype.trim) {
 
 
 
-// The following mirrored in wikiindent.user.js
+// The following block is mirrored in wikiindent.user.js
 
+// See also: resetProps
 function clearStyle(elem) {
 	// We set some crucial defaults, so we don't inherit CSS from the page:
 	elem.style.display = 'inline';
@@ -162,6 +164,9 @@ function clearStyle(elem) {
 	elem.style.left = 'auto';
 	elem.style.color = 'black';
 	elem.style.backgroundColor = 'white';
+	elem.style.border = '0px solid magenta';
+	elem.style.padding = '0px';
+	elem.style.margin = '1px';
 	return elem;
 }
 
@@ -269,6 +274,8 @@ function addButtonsConditionally(toc) {
 
 }
 
+// End mirror.
+
 
 
 // == Main == //
@@ -280,11 +287,17 @@ function buildTableOfContents() {
 	var anchors = "//a[@name]";
 	// For coffeescript.org:
 	var elementsMarkedAsHeader = "//*[@class='header']";
-	var nodeSnapshot = document.evaluate(headers+(showAnchors?"|"+anchors:"")+"|"+elementsMarkedAsHeader,document,null,6,null);
+	// However on many sites that might be the thing opposite the footer, and probably not of note.
+
+	var xpathQuery = headers+(showAnchors?"|"+anchors:"")+"|"+elementsMarkedAsHeader;
+	var nodeSnapshot = document.evaluate(xpathQuery,document,null,6,null);
 	//// Chrome needs lower-case 'h', Firefox needs upper-case 'H'!
 	// var nodeSnapshot = document.evaluate("//*[starts-with(name(.),'h') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
 	// var nodeSnapshot = document.evaluate("//*[starts-with(name(.),'H') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
-	if (nodeSnapshot.snapshotLength > minimumItems) {
+
+	if (nodeSnapshot.snapshotLength > maximumItems) {
+		GM_log("[TOCE] Too many nodes for table (sanity): "+nodeSnapshot.snapshotLength);
+	} else if (nodeSnapshot.snapshotLength >= minimumItems) {
 
 		GM_log("[TOCE] Making TOC with "+nodeSnapshot.snapshotLength+" nodes.");
 
@@ -293,12 +306,14 @@ function buildTableOfContents() {
 
 		// var heading = newSpan("Table of Contents");
 		var heading = clearStyle(newNode("h2",{textContent:"Table of Contents"}));
+		heading.id = 'toctitle';   // Like Wikipedia
 		heading.style.fontWeight = "bold";
 		heading.style.fontSize = "100%";
 		toc.appendChild(heading);
 
 		var table = newNode("div");
 		// addHideButtonTo(toc,table);
+		table.id = 'toctable';   // Our own
 		toc.appendChild(table);
 
 		// We need to do this *after* adding the table.
@@ -386,6 +401,8 @@ function buildTableOfContents() {
 				liType = "div";
 			}
 			var li = newNode(liType);
+			// clearStyle(li); // display:inline; is bad on LIs!
+			// li.style.display = 'list-item';   // not working on Github
 			link.parentNode.replaceChild(li,link);
 			if (node.tagName == "A") {
 				li.appendChild(document.createTextNode("\u2693 "));
@@ -427,15 +444,30 @@ function postTOC(toc) {
 		// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
 		// FIXED: Some of the sub-trees are so long that they also get scrollbars, which is a bit messy!
 		// FIXED : max-width does not do what I want!  To see, find a TOC with really wide section titles (long lines).
+
+		// Also in Related_Links_Pager.user.js
+		// See also: clearStyle
+		var resetProps = " width: auto; height: auto; max-width: none; max-height: none; ";
+
 		if (toc.id === "") {
 			toc.id = "toc";
 		}
 		var tocID = toc.id;
-		// TODO: If we can cleanly separate them, we might want to make put a scrollbar on the content element, leaving the title outside it.
-		GM_addStyle("#"+tocID+" { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; max-height: 80%; max-width: 32%; overflow: auto; }"
+		GM_addStyle("#"+tocID+" { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; "+resetProps+" }" // max-height: 80%; max-width: 32%; overflow: auto; 
 			+ "#"+tocID+"       { opacity: 0.2; }"
 			+ "#"+tocID+":hover { opacity: 1.0; }"
 		);
+		GM_addStyle("#"+tocID+" > * { "+resetProps+" }");
+
+		var maxWidth = window.innerWidth * 0.40 | 0;
+		var maxHeight = window.innerHeight * 0.80 | 0;
+
+		var table = document.getElementById("toctable");
+		table = table || toc.getElementsByTagName("ul")[0];   // Wikipedia
+		table = table || toc;   // Give up, set for whole element
+		table.style.overflow = 'auto';
+		table.style.maxWidth = maxWidth+"px";
+		table.style.maxHeight = maxHeight+"px";
 
 	}
 }
