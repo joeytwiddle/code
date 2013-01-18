@@ -37,17 +37,30 @@ try {
 }
 
 function checkNode(node) {
+
+	var words = [ "width", "maxWidth" ]; // Chrome offers both but "max-width" cannot be written (DOM Exception 7 NO_MODIFICATION_ALLOWED_ERR)!
+	if (node.tagName == "IMG") {
+		return;
+	}
 	var rules = getComputedStyle(node);
 	if (rules) {
 		// for (var i=0;i<rules.length;i++) {
-			// if (rule[i] == "width") {
-			// }
+		// 	if (rule[i] == "width") {
+		// 	}
 		// }
-		if (rules["width"].slice(-2) == "px") {
-			GM_log("Replacing node "+node+"'s width "+rules["width"]+" with ''.");
-			// rules["width"] = '';
-			node.style["width"] = 'auto'; // '100%';   // '' did not work!
+		for (var i=0;i<words.length;i++) {
+			var word = words[i];
+			if (rules[word] && rules[word].slice(-2) == "px") {
+				var intValue = parseInt(rules[word],10);
+				// We don't want to affect small boxes
+				if (intValue >= 250) {
+					GM_log("Replacing node "+node+"'s "+word+" rule '"+rules[word]+"' with 'none'.");
+					// '' 'clear' and 'auto' and 'reset' and 'default' did not work!
+					// node.style[word] = '100%';   // enlarges some things that are naturally small
+					node.style[word] = 'none';
+				}
+			}
 		}
 	}
-}
 
+}
