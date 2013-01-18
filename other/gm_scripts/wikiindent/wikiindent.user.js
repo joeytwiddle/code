@@ -10,6 +10,11 @@
 // @include        http://theinfosphere.org/*
 // ==/UserScript==
 
+(function(){
+// The function wrapper is essential to allow breakout with return when sourced
+// as a bookmarklet, which on some browsers is a SyntaxError, so none of the
+// script runs, even if it should..
+
 //// Features:
 var toggleSidebar = true;
 var makeTableOfContentsFloat = true;
@@ -116,8 +121,9 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 
 
 
-// The following mirrored in table_of_contents_everyw.user.js
+// The following block is mirrored in table_of_contents_everyw.user.js
 
+// See also: resetProps
 function clearStyle(elem) {
 	// We set some crucial defaults, so we don't inherit CSS from the page:
 	elem.style.display = 'inline';
@@ -234,6 +240,8 @@ function addButtonsConditionally(toc) {
 	}
 
 }
+
+// End mirror.
 
 
 
@@ -599,4 +607,6 @@ function doIt() {
 
 // setTimeout(doIt,2000);
 doIt();
+
+}();
 
