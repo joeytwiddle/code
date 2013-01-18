@@ -12,12 +12,17 @@
 // @exclude        https://*.xmarks.com/*
 // @exclude        http://github.com/*
 // @exclude        https://github.com/*
+// @exclude        https://chrome.google.com/webstore/
 // ==/UserScript==
 
 
 
+// Google redirection can block #siblings from being carried to the target page.  If that happens, this script may help: http://userscripts.org/scripts/show/121261#Straight_Google
+
 // DONE: Using the pager always sets the siblings packet in the target URL, even if passPacketByGM is enabled!  Fix that.
-// TODO: Still problems with the pager not working when passPacketByGM is enabled.  For some reason the pager shows us focused on the wrong link in the list!  (Was browsing vim.org, URLs_Need_Titles was adding #s to the title but not the links.)  Also, sometimes the old packet was getting cleared and a new one was not loading when clicking pager clicks.
+// FIXED: Still problems with the pager not working when passPacketByGM is enabled.  For some reason the pager shows us focused on the wrong link in the list!  (Was browsing vim.org, URLs_Need_Titles was adding #s to the title but not the links.)  Also, sometimes the old packet was getting cleared and a new one was not loading when clicking pager clicks.
+// TODO: We want RLP to run on github, for lists of external links, just not for links to local pages (or it can always run if passPacketByGM!).  Same could be said for twitter, facebook, etc.
+// CONSIDER: When following same-domain links, Chrome could opt to use GM_set/get or localStorage, rather than the messy #siblings packet.
 
 
 
@@ -46,10 +51,10 @@ var clearDataFromLocation = false;    // Tidies up your location bar URL, but pr
 
 var highlightLinkGroups = true;       // Change the background or border of links in the current group on hover.
 var changeBackgroundNotBorder = true; // If false, draws boxes around related links.
-var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // very light blueish
-var highlightColor         = "rgba(130,200,255,0.2)"; // light blueish
-// var thisLinkHighlightColor = "rgba(0,255,255,0.01)"; // faint cyan
-// var highlightColor         = "rgba(0,255,255,0.08)"; // very faint cyan
+var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // very light blue
+var highlightColor         = "rgba(130,200,255,0.2)"; // light blue
+// var thisLinkHighlightColor = "rgba(0,255,255,0.01)"; // very faint cyan
+// var highlightColor         = "rgba(0,255,255,0.08)"; // faint cyan
 // var thisLinkHighlightColor = null;
 // var highlightColor         = "rgba(130,230,255,0.3)";
 // var thisLinkHighlightColor = "rgba(0,0,255,0.1)"; // very faint blue
@@ -62,6 +67,7 @@ var verbose = false;                  // Extra logging for debugging
 
 
 // == CHANGELOG ==
+// 2012-10-27 Added passPacketByGM for all browsers except Chrome.
 // 2012-10-21 Fixes for Google search results link rewriting war!
 // 2012-10-08 Fixed inefficiencies in getXPath which could cause lockups.
 // 2012-03-22 Added highlighting and further heuristics.
@@ -157,6 +163,11 @@ if (typeof GM_setValue == 'function') {
   if (window.navigator.vendor.match(/Google/)) {
     passPacketByGM = false;
   }
+  // FBGMAPI check.  We cannot pass by GM if it is domain-restricted.
+  // (TODO: Actually we could, if the target was local too.)
+  if (GM_setValue.restrictedToDomain) {
+    passPacketByGM = false;
+  }
   // TODO: We may want more specific checks here.  The presence of
   // GM_setValue does not indicate that it will work cross-domain.  It would be
   // safer to use the # fallback unless we are *sure* we have a XD GMsV.
@@ -176,7 +187,7 @@ if (passPacketByGM) {
   setTimeout(function(){
     GM_setValue("siblings_data","");
   },15000);
-  // This approach loses the earlier feature of retaining the pager if we come Back to this page.
+  // The passPacketByGM approach loses the earlier feature of retaining the pager if we come Back to this page.
 } else {
   if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
     grabbedList = document.location.hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
@@ -186,11 +197,15 @@ if (passPacketByGM) {
   }
 }
 
+function onAGoogleSearchPage() {
+  // return document.location.hostname.indexOf("google")>=0 && document.location.href.indexOf("search")>=0;
+  return document.location.hostname.indexOf("google")>=0 && document.location.href.match(/\bq=/);
+}
 // CHECK_IF_GOOGLE
 // This is heavy-handed and didn't even work.  stopPropagation did.
-/*if (document.location.hostname.indexOf("google")>=0 && document.location.href.indexOf("search")>=0) {
+/*if (onAGoogleSearchPage()) {
   forceTravel = true;          // Since removeAttribute("onmousedown") stopped working
-  groupLinksByClass = false;   // Most links get class "l" but some get class "l vst"
+  groupLinksByClass = false;   // Most links get class "l" but some get class "l vst" (previously visited)
 }*/
 // Dear Google: I don't mind giving you useful feedback about which links I
 // clicked, but I *need* my siblings packet in the final arrival URL!
@@ -412,6 +427,11 @@ function checkClick(evt) {
 
     siblings = JSON.stringify(siblings);
 
+    // I like to clear our highlights before travel, nice feedback to see something change.
+    if (highlightLinkGroups) {
+      clearList();
+    }
+
     if (passPacketByGM) {
       // GM_log("[RLP] Saving siblings_data");
       GM_setValue("siblings_data",siblings);
@@ -434,12 +454,6 @@ function checkClick(evt) {
     }
     var targetURL = link.href + appendChar + "siblings="+sibsEncoded;
 
-    if (verbose) {
-      GM_log("Rewriting link "+getXPath(link));
-      GM_log(" url: "+link.href);
-      GM_log("with: "+targetURL);
-    }
-
     // We need this on Google search result pages, or we end up following
     // feedback/tracking redirection links, which throw away our hash data!
     /*
@@ -448,6 +462,11 @@ function checkClick(evt) {
     // Stopped working Oct 2012.
     */
     // Alternative fix see CHECK_IF_GOOGLE.
+    /*
+    if (onAGoogleSearchPage()) {
+      forceTravel = true;
+    }
+    */
 
     // Force travel to the new URL.  (Don't wait for the page to handle the
     // click - some sites e.g. YouTube will throw away our hash-data!)
@@ -461,19 +480,22 @@ function checkClick(evt) {
       }
     }
 
+    if (verbose) {
+      GM_log("Rewriting link "+getXPath(link));
+      GM_log(" url: "+link.href);
+      GM_log("with: "+targetURL);
+    }
+
     // Instead of pushing the browser to the magic URL, just change the link and see what happens.
     link.href = targetURL;
-
-    // I like to clear our highlights before travel, nice feedback to see something change.
-    if (highlightLinkGroups) {
-      clearList();
-    }
 
     // CHECK_IF_GOOGLE
     // In the second half of 2012, Google's events got more powerful.
     // stopPropagation manages to work around this.
     // But we only do it on Google for now - we let other sites override us if they wanna (they might need to!).
-    if (document.location.hostname.indexOf("google")>=0 && document.location.href.indexOf("search")>=0) {
+    // This seemed to be working, but is not solving the problem any longer.
+    // The problem appears to be that they are rewriting the href before we add #siblings!
+    if (onAGoogleSearchPage()) {
       // evt.preventDefault();
       evt.stopPropagation();
       // return false;
@@ -525,12 +547,18 @@ function createRelatedLinksPager(siblings) {
   }
 
   var pager = document.createElement("div");
+  // Size of the pager is actually determined by its children.  But we want to
+  // remove any size constraints inherited from the page.
+
+  // Also in table_of_contents_everywhere.user.js
+  // See also: clearStyle
+  var resetProps = " width: auto; height: auto; max-width: none; max-height: none; ";
+
   pager.id = "linkGroupPager";
-  GM_addStyle("#linkGroupPager { position: fixed; top: 5%; right: 5%; "+
+  GM_addStyle("#linkGroupPager { "+resetProps+" position: fixed; top: 5%; right: 5%; "+
     "z-index: 9999999; background: white; color: black; border: 1px solid black; "+
-    "padding: 5px; font-size: 100%; text-align: center; "+
-    "max-width: 40%; max-height: 90%; overflow: auto; } "+
-    ".linkGroupPagerList { text-align: left; }"
+    "padding: 5px; font-size: 100%; text-align: center; } "+
+    ".linkGroupPagerList { text-align: left; overflow: auto; }"
   );
 
   function maybeHost(link) {
@@ -558,17 +586,17 @@ function createRelatedLinksPager(siblings) {
         }
         return record;
     });
-    var newEncodedList = encodeURIComponent(JSON.stringify(newRecords));
+    var newSiblingsList = JSON.stringify(newRecords);
 
     link.isRLPPagerLink = true;
     if (passPacketByGM) {
       link.href = selectedRecord[1];
       // We wait and set the packet only when the user clicks, since GM_setValue is a single global.  He may have gone browsing in another tab, using RLP there also and overwriting the packet, before coming back to click in this tab.
       link.addEventListener("click",function(e){
-        GM_setValue("siblings_data",siblings);
+        GM_setValue("siblings_data",newSiblingsList);
       },false);
     } else {
-      link.href = selectedRecord[1] + appendChar + 'siblings=' + newEncodedList;
+      link.href = selectedRecord[1] + appendChar + 'siblings=' + encodeURIComponent(newSiblingsList);
     }
     if (text != selectedRecord[0]) {
       link.title = selectedRecord[0];
@@ -617,6 +645,8 @@ function createRelatedLinksPager(siblings) {
   // We could create this lazily, but why not immediately? :P
   var pageList = document.createElement("div");
   pageList.className = "linkGroupPagerList";
+  pageList.style.maxWidth = (window.innerWidth * 0.40 | 0) + "px";
+  pageList.style.maxHeight = (window.innerHeight * 0.90 | 0) + "px";
   for (var i=0;i<siblings.length;i++) {
     pageList.appendChild(document.createElement("br"));
     pageList.appendChild(document.createTextNode(""+(i+1)+". "));
