@@ -177,10 +177,10 @@ function newInlineWindow(event, href, link, windowID){
 	//closeInlineWindows();
 	
 	// Setup some constants for use in creating the inline window...
-	var windowWidth = Math.round(document.body.clientWidth * 0.45);
-	var windowHeight = Math.round(window.innerHeight * 0.45);
+	var windowWidth = Math.round(document.body.clientWidth * 0.55);
+	var windowHeight = Math.round(window.innerHeight * 0.55);
 	var windowPadding = 13;
-	var windowTextPadding = 5;
+	var windowTextPadding = 10;
 	var windowFontSize = 10;
 	var windowBorderSize = 1;
 	var windowButtonHeight = 12;
@@ -221,6 +221,10 @@ function newInlineWindow(event, href, link, windowID){
 		ypos = elementTop - windowHeight;
 	} else { 
 		ypos = elementTop + elementHeight;
+	}
+	// If we put it above the element, make sure we didn't go off the top.
+	if (ypos < 4) {
+		ypos = 4;
 	}
 	
 	var container = document.createElement('div');
