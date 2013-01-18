@@ -17,6 +17,7 @@ var addGreasemonkeyLibToBookmarklets = true;
 // Sometimes Chrome refuses to acknowledge that a script has been updated, and
 // repeatedly installs an old version from its cache!
 var preventCachingOfInstallScripts = true;
+// BUG: Chrome sometimes installs a new instance of an extension for each click, rather than overwriting (upgrading) the old.  However disabling preventBrowserFromCachingBookmarklets does not fix that.  It may have been the name "Wikimedia+"?
 
 // DONE: All bookmarklets optionally preload the Fallback GMAPI.
 // DONE: All bookmarklets optionally load in non-caching fashion (for changing scripts).
@@ -159,9 +160,9 @@ function loadSourceViewer(url, newLink, evt) {
 	}
 	frame = document.createElement("iframe");
 
-	// BUG TODO: This doesn't help.  Loading it directly into the iframe still triggers Greasemonkey to install it.
-	// What we need to do is get the script with an XHR, then place it into the div.
+	// This doesn't work.  Loading it directly into the iframe triggers Greasemonkey to install it!
 	//frame.src = url;
+	// What we need to do is get the script with an XHR, then place it into the div.
 
 	var cleanup = function(evt) {
 		frame.parentNode.removeChild(frame);
