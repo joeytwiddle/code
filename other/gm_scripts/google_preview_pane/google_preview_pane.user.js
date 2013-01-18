@@ -370,6 +370,18 @@ function initPreview() {
 			// previewFrame.parentNode.removeChild(previewFrame);
 		}
 
+		// Links which we would rather follow to a new page, than open in a preview.
+		function isNotPreviewableLink(link) {
+			// Looks like a link to another results page (1..10)
+			if (link.host==document.location.host && link.pathname.match('/(search|webhp)')) {
+				return true;
+			}
+			// Buttons across the top which repeat the search on a different site (Images/Maps/YouTube/News)
+			if (hasClass(link,"gbzt")) {
+				return true;
+			}
+		}
+
 		function getAncestorByTagName(node,tagName) {
 			if (node) {
 				while (node = node.parentNode) {
@@ -391,43 +403,43 @@ function initPreview() {
 			// To make it easier to select links, they can select results by hovering over the non-link areas.
 			// We check this by going up parent nodes until we find a link, or hit the top of a results block.
 			while (node) {
-				if (!link) {
-					if (node.tagName == "A") {
-						link = node;
-					}
-				}
-				// CONSIDER: My only remaining niggle with this algorithm is that the
-				// Delicious Results userscript makes 'l' class links, but there is no
-				// parent LI, so the very first one highlights the whole block.
-				// We could fix this by aborting ascent if we can find other 'l' links
-				// in the parent (rather than just an earlier link).
-				var goUp = true;
-				if (link) {
-					// If we have found a link, only go up if that link was a main result.
-					// Otherwise the Cache selects the div above it, which looks weird.
-					if (link.className == 'l') {
-					} else {
-						return link;
-					}
-				}
-				// If we have a link, we must not go to the parent if the parent
-				// contains any earlier links.  Unlikely given former check.
-				if (link != null) {
-					var parentsFirstLink = node.parentNode.getElementsByTagName('A')[0];
-					if (parentsFirstLink != link) {
-						goUp = false;
-					}
-				}
-				// Or have we reached a google result block?  If so, stop here.
-				if ( node.tagName=='LI' || node.className == 'g' || node.className == 'g w0' ) {
-					goUp = false;
-					// link will be first 'A' child.
-				}
-				if (!goUp) {
-					// We better check we do contain a link!
-					return node;
-				}
-				node = node.parentNode;
+			if (!link) {
+			if (node.tagName == "A") {
+			link = node;
+			}
+			}
+			// CONSIDER: My only remaining niggle with this algorithm is that the
+			// Delicious Results userscript makes 'l' class links, but there is no
+			// parent LI, so the very first one highlights the whole block.
+			// We could fix this by aborting ascent if we can find other 'l' links
+			// in the parent (rather than just an earlier link).
+			var goUp = true;
+			if (link) {
+			// If we have found a link, only go up if that link was a main result.
+			// Otherwise the Cache selects the div above it, which looks weird.
+			if (link.className == 'l') {
+			} else {
+			return link;
+			}
+			}
+			// If we have a link, we must not go to the parent if the parent
+			// contains any earlier links.  Unlikely given former check.
+			if (link != null) {
+			var parentsFirstLink = node.parentNode.getElementsByTagName('A')[0];
+			if (parentsFirstLink != link) {
+			goUp = false;
+			}
+			}
+			// Or have we reached a google result block?  If so, stop here.
+			if ( node.tagName=='LI' || node.className == 'g' || node.className == 'g w0' ) {
+			goUp = false;
+			// link will be first 'A' child.
+			}
+			if (!goUp) {
+			// We better check we do contain a link!
+			return node;
+			}
+			node = node.parentNode;
 			}
 			// Don't highlight the whole document, but highlight the link if we got one.
 			return link;
@@ -452,9 +464,9 @@ function initPreview() {
 				//// Cached and Similar.
 				// var n = startNode;
 				// while (n) {
-					// if (n.getElementsByTagName("A"))
-						// return n;
-					// n = n.parentNode;
+				// if (n.getElementsByTagName("A"))
+				// return n;
+				// n = n.parentNode;
 				// }
 				return null;
 			} else {
@@ -678,11 +690,9 @@ function initPreview() {
 			}
 			if (node == lastHover) {
 				// If the user is selecting a link to another results page, they
-				// probably don't want a preview!
+				// probably don't want a preview!  We want to visit that page normally.
 				var link = getLink(getContainer(node));
-				if (link && link.tagName=='A' && link.host==document.location.host
-					&& link.pathname.match('/(search|webhp)')
-				) {
+				if (link && link.tagName=='A' && isNotPreviewableLink(link)) {
 
 					// *** RESULT *** Click the link normally / force click.  (User has clicked on a navigation page, e.g. next/previous page.)
 
@@ -837,7 +847,8 @@ function getXPath(elem) {
 }
 
 function hasClass(elem,cla) {
-	return new RegExp("(^|\\s)"+cla+"(\\s|$)").test(elem.className);
+	// return new RegExp("(^|\\s)"+cla+"(\\s|$)").test(elem.className);
+	return findIndexOf(cla,link.className.split(" ")) >= 0;
 }
 
 function getResultsBlock() {
