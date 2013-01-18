@@ -12,7 +12,8 @@ var resetThreshold = 10;   // Allows auto-scroll to work when zoomed in.
 
 // 2012/10/09  Now runs at 60fps or whatever machine can handle
 // However, this means PageDown/PageUp now have no effect, because the real value is always used.
-// TODO: We could check if getScrollPosition gives us something far from realy, and if so assume the user has moved the page, then re-init realy if we want to continue scrolling.
+// DONE: We could check if getScrollPosition gives us something far from realy, and if so assume the user has moved the page, then re-init realy if we want to continue scrolling.
+// Result: PageUp/Down seem to work fine in Konqueror, but poorly in Firefox.  My guess is that Firefox issues a PageUp as a series of small movements, which do not trigger the resetThreshold.
 
 /* BUG: Does not work well when zoomed in Chrome.
  * It does scroll, if you hold down the key long enough.
@@ -102,6 +103,7 @@ function startScroller() {
 }
 
 function u44573_goScroll() {
+
 	if (u44573_go) {
 
 		// Check if the user has scrolled the page with a key since we last scrolled.
@@ -152,8 +154,9 @@ function u44573_goScroll() {
 		}
 
 	}
+
 }
 
 function u44573_getScrollPosition() {
-    return Array((document.documentElement && document.documentElement.scrollLeft) || window.pageXOffset || self.pageXOffset || document.body.scrollLeft,(document.documentElement && document.documentElement.scrollTop) || window.pageYOffset || self.pageYOffset || document.body.scrollTop);
+	return Array((document.documentElement && document.documentElement.scrollLeft) || window.pageXOffset || self.pageXOffset || document.body.scrollLeft,(document.documentElement && document.documentElement.scrollTop) || window.pageYOffset || self.pageYOffset || document.body.scrollTop);
 }
