@@ -168,7 +168,11 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 
 		*/
 
-		maxCacheSize = 4096; // per domain
+		// We leave a warning that, unlike Firefox's GM_set/getValue, our data
+		// will only persist while on this domain:
+
+		exportTarget.GM_setValue.restrictedToDomain = true;
+		exportTarget.GM_getValue.restrictedToDomain = true;
 
 	} else {
 		GM_log("[FBGM] Warning: Could not implement GM_get/setValue.");
@@ -225,6 +229,8 @@ if (typeof GM_xmlhttpRequest == "undefined") {
 			*/
 		}
 	};
+	// Most browsers now restrict XMLHttpRequest to local domain requests only.
+	// We leave a warning that this restriction is in effect:
 	exportTarget.GM_xmlhttpRequest.localDomainOnly = true;
 }
 
