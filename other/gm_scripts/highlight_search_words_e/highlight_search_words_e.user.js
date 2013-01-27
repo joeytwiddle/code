@@ -15,7 +15,7 @@ var highlightOnSearchPages = false;  // highlight on the search page, as well as
 
 var changeTitle = true;   // I think this script may be the cause of a lot of perceived lag in my browser when doing Google searches!
 var titlePrependString = "(Highlighting words...) ";
-var titleAppendString = ""
+var titleAppendString = "";
 
 // Extra excludes (and repeated excludes for monkeys not properly supporting @exclude):
 if (document.location.host.indexOf("imdb.com")>=0) {
