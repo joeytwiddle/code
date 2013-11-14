@@ -22,6 +22,7 @@
 var numToRemember = 100;
 var numToShow = 10;
 var minHoursForBreak = 4;
+var alwaysUseLocalStorage = true;   // I find this preferable because it acts per-site rather than global.
 
 // Release notes
 // =============
@@ -50,7 +51,7 @@ try {
    // because: window.GM_getValue.toString is not a function
    // GM_log("Getting GM_test: "+e);
 }
-if (typeof GM_getValue !== 'function' || (""+GM_test).indexOf("not supported")>=0) {
+if (alwaysUseLocalStorage || typeof GM_getValue !== 'function' || (""+GM_test).indexOf("not supported")>=0) {
    GM_log("[Wikimedia+] Adding localStorage implementation of GMget/setValue for Chrome.");
    if (localStorage) {
       // We add and remove leading "s" to match records saved/loaded via FallbackGMAPI.
