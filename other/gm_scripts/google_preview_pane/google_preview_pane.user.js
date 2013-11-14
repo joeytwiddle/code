@@ -482,7 +482,7 @@ function initPreview() {
 					}
 				}
 				// Otherwise do a generic ascent, but only while we are the only link in the block!
-				while (link.parentNode.getElementsByTagName('A') == 1) {
+				while (link.parentNode.getElementsByTagName('A').length == 1) {
 					link = link.parentNode;
 				}
 				return link;
@@ -848,7 +848,7 @@ function getXPath(elem) {
 
 function hasClass(elem,cla) {
 	// return new RegExp("(^|\\s)"+cla+"(\\s|$)").test(elem.className);
-	return findIndexOf(cla,link.className.split(" ")) >= 0;
+	return findIndexOf(cla,elem.className.split(" ")) >= 0;
 }
 
 function getResultsBlock() {
@@ -922,7 +922,7 @@ function reformatThingsEarly() {
 	}
 
 	// Do some styling on the main result LI nodes.
-	var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
+	var resNodes = getResultNodes();
 	for (var i=0;i<resNodes.snapshotLength;i++) {
 		var elem = resNodes.snapshotItem(i);
 		// Alternate background color
@@ -936,6 +936,17 @@ function reformatThingsEarly() {
 		GM_addStyle("ul.g { padding: 8px 12px; margin: 0px; }");
 	}
 
+}
+
+function getResultNodes() {
+	// var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+	var res = document.getElementById("res");
+	var elems = res.getElementsByTagName("li");
+	var resNodes = {
+		snapshotLength: elems.length,
+		snapshotItem: function(i) { return elems[i]; }
+	};
+	return resNodes;
 }
 
 function hideSidebar() {
@@ -960,7 +971,7 @@ function removeSidebar() {
 	// GM_addStyle("#center_col { margin-right: 0px; }");
 	// GM_addStyle("#center_col { margin-right: 0px; }");
 	GM_addStyle("#leftnav { display: none; }");
-	GM_addStyle("#center_col, #foot { margin: 0px; border: 0px; }");
+	GM_addStyle("#cnt #center_col, #foot { margin: 0px; border: 0px; }");
 	GM_addStyle("table { margin: 0px; border: 0px; }");
 
 	if (document.getElementById("vspb")) {
@@ -998,7 +1009,7 @@ function reformatThingsLater() {
 	// Mainly this shrinks things down in the sidebar, so it displays better.
 
 	// Do some styling on the main result LI nodes.
-	var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
+	var resNodes = getResultNodes();
 	for (var i=0;i<resNodes.snapshotLength;i++) {
 		var elem = resNodes.snapshotItem(i);
 		showUnselected(elem);
