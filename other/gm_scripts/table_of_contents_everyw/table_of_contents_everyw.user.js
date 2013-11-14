@@ -25,6 +25,9 @@ var pushAnchorsToBottom = true;   // They can look messy interspersed amongst TO
 
 // BUG: Displays links for elements which may be invisible due to CSS.  (e.g. see github markdown pages)
 
+// TODO CONSIDER: TOC hijacking _whitelist_ to avoid creeping fixes for per-site issues.  Different problems are appearing on a small proportion of websites when we try to consume/hijack their existing TOC.  It would be better to create our own *separate* TOC as standard, and only hijack *known* friendly TOCs such as WikiMedia's / Wikia's.
+// (We might offer a tiny button "Try to Use Page TOC" allowing us to test hijack before adding the site to the whitelist.)
+
 setTimeout(function(){
 
 

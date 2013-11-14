@@ -11,6 +11,8 @@ document.addEventListener('keydown', keypressListener, false);
 function keypressListener(evt) {
 	var code = evt.keyCode || evt.which;
 
+	// TODO: We should skip most of these checks if the user is focused on an input box or textarea.
+
 	/*
 	var modifierReport = "";
 	modifierReport += ( evt.ctrlKey  ? "Ctrl "  : "" );
