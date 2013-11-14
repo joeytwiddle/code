@@ -1,23 +1,9 @@
 // ==UserScript==
 // @name           IMDB Inline Threads
 // @namespace      IIT
-// @description    Makes it possible to view other posts in the thread without navigating to another page.
+// @description    Makes collapsed posts in a thread load directly into the current page, like on SlashDot, avoiding navigation to a separate page to read each post.
 // @include        http://www.imdb.com/*/board/thread/*
 // ==/UserScript==
-
-function checkIMDBClick(evt) {
-	var elem = evt.target || evt.sourceElement;
-	if (elem.tagName == 'A') {
-		if (elem.href.match("/board/thread/")) {
-			loadThreadBitFor(elem,elem.href);
-			link.href = '#';
-			evt.preventDefault();
-			return true;
-		}
-	}
-}
-
-// document.body.addEventListener('click',checkIMDBClick,true);
 
 function listenForLoad(newLink,href) {
 	newLink.addEventListener('click',function(evt){
@@ -28,12 +14,12 @@ function listenForLoad(newLink,href) {
 var links = document.getElementsByTagName("A");
 for (var i=0;i<links.length;i++) {
 	var link = links[i];
-	if (link.href.match("/board/thread/")) {
+	if (link.href.match(/\/board\/thread\/.*d=/)) {
 		var newLink = document.createElement("A");
-		newLink.href = 'javascript:(void 0);';
 		newLink.textContent = "[+] " + link.textContent;
+		// newLink.href = link.href;
+		newLink.href = 'javascript:(void 0);';
 		newLink.title = "Expand this post";
-		// newLink.addEventListener('click',checkIMDBClick,true);
 		link.parentNode.insertBefore(newLink,link);
 		link.parentNode.removeChild(link);
 		newLink.style.cursor = 'pointer';
@@ -57,7 +43,6 @@ function loadThreadBitFor(link,href) {
 		while (parentRow && parentRow.tagName!="TR") {
 			parentRow = parentRow.parentNode;
 		}
-		parentRow.parentNode.insertBefore(otherPostRow,parentRow.nextSibling);
 
 		// Indent the post to the proper level
 		var indentImg = link;
@@ -77,8 +62,18 @@ function loadThreadBitFor(link,href) {
 			td.style.paddingLeft = indentImg.width+'px';
 		}
 
+		parentRow.parentNode.insertBefore(otherPostRow,parentRow.nextSibling);
+
 		// We don't really need the original "subject" row now, we have a new one.
 		parentRow.parentNode.removeChild(parentRow);
+
+		// The new subject line is actually a whole table, the first of two tables.
+		var subjectTable = td.getElementsByTagName("tr")[0];
+		var postTable = td.getElementsByTagName("tr")[1];
+		subjectTable.onclick = function(){
+			postTable.style.display = ( postTable.style.display == 'none' ? "block" : 'none' );
+		};
+		subjectTable.style.cursor = 'pointer';
 
 	}
 
