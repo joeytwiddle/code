@@ -326,9 +326,9 @@ function getStaticBookmarkletFromUserscript(href,callback) {
 	scriptsToLoad.push(href);
 
 	var scriptSources = [];
+	var numLoaded = 0;
 
 	function loadSourceIntoArray(i) {
-		var numLoaded = 0;
 		getSourceFor(scriptsToLoad[i]).
 		then(function(source){
 			if (!source) {
