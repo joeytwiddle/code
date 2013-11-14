@@ -8,16 +8,23 @@
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // ==/UserScript==
 
+// TODO: All links with using dummy=random should change the value on mouseover/mousemove/click, so they can be re-used live without refreshing the page.
+//       Static bookmarklets could timeout and re-build after ... 10 seconds?  ^^
+
 // Most people will NOT want the NoCache version.  It's only useful for script developers.
 
-var preventBrowserFromCachingBookmarklets = true;
+// Firefox/Greasemonkey does not like to install scripts ending ".user.js?dummy=123"
+// But in Chrome it is a useful way to prevent the script from being cached when you are developing it.
+var inGoogleChrome = window && window.navigator && window.navigator.vendor.match(/Google/);
 
-var addGreasemonkeyLibToBookmarklets = true;
+var preventBrowserFromCachingBookmarklets = inGoogleChrome;
 
 // Sometimes Chrome refuses to acknowledge that a script has been updated, and
 // repeatedly installs an old version from its cache!
-var preventCachingOfInstallScripts = true;
+var preventCachingOfInstallScripts = inGoogleChrome;
 // BUG: Chrome sometimes installs a new instance of an extension for each click, rather than overwriting (upgrading) the old.  However disabling preventBrowserFromCachingBookmarklets does not fix that.  It may have been the name "Wikimedia+"?
+
+var addGreasemonkeyLibToBookmarklets = true;
 
 // DONE: All bookmarklets optionally preload the Fallback GMAPI.
 // DONE: All bookmarklets optionally load in non-caching fashion (for changing scripts).
@@ -33,17 +40,23 @@ var preventCachingOfInstallScripts = true;
 // TODO: Support @include/@excude and @require meta rules?
 // This requires parsing the script's header using XHR before creating each bookmarklet.
 
-// TODO: Optionally create static bookmarklet, with all code inline, rather than loaded from a URL.
+// DONE: Optionally create static bookmarklet, with all code inline, rather than loaded from a URL.
 //       // comments will need to be removed or converted to /*...*/ comments
 
-function addBookmarklet(link) {
-	var includeGMCompat = addGreasemonkeyLibToBookmarklets;
+var addDateToStaticBookmarklets = true;
+
+var defaultScripts = [];
+var includeGMCompat = addGreasemonkeyLibToBookmarklets;
+if (includeGMCompat) {
+	// defaultScripts.push("http://hwi.ath.cx/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
+	defaultScripts.push("http://neuralyte.org/~joey/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
+}
+
+function buildLiveBookmarklet(link) {
 	var neverCache = preventBrowserFromCachingBookmarklets;
 
-	var scriptsToLoad = [];
-	if (includeGMCompat) {
-		scriptsToLoad.push("http://hwi.ath.cx/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
-	}
+	var scriptsToLoad = defaultScripts.slice(0);
+
 	scriptsToLoad.push(link.href);
 
 	var neverCacheStr = ( neverCache ? "+'?dummy='+new Date().getTime()" : "" );
@@ -72,7 +85,7 @@ function addBookmarklet(link) {
 	toRun += "  document.body.appendChild(newScript);\n";
 	toRun += "}\n";
 	toRun += "loadNext();\n";
-	toRun += "})(); void 0;";
+	toRun += "})(); (void 0);";
 
 	var name = getNameFromFilename(link.href);
 	/*
@@ -89,23 +102,277 @@ function addBookmarklet(link) {
 	newLink.textContent = name;
 	newLink.title = newLink.href;
 
-	var newContainer = document.createElement("SPAN");
-	newContainer.appendChild(document.createTextNode("(Drag Bookmarklet: "));
+	var newContainer = document.createElement("div");
+	// newContainer.style.whiteSpace = 'nowrap';
+	newContainer.appendChild(document.createTextNode("(Live Bookmarklet: "));
 	newContainer.appendChild(newLink);
 	var extraString = ( neverCache || includeGMCompat ? neverCache && includeGMCompat ? " (no-caching, with GM fallbacks)" : neverCache ? " (no-caching)" : " (with GM fallbacks)" : "" );
+	// DISABLED HERE:
+	extraString = "";
 	if (extraString) {
 		// newContainer.appendChild(document.createTextNode(extraString));
-		var extraText = document.createElement("span");
+		// var extraText = document.createElement("span");
+		// extraText.style.fontSize = '80%';
+		var extraText = document.createElement("small");
 		extraText.textContent = extraString;
-		extraText.style.fontSize = '80%';
 		newContainer.appendChild(extraText);
 	}
 	newContainer.appendChild(document.createTextNode(")"));
 	newContainer.style.paddingLeft = '8px';
-	link.parentNode.insertBefore(newContainer,link.nextSibling);
+	// link.parentNode.insertBefore(newContainer,link.nextSibling);
+	return newContainer;
 }
 
+function reportMessage(msg) {
+	console.log(msg);
+}
+
+function reportWarning(msg) {
+	console.warn(msg);
+}
+
+function reportError(msg) {
+	console.error(msg);
+}
+
+function doesItCompile(code) {
+	try {
+		var f = new Function(code);
+	} catch (e) {
+		return false;
+	}
+	return true;
+}
+
+/* For more bugs try putting (function(){ ... })(); wrapper around WikiIndent! */
+
+function fixComments(line) {
+
+	//// Clear // comment line
+	line = line.replace(/^[ \t]*\/\/.*/g,'');
+
+	//// Wrap // comment in /*...*/ (Dangerous! if comment contains a */ !)
+	// line = line.replace(/^([ \t]*)\/\/(.*)/g,'$1/*$2*/');
+
+	//// Clear trailing comment (after a few chars we deem sensible)
+	//// This still doesn't handle some valid cases.
+	var trailingComment = /([;{}()\[\],\. \t])\s*\/\/.*/g;
+	//// What might break: An odd number of "s or 's, any /*s or */s
+	var worrying = /(["']|\/\*|\*\/)/;
+	// Here is a breaking example:
+	// var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+	// var hasTrailingComment = line.match(trailingComment);
+	var hasTrailingComment = trailingComment.exec(line);
+	if (hasTrailingComment) {
+		/*
+		if (line.match(worrying)) {
+			reportWarning("Warning: trailingComment matches: "+hasTrailingComment);
+		}
+		*/
+		var compiledBefore = doesItCompile(line);
+		var newLine = line.replace(trailingComment,'$1');
+		var compilesAfter = doesItCompile(newLine);
+		if (compiledBefore && !compilesAfter) {
+			reportWarning("Aborted // stripping on: "+line);
+		} else {
+			// Accept changes
+			line = newLine;
+		}
+	}
+	return line;
+
+}
+
+function cleanupSource(source) {
+	// console.log("old length: "+source.length);
+	var lines = source.split('\n');
+	// console.log("lines: "+lines.length);
+	for (var i=0;i<lines.length;i++) {
+		lines[i] = fixComments(lines[i]);
+	}
+	// source = lines.join('\n');
+	source = lines.join(' ');
+	// console.log("new length: "+source.length);
+	//// For Bookmarklet Builder's reformatter:
+	source = source.replace("(function","( function",'g');
+	return source;
+}
+
+// We could cache urls, at least during this one page visit
+// Specifically the ones we request repeatedly for statis bmls (fbgmapi).
+var sourcesLoaded = {};
+
+// My first "promise":
+function getSourceFor(url) {
+
+	var handler;
+
+	function handlerFn(res) {
+		var source = res.responseText;
+		if (handler) {
+			handler(source);
+		}
+	}
+
+	function onErrorFn(res) {
+		reportError("Failed to load "+url+": HTTP "+res.status);
+	}
+
+	// I found this was needed one time on Chrome!
+	// It probably doesn't need to be linked to preventCachingOfInstallScripts or preventBrowserFromCachingBookmarklets.
+	url += "?dummy="+Math.random();
+	console.log("Loading "+url);
+	getURLThen(url,handlerFn,onErrorFn);
+
+	return {
+		then: function(handleResponse){
+			handler = handleResponse;
+			// TODO: return next promise
+		}
+	};
+}
+
+// DONE: Instead of making 175+ requests for userscript files, add a button "Generate Static Bookmarklet" for any but the top few.  :)
+
+/*
+var maxStaticsToRequest = 12;
+var staticsRequested = 0;
+
+// TODO: Really we should queue/chain all the requests, running the next one only when the last one has finished.
+
+// Wrapper which crops and delays, then may call addStaticBookmarkletNow().
+function buildStaticBookmarklet(link) {
+
+	if (staticsRequested >= maxStaticsToRequest) {
+		return;
+	}
+	staticsRequested++;
+
+	addStaticBookmarkletNow(link);
+
+}
+*/
+
+// Was addStaticBookmarkletNow
+function buildStaticBookmarklet(link) {
+
+	var newLink = document.createElement("a");
+	newLink.textContent = getNameFromFilename(link.href);
+
+	var newContainer = document.createElement("div");
+	// newContainer.style.whiteSpace = 'nowrap';
+	// Experimental:
+	newContainer.appendChild(document.createTextNode("(Static Bookmarklet: "));
+	newContainer.appendChild(newLink);
+	newContainer.appendChild(document.createTextNode(")"));
+	newContainer.style.paddingLeft = '8px';
+
+	newLink.style.textDecoration = 'underline';
+	// newLink.style.color = '#000080';
+	newLink.style.color = '#333366';
+
+	// link.parentNode.insertBefore(newContainer,link.nextSibling);
+
+	// The href may change before we fire (e.g. if dummy is appended) so we make a copy.
+	var href = link.href;
+
+	// setTimeout(function(){
+	// ,2000 * staticsRequested);
+	newLink.onmouseover = function(){
+		getStaticBookmarkletFromUserscript(href,whenGot);
+		newLink.style.color = '#ff7700';
+		newLink.onmouseover = null; // once
+	};
+
+	function whenGot(staticSrc) {
+
+		// Does it parse?
+		try {
+			var testFn = new Function(staticSrc);
+			newLink.style.color = '';  // Success!  Color like a normal link
+		} catch (e) {
+			var msg = "PARSE FAILED";
+			// Firefox has this:
+			if (e.lineNumber) {
+				msg += " on line "+e.lineNumber;
+			}
+			msg += ":";
+			console.log("["+href+"] "+msg,e);
+			newLink.title = msg+" "+e;
+			newLink.style.color = 'red'; // color as error
+			window.lastParseError = e;
+			// return;
+		}
+
+		newLink.href = "javascript:" + staticSrc;
+
+		if (addDateToStaticBookmarklets) {
+			var d = new Date();
+			var dateStr = d.getFullYear()+"."+(d.getMonth()+1)+"."+d.getDate();
+			newLink.textContent = newLink.textContent + " ("+dateStr+")";
+		}
+
+		// Just in case the browser is dumb, force it to re-analyse the link.
+		newLink.parentNode.insertBefore(newLink,newLink.nextSibling);
+	}
+
+	return newContainer;
+
+}
+
+function getStaticBookmarkletFromUserscript(href,callback) {
+
+	var scriptsToLoad = defaultScripts.slice(0);
+	scriptsToLoad.push(href);
+
+	var scriptSources = [];
+
+	function loadSourceIntoArray(i) {
+		var numLoaded = 0;
+		getSourceFor(scriptsToLoad[i]).
+		then(function(source){
+			if (!source) {
+				reportError("Failed to acquire source for: "+href);
+			}
+			scriptSources[i] = source;
+			numLoaded++;
+			if (numLoaded == scriptsToLoad.length) {
+				allSourcesLoaded();
+			}
+		});
+	}
+
+	for (var i=0;i<scriptsToLoad.length;i++) {
+		loadSourceIntoArray(i);
+	}
+
+	function allSourcesLoaded() {
+
+		var toRun = "";
+
+		for (var i=0;i<scriptSources.length;i++) {
+			if (!scriptSources[i]) {
+				reportError("Expected contents of "+scriptsToLoad[i]+" but got: "+scriptSources[i]);
+			}
+			var cleaned = cleanupSource(scriptSources[i]);
+			toRun += "(function(){\n";
+			toRun += cleaned;
+			toRun += "})();\n";
+		}
+		toRun += "(void 0);";
+
+		callback(toRun);
+
+	}
+
+}
+
+// In this case, link points to a folder containing a userscript.
+// We guess the userscript's name from the folder's name.
 function addQuickInstall(link) {
+	if (link.parentNode.tagName == 'TD') {
+		link.parentNode.style.width = '60%';
+	}
 	var br2 = document.createElement("br");
 	link.parentNode.insertBefore(br2,link.nextSibling);
 	var br = document.createElement("br");
@@ -120,10 +387,12 @@ function addQuickInstall(link) {
 	newContainer.appendChild(document.createTextNode("]"));
 	newContainer.style.paddingLeft = '8px';
 	link.parentNode.insertBefore(newContainer,br);
-	link.style.color = 'grey';
-	addBookmarklet(newLink);
-	addLiveUserscript(newLink);
-	addSourcePopup(newLink);
+	link.style.color = 'black';
+	link.style.fontWeight = 'bold';
+	newContainer.appendChild(buildLiveBookmarklet(newLink));
+	newContainer.appendChild(buildStaticBookmarklet(newLink));
+	newContainer.appendChild(buildLiveUserscript(newLink));
+	popupSourceOnHover(newLink);
 	// Do this after the other two builders have used the .href
 	if (preventCachingOfInstallScripts) {
 		newLink.href = newLink.href + '?dummy='+new Date().getTime();
@@ -132,8 +401,7 @@ function addQuickInstall(link) {
 
 function getURLThen(url,handlerFn,onErrorFn) {
 	var req = new XMLHttpRequest();
-	req.open("GET", url, true);
-	req.send(null);
+	req.open("get", url, true);
 	req.onreadystatechange = function (aEvt) {
 		if (req.readyState == 4) {
 			if(req.status == 200) {
@@ -147,6 +415,7 @@ function getURLThen(url,handlerFn,onErrorFn) {
 			}
 		}
 	};
+	req.send(null);
 }
 
 var frame = null;
@@ -158,12 +427,17 @@ function loadSourceViewer(url, newLink, evt) {
 	if (frame && frame.parentNode) {
 		frame.parentNode.removeChild(frame);
 	}
-	frame = document.createElement("iframe");
+	frame = document.createElement("div");
+
+	function reportToFrame(msg) {
+		frame.appendChild( document.createTextNode(msg) );
+	}
 
 	// This doesn't work.  Loading it directly into the iframe triggers Greasemonkey to install it!
 	//frame.src = url;
 	// What we need to do is get the script with an XHR, then place it into the div.
 
+	// This seems to fire immediately in Firefox!
 	var cleanup = function(evt) {
 		frame.parentNode.removeChild(frame);
 		document.body.removeEventListener("click",cleanup,false);
@@ -172,11 +446,38 @@ function loadSourceViewer(url, newLink, evt) {
 	document.body.addEventListener("click",cleanup,false);
 
 	getURLThen(url, function(res){
-		var displayDiv = document.createElement("pre");
+		// We were using pre instead of div to get monospace like <tt> or <code>
+		// However since we are commonly reading the description, sans seems better.
+		var displayDiv = document.createElement("div");
 		displayDiv.style.fontSize = '0.8em';
-		displayDiv.textContent = res.responseText;
 		displayDiv.style.whiteSpace = "pre-wrap";
-		frame.contentWindow.document.body.appendChild(displayDiv);
+		var displayCode = document.createElement("pre");
+		displayCode.textContent = res.responseText;
+		displayCode.style.maxHeight = "100%";
+		displayCode.style.overflow = "auto";
+		displayDiv.appendChild(displayCode);
+		while (frame.firstChild) {
+			frame.removeChild(frame.firstChild);
+		}
+		frame.appendChild(displayDiv);
+		if (typeof Rainbow != null) {
+			/*
+			// Works fine in Chrome, but in Firefox it causes Rainbow to fail with "too much recursion".
+			Rainbow.extend('javascript', [
+				{
+					'name': 'importantcomment',
+					'pattern': /(\/\/|\#) @(name|description|include) [\s\S]*?$/gm
+				},
+			], false);
+			*/
+			setTimeout(function(){
+				displayCode.setAttribute('data-language', "javascript");
+				displayCode.style.fontSize = '100%';
+				Rainbow.color(displayCode.parentNode, function(){
+					console.log("Rainbow finished.");
+				});
+			},50);
+		}
 		// frame.addEventListener("mouseout",cleanup,false);
 		// newLink.title = res.responseText;
 		var lines = res.responseText.split("\n");
@@ -189,7 +490,7 @@ function loadSourceViewer(url, newLink, evt) {
 			}
 		}
 	}, function(res){
-		frame.contentWindow.document.body.appendChild( document.createTextNode("Failed to load "+url+": HTTP "+res.status) );
+		reportToFrame("Failed to load "+url+": HTTP "+res.status);
 	});
 
 	/*
@@ -197,24 +498,29 @@ function loadSourceViewer(url, newLink, evt) {
 	frame.style.top = evt.clientY+4+'px';
 	frame.style.left = evt.clientX+4+'px';
 	*/
-	frame.style.position = 'absolute';
+	// frame.style.position = 'absolute';
 	// frame.style.top = evt.layerY+12+'px';
 	// frame.style.left = evt.layerX+12+'px';
-	frame.style.top = evt.layerY - window.innerHeight*35/100 + 'px';
-	frame.style.left = evt.layerX + 64 + 'px';
-	frame.style.width = "70%";
-	frame.style.height = "70%";
+	// frame.style.top = evt.layerY - window.innerHeight*35/100 + 'px';
+	// frame.style.left = evt.layerX + 64 + 'px';
+	// frame.style.width = "70%";
+	// frame.style.height = "70%";
+	frame.style.position = 'fixed';
+	frame.style.right = '2%';
+	frame.style.width = '50%';
+	frame.style.top = '10%';
+	frame.style.height = '80%';
 	frame.style.backgroundColor = 'white';
 	frame.style.color = 'black';
 	frame.style.padding = '8px';
 	frame.style.border = '2px solid #555555';
 	document.body.appendChild(frame);
 
-	frame.contentWindow.document.body.appendChild( document.createTextNode("Loading...") );
+	reportToFrame("Loading...");
 
 }
 
-function addSourceViewer(link) {
+function buildSourceViewer(link) {
 	var newLink = document.createElement("A");
 	// newLink.href = '#';
 	newLink.textContent = "Source";
@@ -231,10 +537,12 @@ function addSourceViewer(link) {
 	extra.appendChild(newLink);
 	extra.appendChild(document.createTextNode("]"));
 	extra.style.paddingLeft = '8px';
-	link.parentNode.insertBefore(extra,link.nextSibling);
+
+	// link.parentNode.insertBefore(extra,link.nextSibling);
+	return extra;
 }
 
-function addSourcePopup(link) {
+function popupSourceOnHover(link) {
 	var hoverTimer = null;
 	function startHover(evt) {
 		stopHover(evt);
@@ -243,7 +551,7 @@ function addSourcePopup(link) {
 			stopHover(evt);
 			// link.removeEventListener("mouseover",startHover,false);
 			// link.removeEventListener("mouseout",stopHover,false);
-		},1000);
+		},1500);
 	}
 	function stopHover(evt) {
 		clearTimeout(hoverTimer);
@@ -251,9 +559,16 @@ function addSourcePopup(link) {
 	}
 	link.addEventListener("mouseover",startHover,false);
 	link.addEventListener("mouseout",stopHover,false);
+	// If they click on it before waiting to hover, they probably don't want the popup:
+	link.addEventListener("click",stopHover,false);
 }
 
-function addLiveUserscript(link) {
+function buildLiveUserscript(link) {
+	//// This isn't working any more.  data:// lost its power circa 2006 due to abuse.
+	//// Create a clickable link that returns a sort-of file to the browser using the "data:" protocol.
+	//// That file would be a new userscript for installation.
+	//// We can generate the contents of this new userscript at run-time.
+	//// The current one we generate runs (no @includes), and loads the latest userscript from its website via script injection.
 	/* DISABLED
 	// BUG: data:{...}.user.js does not interest my Chromium
 	var name = getNameFromFilename(link.href)+" Live!";
@@ -281,6 +596,7 @@ function addLiveUserscript(link) {
 	extra.style.paddingLeft = '8px';
 	link.parentNode.insertBefore(extra,link.nextSibling);
 	*/
+	return document.createTextNode("");
 }
 
 function getCanonicalUrl(url) {
@@ -297,6 +613,8 @@ function getNameFromFilename(href) {
 	var isUserscript = href.match(/\.user\.js$/);
 	// Remove any leading folders and trailing ".user.js"
 	var name = href.match(/[^\/]*$/)[0].replace(/\.user\.js$/,'');
+
+	name = decodeURIComponent(name);
 
 	// The scripts on userscripts.org do not have their name in the filename,
 	// but we can get the name from the page title!
@@ -327,14 +645,23 @@ function getNameFromFilename(href) {
 }
 
 var links = document.getElementsByTagName("A");
-for (var i=links.length-1;i>=0;i--) {
+//// We used to process backwards (for less height recalculation).
+//// But this messes up maxStaticsToRequest.
+// for (var i=links.length-1;i>=0;i--) {
+for (var i=0;i<links.length;i++) {
 	var link = links[i];
 
 	// If we see a direct link to a user script, create buttons for it.
 	if (link.href.match(/\.js$/)) { // \.user\.js
-		addBookmarklet(link);
-		addLiveUserscript(link);
-		addSourceViewer(link);
+		var where = link;
+		function insert(newElem) {
+			where.parentNode.insertBefore(newElem,where.nextSibling);
+			where = newElem;
+		}
+		insert(buildLiveBookmarklet(link));
+		insert(buildStaticBookmarklet(link));
+		insert(buildLiveUserscript(link));
+		insert(buildSourceViewer(link));
 	}
 
 	// If the current page looks like a Greasemonkey Userscript Folder, then
@@ -346,4 +673,27 @@ for (var i=links.length-1;i>=0;i--) {
 	}
 
 }
+
+/*
+var promise(getURLThen,url) {
+	var handler;
+
+	getURLThen(url,handlerFn,handlerFn);
+
+	function handlerFn(res) {
+		var source = res.responseText;
+		if (handler) {
+			handler(source);
+		} else {
+			reportError("No handler set for: "+
+		}
+	}
+
+	return {
+		then: function(handleResponse){
+			handler = handleResponse;
+		}
+	};
+}
+*/
 
