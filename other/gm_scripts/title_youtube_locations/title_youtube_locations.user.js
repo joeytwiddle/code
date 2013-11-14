@@ -30,6 +30,7 @@
 var addTitleToLocation = true;
 var reduceFontSizes    = true;
 var addScrollbars      = true;
+var scrollDownToVideo  = true;
 var animateThumbnails  = true;
 
 
@@ -41,8 +42,7 @@ if (addTitleToLocation) {
 	setTimeout(function(){
 		if (document.location.pathname == "/watch") {
 
-			var title = document.getElementsByTagName("h1")[0].textContent
-				|| document.title.replace(/^YouTube - /,'')
+			var title = document.title.replace(/^YouTube - /,'')
 				|| null;
 
 			if (title)
@@ -78,9 +78,12 @@ if (addScrollbars) {
 		if (document.location.href.indexOf("/all_comments?") >= 0) {
 			return;   // Leave the full comments page alone.
 		}
-		var watchDiscussion = document.getElementById("watch-discussion") || document.getElementById("watch7-content");
+		// The top of watch7-content has become very large, so put a scrollbar on the whole lot.
+		var watchDiscussion = /* document.getElementById("watch-discussion") || */ document.getElementById("watch7-content");
 		if (watchDiscussion) {
-			var roomForComments = window.innerHeight - 530;
+			var toSubtract = 435;     // Small video screen
+			//var toSubtract = 515;   // Medium size video screen
+			var roomForComments = window.innerHeight - toSubtract;
 			if (roomForComments < 200) {
 				roomForComments = 200;
 			}
@@ -99,19 +102,26 @@ if (addScrollbars) {
 			// TODO BUG: Why does this work in the console, but not from the userscript?
 			// document.getElementById("watch-main").style.width = (960+24)+"px";
 		}
-		//// Title text
-		// document.getElementById("eow-title").scrollIntoView();
-		//// Uploader info and videolist popdown.
-		// document.getElementById("watch-headline-user-info").scrollIntoView();
-		//// The author's video list (was supposed to be a small gap above the video when collapsed, but it's not)
-		// document.getElementById("watch-more-from-user").scrollIntoView();
-		//// The video
-		// document.getElementsByTagName("embed")[0].scrollIntoView();
-		//// The video
-		// document.getElementById("watch-video").scrollIntoView();
-		// document.getElementById("watch7-video").scrollIntoView();
-		//// Slight gap above the video (I prefer that)
-		document.getElementById("watch7-container").scrollIntoView();
+		if (scrollDownToVideo) {
+			//// Title text
+			// document.getElementById("eow-title").scrollIntoView();
+			//// Uploader info and videolist popdown.
+			// document.getElementById("watch-headline-user-info").scrollIntoView();
+			//// The author's video list (was supposed to be a small gap above the video when collapsed, but it's not)
+			// document.getElementById("watch-more-from-user").scrollIntoView();
+			//// The video
+			// document.getElementsByTagName("embed")[0].scrollIntoView();
+			//// The video
+			var watchVideo = document.getElementById("movie_player") || document.getElementById("player-api");
+			if (watchVideo) {
+				watchVideo.scrollIntoView();
+			}
+			//// Slight gap above the video (I prefer that)
+			// var watchContainer = document.getElementById("watch7-container");
+			// if (watchContainer) {
+			// 	watchContainer.scrollIntoView();
+			// }
+		}
 	},1000);
 
 }
