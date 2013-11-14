@@ -87,7 +87,7 @@ function findClosestLinkElem(orig) {
 
 // Display likes/dislikes on links to other videos
 function lookupLikesDislikes(target) {
-	if (!target.doneLikesDislikes) {
+	if (target && !target.doneLikesDislikes) {
 		target.doneLikesDislikes = true;
 
 		function gotTargetPage(response) {
@@ -114,19 +114,23 @@ function lookupLikesDislikes(target) {
 
 					if (addLightSaberBarToThumbnail) {
 
+						// Pictures are easier to read than words:
 						var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
 						lightSaber = lightSaber || lePage.getElementsByClassName("video-extras-sparkbars")[0]; // Oct 2012
 						if (lightSaber) {
-							// Pictures are easier to read than words:
-							target.appendChild(lightSaber);
-							// It often falls on the line below the thumbnail, aligned left
-							// Here is a dirty fix to align it right, with all the other info.
-							if (document.location.pathname === "/watch") { // not on search results
-								lightSaber.style.marginLeft = '124px';
-							}
-							// Bars are unneccessarily wide on search results pages, so:
-							if (lightSaber.clientWidth > 150) {
-								lightSaber.style.maxWidth = '120px';
+							if (lightSaber.clientWidth == 0) {
+								GM_log("Unfortunately the lightSaber had width 0.  Perhaps its dimensions are supposed to be loaded by Ajax.  "+lightSaber.outerHTML);
+							} else {
+								target.appendChild(lightSaber);
+								// It often falls on the line below the thumbnail, aligned left
+								// Here is a dirty fix to align it right, with all the other info.
+								if (document.location.pathname === "/watch") { // not on search results
+									lightSaber.style.marginLeft = '124px';
+								}
+								// Bars are unneccessarily wide on search results pages, so:
+								if (lightSaber.clientWidth > 150) {
+									lightSaber.style.maxWidth = '120px';
+								}
 							}
 						} else {
 							elemWithTitle.title += " [No likes/dislikes available]";
@@ -218,7 +222,9 @@ function watchForHover(evt) {
 	if (suitableLink(target)) {
 		hoveredElem = target;
 		hoverTimer = setTimeout(function(){
-			lookupLikesDislikes(hoveredElem);
+			if (hoveredElem) {
+				lookupLikesDislikes(hoveredElem);
+			}
 		},1000);
 	} else {
 		// Don't cancel if we are a child of hoveredElem
