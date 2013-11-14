@@ -10,8 +10,8 @@
 // @exclude        http://twitter.com/*
 // @exclude        https://twitter.com/*
 // @exclude        https://*.xmarks.com/*
-// @exclude        http://github.com/*
-// @exclude        https://github.com/*
+// @no-longer-exclude        http://github.com/*
+// @no-longer-exclude        https://github.com/*
 // @exclude        https://chrome.google.com/webstore/
 // ==/UserScript==
 
@@ -24,6 +24,8 @@
 // TODO: We want RLP to run on github, for lists of external links, just not for links to local pages (or it can always run if passPacketByGM!).  Same could be said for twitter, facebook, etc.
 // CONSIDER: When following same-domain links, Chrome could opt to use GM_set/get or localStorage, rather than the messy #siblings packet.
 
+// TODO: RLP and HTML5 History API are not working well together.  What we should probably do is drop to the localStorage method for same-host links.
+
 
 
 // == OPTIONS ==
@@ -33,8 +35,9 @@ var minimumGroupSize   = 2;
 var maximumGroupSize   = 250;         // Some webservers restrict long URLs, responding with "Bad Request".
 var groupLinksByClass  = true;
 if (document.location.href.match(/google.*(search|q=)/)) {
-  groupLinksByClass = false;   // Most Google results have class "l" but any previously visited have "l vst".
+  groupLinksByClass = false;          // Most Google results have class "l" but any previously visited have "l vst".
 }
+// CONSIDER TODO: A better compromise for all sites might be groupLinksWhichShareAtLeastOneClass.  This would reject links which do not share any classes with the focused link.
 
 var showGroupCountInLinkTitle = true;    // Updates hovered links' titles to show number of siblings.
 var showPageNumberInWindowTitle = false; // Updates title of current page to show current "page" number.
@@ -50,7 +53,7 @@ var forceTravel = false;              // Attempt to fix loss of #data when click
 var clearDataFromLocation = false;    // Tidies up your location bar URL, but prevents the pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.
 
 var highlightLinkGroups = true;       // Change the background or border of links in the current group on hover.
-var changeBackgroundNotBorder = true; // If false, draws boxes around related links.
+var changeBackgroundNotBorder = true; // If false, draws boxes around related links.  (Then you may want to increase the opacity of the colors below.)
 var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // very light blue
 var highlightColor         = "rgba(130,200,255,0.2)"; // light blue
 // var thisLinkHighlightColor = "rgba(0,255,255,0.01)"; // very faint cyan
@@ -59,10 +62,15 @@ var highlightColor         = "rgba(130,200,255,0.2)"; // light blue
 // var highlightColor         = "rgba(130,230,255,0.3)";
 // var thisLinkHighlightColor = "rgba(0,0,255,0.1)"; // very faint blue
 // var highlightColor         = "rgba(0,0,255,0.2)"; // faint blue
+var visitingColor          = "rgba(220,130,255,0.2)"; // light purple
 var lineStyle = "solid";
 // var lineStyle = "dashed";
 
-var verbose = false;                  // Extra logging for debugging
+var useLocalStorageWhenPossible = true; // Hide #siblings from URL when we are travelling to a page on the same host.  Pass data by localStorage instead (implemented through fake GM_set).  This replaces the old passPacketByGM.  The only disadvantage is that going *back* to a non-#siblings URL will lose the pager that was previously there.
+
+var beFrugal = false;   // When forced to use #siblings, only do so on Google search results pages.
+
+var verbose = false;    // Extra logging for debugging
 
 
 
@@ -156,6 +164,8 @@ var verbose = false;                  // Extra logging for debugging
 
 
 
+// passPacketByGM is now auto-determined at click time
+/*
 var passPacketByGM = false;
 if (typeof GM_setValue == 'function') {
   passPacketByGM = true;   // It is safe to disable this if you want the old behaviour
@@ -172,29 +182,42 @@ if (typeof GM_setValue == 'function') {
   // GM_setValue does not indicate that it will work cross-domain.  It would be
   // safer to use the # fallback unless we are *sure* we have a XD GMsV.
 }
+*/
+if (window.navigator.vendor.match(/Google/) || typeof GM_setValue != 'function') {
+  GM_setValue = function(key, val){
+    localStorage["RLP_Fake_GM:"+key] = val;
+  };
+  GM_getValue = function(key) {
+    return localStorage["RLP_Fake_GM:"+key];
+  };
+}
 
 
 
 // We grab the data as early as possible, in case any other scripts decide to
 // change the #.  We delay running anything else for a little while.
 var grabbedList;
-if (passPacketByGM) {
+var clearDataTimer = null;
+if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
+  grabbedList = document.location.hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
+  if (grabbedList) {
+    grabbedList = decodeURIComponent(grabbedList);
+  }
+}
+if (!grabbedList) {
   grabbedList = GM_getValue("siblings_data");
   // GM_log("[RLP] Got siblings_data="+grabbedList);
   // I often see this logged twice, and if we cleanse the siblings_data immediately, no pager appears.  This could be caused by google redirection, or perhaps even by an iframe which loads faster than the page.
   // Let's delay the cleansing (by a full 15 seconds for modem users).
   // The reason we want to cleanse is when the user later visits pages without the pager (e.g. from a bookmark), then that page should not pick up the packet!  We *could* address that by checking whether we are one of the targets in the packet, but we very occasionally had issues with that check, so opted to always display the pager if we have data
-  setTimeout(function(){
-    GM_setValue("siblings_data","");
+  clearDataTimer = setTimeout(function(){
+    var grabbedListNow = GM_getValue("siblings_data");
+    if (grabbedListNow == grabbedList) {
+      GM_setValue("siblings_data","");
+    }
+    clearDataTimer = null;
   },15000);
   // The passPacketByGM approach loses the earlier feature of retaining the pager if we come Back to this page.
-} else {
-  if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
-    grabbedList = document.location.hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
-    if (grabbedList) {
-      grabbedList = decodeURIComponent(grabbedList);
-    }
-  }
 }
 
 function onAGoogleSearchPage() {
@@ -209,6 +232,15 @@ function onAGoogleSearchPage() {
 }*/
 // Dear Google: I don't mind giving you useful feedback about which links I
 // clicked, but I *need* my siblings packet in the final arrival URL!
+
+// Occasionally (when a web page has no title) the window will get the URL as its title.  If Related_Links_Pager has created a *very* long URL, this can be upsetting to window managers.  Detect and fix this...
+if (document.title.length==0 && document.location.href.length>800) {
+	document.title = document.location.href.slice(0,100) + " ...";
+}
+// Let's also fix it, even if it wasn't our fault
+if (document.title.length > 800) {
+	document.title = document.title.slice(0,100) + " ...";
+}
 
 
 
@@ -280,6 +312,10 @@ if (!this.GM_addStyle) {
 // We consider related links, or "siblings", to be those on the current page
 // with the same DOM path as the clicked link.
 
+// TODO: We should change the rules to track ancestors/descendants in a tree
+// for mailing lists archives like this MHonArc page:
+//   http://www.redhat.com/archives/taroon-list/2007-August/thread.html
+
 function getGroupSignature(link) {
   if (!link.cachedGroupSignature) {
     // We remove offsets like [4] from the unique xpath to get a more general path signature.
@@ -312,7 +348,7 @@ function collectLinksInSameGroupAs(clickedLink) {
     }
   }
   if (verbose) {
-    GM_log("Got "+list.length+" matching siblings: for "+link.outerHTML+" with xpath "+seekXPath);
+    GM_log("Got "+collected.length+" matching siblings: for "+clickedLink.outerHTML+" with xpath "+seekXPath);
   }
   return collected;
 }
@@ -323,29 +359,29 @@ function collectLinksInSameGroupAs(clickedLink) {
 function isSuitable(link) {
 
   if (link.tagName != "A") {
-    return;
+    return false;
   }
 
   /*
   if (link.href.indexOf("#siblings=")>=0 || link.href.indexOf("&siblings=")>=0) {
     // This is already a prepared link!  Probably created by the pager.
     // No need to modify it.
-    return;
+    return false;
   }
   */
   // The above check doesn't work if we are using passPacketByGM, so:
   if (link.isRLPPagerLink) {
-    return;
+    return false;
   }
   if (link.protocol.indexOf(/*"http") != 0)*/ "javascript:") == 0) {
     // We should not add #s to javascript: links but it seems to work ok on ftp:// (FF)
-    return;
+    return false;
   }
 
   // Ignore links which are simply anchor into the current page
   // Note that .href gives the whole URL, so we check getAttribute("href")
   if (link.getAttribute("href") && link.getAttribute("href").charAt(0) == '#') {
-    return;
+    return false;
   }
 
   // What about links to #s in other pages?  I decided in the end to leave them
@@ -358,7 +394,11 @@ function isSuitable(link) {
   // '?' *outside* the hash.  (Which will no doubt break some sites, but
   // perhaps fewer!)
   if (link.hash && leaveHashUrlsAlone) {
-    return;
+    return false;
+  }
+
+  if (beFrugal && !canPassPacketByGM(link,[]) && document.location.host.indexOf("google") == -1) {
+    return false;
   }
 
   //// === Some sites complain about long URLs or unexpected strings. ===
@@ -381,11 +421,34 @@ function isSuitable(link) {
   var siteWillComplain = googleWillComplain || youtubeWillComplain;
 
   if (siteWillComplain) {
-    return;
+    return false;
   }
+
+  // Even with forceTravel=false, we still manage to break github's use of history API.
+  // Oh, that's not us.  They have just changed their site this week!  OK then let's keep things how they are for now.
+  /*
+  if (document.location.host == "github.com") {
+    if (link.host == document.location.host) {
+      //GM_log("Skipping github local link: dlh="+document.location.host+" lh="+link.host);
+      return false;
+    }
+  }
+  */
 
   return true;
 
+}
+
+function canPassPacketByGM(link, siblings) {
+  // Yes if we are in Firefox Greasemonkey
+  if (typeof GM_setValue == 'function' && !window.navigator.vendor.match(/Google/)) {
+    return true;
+  }
+  // Yes we can use our Fake shim above, if we are in Chrome, and travelling to the same host.
+  if (link.host == document.location.host && useLocalStorageWhenPossible) {
+    return true;
+  }
+  return false;
 }
 
 function checkClick(evt) {
@@ -427,13 +490,18 @@ function checkClick(evt) {
 
     siblings = JSON.stringify(siblings);
 
-    // I like to clear our highlights before travel, nice feedback to see something change.
+    // I like to clear our highlights before travel, nice feedback to see something changed.
     if (highlightLinkGroups) {
       clearList();
+      listOfHighlightedNodes = linksInGroup;
+      highlightList(link, visitingColor);
     }
 
-    if (passPacketByGM) {
+    if (canPassPacketByGM(link,siblings)) {
       // GM_log("[RLP] Saving siblings_data");
+      if (clearDataTimer) {
+        clearTimeout(clearDataTimer);
+      }
       GM_setValue("siblings_data",siblings);
       // GM_log("[RLP] Saving done");
       return; // Let the event occur naturally, if we do load a new page the packet will be picked up.
@@ -589,10 +657,13 @@ function createRelatedLinksPager(siblings) {
     var newSiblingsList = JSON.stringify(newRecords);
 
     link.isRLPPagerLink = true;
-    if (passPacketByGM) {
-      link.href = selectedRecord[1];
+    link.href = selectedRecord[1];
+    if (canPassPacketByGM(link,siblings)) {
       // We wait and set the packet only when the user clicks, since GM_setValue is a single global.  He may have gone browsing in another tab, using RLP there also and overwriting the packet, before coming back to click in this tab.
       link.addEventListener("click",function(e){
+        if (clearDataTimer) {
+          clearTimeout(clearDataTimer);
+        }
         GM_setValue("siblings_data",newSiblingsList);
       },false);
     } else {
@@ -645,8 +716,9 @@ function createRelatedLinksPager(siblings) {
   // We could create this lazily, but why not immediately? :P
   var pageList = document.createElement("div");
   pageList.className = "linkGroupPagerList";
-  pageList.style.maxWidth = (window.innerWidth * 0.40 | 0) + "px";
-  pageList.style.maxHeight = (window.innerHeight * 0.90 | 0) + "px";
+  //// Un-DRY - these are also %ages in the GM_addStyle above.
+  // pageList.style.maxWidth = (window.innerWidth * 0.40 | 0) + "px";
+  // pageList.style.maxHeight = (window.innerHeight * 0.90 | 0) + "px";
   for (var i=0;i<siblings.length;i++) {
     pageList.appendChild(document.createElement("br"));
     pageList.appendChild(document.createTextNode(""+(i+1)+". "));
@@ -699,16 +771,16 @@ if (highlightLinkGroups) {
     return startElem;
   }
 
-  var list = [];
+  var listOfHighlightedNodes = [];
 
   var directions = ["Top","Bottom","Left","Right"];
 
-  function highlightList(link) {
+  function highlightList(link, highlightColor, thisLinkHighlightColor) {
     if (verbose) {
-      GM_log("Highlighting "+list.length+" elements.");
+      GM_log("Highlighting "+listOfHighlightedNodes.length+" elements.");
     }
-    for (var i=0;i<list.length;i++) {
-      var elem = list[i];
+    for (var i=0;i<listOfHighlightedNodes.length;i++) {
+      var elem = listOfHighlightedNodes[i];
       var style = getComputedStyle(elem,null);
       if (highlightColor) {
         if (changeBackgroundNotBorder) {
@@ -730,6 +802,7 @@ if (highlightLinkGroups) {
             } else {
               elem.style["border"+dir] = ((parseInt(style["border"+dir])|0)+1)+"px "+lineStyle+" "+highlightColor;
             }
+            // Since we added 1px to the border, we subtract 1px from the margin.
             elem.style["margin"+dir] = ((parseInt(style["margin"+dir])|0)-1)+"px";
             // elem.style["padding"+dir] = ((parseInt(style["padding"+dir])|0)+1)+"px";
           }
@@ -738,9 +811,9 @@ if (highlightLinkGroups) {
     }
   }
 
-  function clearList() {
-    for (var i=0;i<list.length;i++) {
-      var elem = list[i];
+  function clearList(retainList) {
+    for (var i=0;i<listOfHighlightedNodes.length;i++) {
+      var elem = listOfHighlightedNodes[i];
       if (changeBackgroundNotBorder) {
         elem.style.backgroundColor = elem.savedOldBackgroundColor;
       } else {
@@ -752,20 +825,20 @@ if (highlightLinkGroups) {
         }
       }
     }
-    list.length = 0;
+    listOfHighlightedNodes.length = 0;
   }
 
   document.body.addEventListener("mouseover",function(evt) {
     var link = seekLinkInAncestry(evt.target || evt.sourceElement);
     if (isSuitable(link)) {
       clearList();
-      list = collectLinksInSameGroupAs(link);
+      listOfHighlightedNodes = collectLinksInSameGroupAs(link);
       if (showGroupCountInLinkTitle && !link.doneAppendGroupsize) {
         link.doneAppendGroupsize = true;
-        link.title = (link.title ? link.title+" " : "") + "("+list.length+" related links)";
+        link.title = (link.title ? link.title+" " : "") + "("+listOfHighlightedNodes.length+" related links)";
       }
-      if (list.length>=minimumGroupSize && list.length<maximumGroupSize) {
-        highlightList(link);
+      if (listOfHighlightedNodes.length>=minimumGroupSize && listOfHighlightedNodes.length<maximumGroupSize) {
+        highlightList(link, highlightColor, thisLinkHighlightColor);
       }
     }
   },true);
