@@ -8,12 +8,12 @@
 // @include        http://encyclopediadramatica.com/*
 // @include        http://www.wormus.com/leakytap/*
 // @include        http://theinfosphere.org/*
+// @include        http://rosettacode.org/mw/*
 // ==/UserScript==
 
+// Without this function wrapper, Mozilla Firefox rejects the whole script, because it sees the top-level 'return;' as invalid syntax!
+
 (function(){
-// The function wrapper is essential to allow breakout with return when sourced
-// as a bookmarklet, which on some browsers is a SyntaxError, so none of the
-// script runs, even if it should..
 
 //// Features:
 var toggleSidebar = true;
@@ -273,7 +273,7 @@ function doIt() {
 
 			// We don't want to act on all clicked body elements (notably not the WP
 			// image).  I detected two types of tag we wanted to click.
-			//if (!evt || evt.target.tagName == "UL" || evt.target.tagName == "DIV") {
+			/*if (!evt || evt.target.tagName == "UL" || evt.target.tagName == "DIV") {*/
 
 			// That was still activating on divs in the content!  (Gaps between paragraphs.)
 			// This only acts on the header area.
@@ -608,5 +608,5 @@ function doIt() {
 // setTimeout(doIt,2000);
 doIt();
 
-}();
+})();
 
