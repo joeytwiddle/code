@@ -12,7 +12,6 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  w
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
@@ -63,21 +62,38 @@ VisPlugin *get_vplugin_info(void)
 	return &bscope_vp;
 }
 
-// TODO BUG: bottom line of window does not decay properly.  Test with /stuff/would_like/mp3s/kahvi_new/ftp.scene.org/pub/music/groups/kahvicollective/kahvi101f_vizion-itistheskythatiscrying.ogg
+// You may want to use this for older machines, to save some CPU cycles:
+#define SKIP_BLURRING
+
+// FIXED: bottom line of window does not decay properly.  Test with /stuff/would_like/mp3s/kahvi_new/ftp.scene.org/pub/music/groups/kahvicollective/kahvi101f_vizion-itistheskythatiscrying.ogg
 
 // #define WIDTH 256
 // #define WIDTH 640
 // #define WIDTH 720
-#define WIDTH 800
+// #define WIDTH 800   // Favourite
 // #define WIDTH 960
-// #define WIDTH 1024
+#define WIDTH 1024
 #define HEIGHT 128
+// #define HEIGHT 192
+// #define HEIGHT 256
+//// At 256 we rather notice that the y-axis is double-chunked ^^
+// #define HEIGHT 512
+
+#define SCALE_HEIGHT (HEIGHT/128)
+
+// Joey's:
 #define min(x,y) ((x)<(y)?(x):(y))
 #define BPL	((WIDTH + 2))
+//// DECAY_RATE is no longer used, since all decay comes from spreading
 // #define DECAY_RATE 8
 #define DECAY_RATE 7
 // #define SKIP_FRAMES 2
 // The human eye may see many white lines even when only 1 is renderered, due to the high framerate.  SKIP_FRAMES can make only 1 white line visible, but the oscilloscope will also appear more flickery / less smooth.
+
+// #define ScaleHeight 1.9
+
+#define Thicker_Line 0
+// #define Thicker_Line 1
 
 #ifdef SKIP_FRAMES
 static gint frameCount;
@@ -108,7 +124,8 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0x00BFFF;  // cyan lightning
 		// bscope_cfg.color = 0x008FFF;  // electric cyan
 		bscope_cfg.color = 0x007FFF;  // electric blue
-		// bscope_cfg.color = 0x0087FF;  // electric blue
+		// bscope_cfg.color = 0x0087FF;  // lighter electric blue
+		// bscope_cfg.color = 0x0000FF;  // pure blue
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
 		
@@ -122,18 +139,19 @@ void bscope_read_config(void)
 	}
 }
 
-
 // #define fadeRate 0.9961
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.92
 #define blurTao 0.3
 #define blurTao2 0.9
-#define BOTTOM_OUT 64
 
-// You may want to use this for older machines, to save some CPU cycles:
-// #define SKIP_BLURRING
+#ifdef SKIP_BLURRING
+	#define fadeRate 0.88
+#else
+	#define fadeRate 0.92
+	#define BOTTOM_OUT 64
+#endif
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -201,11 +219,15 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			*/
 #endif
 
+#ifdef BOTTOM_OUT
 			if (sum > BOTTOM_OUT)
 				sum = sum * fadeRate;
 			else
 				if (sum > 0)
 					sum--;
+#else
+			sum = sum * fadeRate;
+#endif
 
 #ifndef SKIP_BLURRING
 		}
@@ -248,15 +270,35 @@ void generate_cmap(void)
 	guint32 colors[256],i,red,blue,green;
 	if(window)
 	{
-		red = (guint32)(bscope_cfg.color / 0x10000);
-		green = (guint32)((bscope_cfg.color % 0x10000)/0x100);
-		blue = (guint32)(bscope_cfg.color % 0x100);
+		red = (guint32)((bscope_cfg.color >> 16) /*& 0xff*/);
+		green = (guint32)((bscope_cfg.color >> 8) & 0xff);
+		blue = (guint32)((bscope_cfg.color) & 0xff);
 		for(i = 255; i > 0; i--)
 		{
-			if (i == 255)
-				colors[i] = 0xFFFFFF;
-			else
-				colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
+
+			#ifdef SKIP_BLURRING
+
+				if (i == 255)
+					colors[i] = 0xFFFFFF;
+				else
+					colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
+
+			#else
+
+				// Fade black -> color -> white in 2 stages.
+				// High firstPhaseEnd makes only the previous frame's line brighter than blue.  Good for slow CPUs with a low framerate?
+				#define firstPhaseEnd 210.0
+				if (i <= firstPhaseEnd) {
+					float thruFirst = (float)i/firstPhaseEnd;
+					colors[i] = (((guint32)(thruFirst*red) << 16) | ((guint32)(thruFirst*green) << 8) | ((guint32)(thruFirst*blue)));
+				} else {
+					float thruSecond = (float)(i-firstPhaseEnd)/(255-firstPhaseEnd);
+					float notThruSecond = 1.0 - thruSecond;
+					colors[i] = (((guint32)(notThruSecond*red + thruSecond*255) << 16) | ((guint32)(notThruSecond*green + thruSecond*255) << 8) | ((guint32)(notThruSecond*blue + thruSecond*255)));
+				}
+
+			#endif
+
 		}
 		colors[0]=0;
 		if(cmap)
@@ -369,20 +411,47 @@ static void bscope_render_pcm(gint16 data[2][512])
 #endif
 
 	bscope_blur_8_no_asm(other_rgb_buf,target_rgb_buf, WIDTH, HEIGHT, BPL);
-	prev_y = y = (HEIGHT / 2) + (data[0][0] >> 9);
+	prev_y = y = (HEIGHT / 2) + SCALE_HEIGHT*(data[0][0] >> 9);
 	for(i = 0; i < WIDTH; i++)
 	{
-		y = (HEIGHT / 2) + (data[0][i >> 1] >> 9);
-		// Since we are reading only 1 sample for 2 pixels, we interpolate the second pixel:
+		//// When HEIGHT used to be 128:
+		y = (HEIGHT / 2) + SCALE_HEIGHT*(data[0][i >> 1] >> 9);
+
+		//// Since we are reading only 1 sample for 2 pixels, we interpolate the second pixel:
 		if (i%2 == 1)
-			y = (y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/2;
-		// However, that does not produce an even volume spread for the display
-		// (unless we add anti-aliasing).
+			y = (y + (HEIGHT / 2) + SCALE_HEIGHT*(data[0][(i+2) >> 1] >> 9))/2;
+
+		// However, along with the draw_vert_line below,
+		// this does not produce an even volume spread for the display.
+		// It plots more pixels for noisier y blocks.
+		// We need to add anti-aliasing.
+
+		// Without this, we plot the same height twice, and so plot the original
+		// staircase effect, which is at least reasonably fair on overall
+		// thickness.
+
+		//// Half-allow the above effect, by averaging 1:3 instead of 1:1
+		// if (i%2 == 1)
+			// y = (3*y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/4;
+		// May appear striped but not too much
+		// Allow a somewhat thicker line for wobbly bits
+
 		if(y < 0)
 			y = 0;
 		if(y >= HEIGHT)
 			y = HEIGHT - 1;
+
+//// Originally:
+#define Smooth_Line 0
+//// Make the line 1 pixel shorter by moving y towards prev_y
+// #define sgn(X) ( (X)>0 ? 1 : (X)<0 ? -1 : 0 )
+// #define Smooth_Line sgn(prev_y-y)
+//// Quite nice, not!
+// #define Smooth_Line (prev_y-y)/2
+
 		draw_vert_line(target_rgb_buf,i,prev_y,y);
+		// draw_vert_line(target_rgb_buf,i,prev_y,y + Thicker_Line + Smooth_Line);
+
 		prev_y = y;
 	}
 				
