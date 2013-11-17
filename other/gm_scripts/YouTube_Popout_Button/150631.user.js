@@ -49,8 +49,7 @@
              return results[1];
        };
 
-       var ytvidid
-          ytvidid = gup( 'v' );
+       var ytvidid = gup( 'v' );
 
        if (ytvidid != null) {
           var link = "http://www.youtube.com/watch_popup?v=";
