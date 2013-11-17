@@ -487,6 +487,11 @@ function doIt() {
 				GM_addStyle("#toc       { opacity: 0.2; }");
 				GM_addStyle("#toc:hover { opacity: 1.0; }");
 
+				// For Wikia (tested in Chrome):
+				if (getComputedStyle(toc)["background-color"] == "rgba(0, 0, 0, 0)") {
+					toc.style.backgroundColor = 'white';
+				}
+
 				return true;
 
 			}
@@ -532,7 +537,7 @@ function doIt() {
 
 		function indent(tag) {
 			// By targetting search we avoid indenting any blocks in left-hand-column (sidebar).
-			var whereToSearch = document.getElementById('bodyContent') || document.getElementById('content') || document;
+			var whereToSearch = document.getElementById('bodyContent') || document.getElementById('content') || document.getElementById('WikiaMainContent') || document.body;
 			var elems = whereToSearch.getElementsByTagName(tag);
 			if (elems.length == 1)
 				return;
@@ -555,7 +560,8 @@ function doIt() {
 				// var newChild = document.createElement('blockquote');
 				//// Unfortunately blockquotes tend to indent too much!
 				// var newChild = document.createElement('DIV');
-				var newChild = document.createElement('UL'); // UL works better with my Folding script, but we must not do this to the TOC!
+				//var newChild = document.createElement('UL'); // UL works better with my Folding script, but we must not do this to the TOC!
+				var newChild = document.createElement('div'); // <ul>s look wrong on bitbucket wikis (indent too much).  And since I haven't used my folding script recently, I am switching back to a nice <div>.
 				newChild.style.marginLeft = '1.0em';
 				var toAdd = elem.nextSibling;
 				while (toAdd && toAdd.tagName != tag) {
