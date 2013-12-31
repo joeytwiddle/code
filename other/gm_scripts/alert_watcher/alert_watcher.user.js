@@ -36,6 +36,7 @@ var init = function()
 			var d = new Date();
 			var now = d.valueOf();
 			if (nexttime <= now) {
+				// Firefox 24.0 reports: NS_ERROR_XPC_BAD_OP_ON_WN_PROTO: Illegal operation on WrappedNative prototype object
 				var result = oldfunc.apply(this,arguments);
 				if (!result) {
 					nexttime = now + 1000*resetTime;
