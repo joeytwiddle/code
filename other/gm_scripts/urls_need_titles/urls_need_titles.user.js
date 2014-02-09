@@ -36,7 +36,7 @@ var rules = [
         hostMatch: "youtube.TLD",
         pathMatch: "/watch",
         getTitle: function(){
-            return document.getElementsByTagName("h1")[0].textContent || document.title.replace(/^YouTube - /,'');
+            return document.title.replace(/^YouTube - /,'');
         }
     },
 
