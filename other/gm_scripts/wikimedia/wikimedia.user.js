@@ -56,10 +56,10 @@ if (alwaysUseLocalStorage || typeof GM_getValue !== 'function' || (""+GM_test).i
    if (localStorage) {
       // We add and remove leading "s" to match records saved/loaded via FallbackGMAPI.
       // This stops the bookmarklet-loaded version from trashing the userscript version's values.
-      this.GM_getValue=function (key,def) {
+      GM_getValue=function (key,def) {
          return (""+localStorage.getItem(key)).replace(/^s/,'') || def;
       };
-      this.GM_setValue=function (key,value) {
+      GM_setValue=function (key,value) {
          localStorage.setItem(key, "s"+value);
          return value;
       };
