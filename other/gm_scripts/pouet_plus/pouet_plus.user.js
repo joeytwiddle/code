@@ -8,6 +8,11 @@
 
 var bg_color = "#EAEAEA";
 var border_color = "#D5D5D5";
+var font_color = "#000000";
+var font_face = "tahoma";
+var font_size = "11px";
+
+// I stole this hover code from somewhere else but forgot to credit it - sorry!
 
 function locate(event) {
 	var posx, posy;
@@ -24,13 +29,20 @@ function find_div() {
 	return document.getElementById("link_tt");
 }
 
+function setImageSource(tt_image, demo_num, ext) {
+	// Used to work:
+	//tt_image.src = "screenshots/"+demo_num+"."+ext;
+	tt_image.src = "http://www.pouet.net/content/screenshots/"+demo_num+"."+ext;
+}
+
+
 function create_div(event,elem) {
 	var tt_div = document.createElement("div");
 	tt_div.setAttribute("id", "link_tt");
-	tt_div.setAttribute("style", "background:" + bg_color + ";border:1px solid " + border_color + ";padding:2px;position:absolute;z-index:1000;");
+	tt_div.setAttribute("style", "background:" + bg_color + ";border:1px solid " + border_color + ";padding:2px;color:" + font_color + ";font-family:" + font_face + ";font-size:" + font_size + ";position:absolute;z-index:1000;");
 	var tt_image = new Image();
 	var demo_num = elem.href.replace(/.*?which=([0-9]*).*/,'$1');
-	tt_image.src = "screenshots/"+demo_num+".jpg";
+	setImageSource(tt_image, demo_num, "jpg");
 	tryOtherExtensionsIfNeeded(tt_image,demo_num,["gif","png"]);
 	tt_div.appendChild(tt_image);
 	tt_image.parentNode.style.display = 'none';
@@ -44,8 +56,7 @@ function tryOtherExtensionsIfNeeded(tt_image,demo_num,imageTypes) {
 			GM_log("We have run out of image types to try!");
 		} else {
 			var ext = imageTypes.pop();
-			GM_log("Trying: screenshots/"+demo_num+"."+ext);
-			tt_image.src = "screenshots/"+demo_num+"."+ext;
+			setImageSource(tt_image, demo_num, ext);
 		}
 	},false);
 	tt_image.addEventListener("load",function(){
