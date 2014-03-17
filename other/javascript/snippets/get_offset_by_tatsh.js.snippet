@@ -1,0 +1,24 @@
+function abspos(el) {
+  var ret = {left: el.offsetLeft, top: el.offsetTop};
+
+  if (window.getComputedStyle) {
+    var style = window.getComputedStyle(el, null);
+  
+    if (style.mozTranslation) {
+      var match = style.mozTranslation.match(/matrix\((\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?(\d+(\.\d+)?)(\s+)?(%|px|em|in|ex|cm|mm|pt|pc)?(\s+)?,(\s+)?(\d+(\.\d+)?)(\s+)?(%|px|em|in|ex|cm|mm|pt|pc)?(\s+)?\)/i);
+      if (match) {
+        ret.left += parseInt(match[14], 10);
+        ret.top += parseInt(match[19], 10);
+      }
+      else {
+        match = style.mozTranslation.match(/matrix3d\((\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?\d+(\.d+)?(\s+)?,(\s+)?(\d+(\.\d+)?)(%|px|em|in|ex|cm|mm|pt|pc)?,(\s+)?(\d+(\.\d+)?)(%|px|em|in|ex|cm|mm|pt|pc)?,(\s+)?(\d+(\.\d+)?)(%|px|em|in|ex|cm|mm|pt|pc)?,(\s+)?\d+(\.d+)?(\s+)?\)/i);
+        if (match) {
+          ret.left += parseInt(match[38], 10);
+          ret.top += paresInt(match[42], 10);
+        }
+      }
+    }
+  }
+
+  return ret;
+}

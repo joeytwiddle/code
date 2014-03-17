@@ -1,0 +1,14 @@
+javascript: document.title = ''; void 0
+  or
+javascript:void document.title = '';
+<-- smftre has quit (Ping timeout: 276 seconds)
+--> dragonshed (~chaka@ip65-47-31-138.z31-47-65.customer.algx.net) has joined ##javascript
+<-- dragonshed has quit (Changing host)
+--> dragonshed (~chaka@about/csharp/regular/chaka) has joined ##javascript
+--> Jet_Blazer (~JetBlazer@122.172.219.223) has joined ##javascript
+<-- Jet_Blazer has quit (Changing host)
+--> Jet_Blazer (~JetBlazer@unaffiliated/jet-blazer/x-8219823) has joined ##javascript
+<-- stafamus has quit (Ping timeout: 260 seconds)
+--> dragonshed|work (~chaka@about/csharp/regular/chaka) has joined ##javascript
+<-- Cupertino has quit (Quit: I give up...)
+<-- molgrew has quit (Quit: quit pro quo)

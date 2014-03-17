@@ -1,0 +1,420 @@
+   jQuery(document).ready(function () {
+
+      var TAB_MOVE_STICKYNESS = 5;
+
+      var tabs = function () {
+        this.init();
+        this.lastHintPosition = false;
+      };
+
+      tabs.prototype = {
+
+        init: function () {
+          this.attachEvents();
+        },
+
+        /**
+         * Calculates area and position information per each tab and puts it
+         * into an object for use in calculating if its moused over or not.
+         * Since elementFromPoint, mouseover, mouseenter events do not work
+         * in this scenario.
+         */
+        getTabAreas: function () {
+          var tabElements = jQuery('.tab');
+          var tabAreas = [],
+              element,
+              offset,
+              /* // Not needed at the moment.
+              bottom,
+              top,
+              height,
+              */
+              left,
+              right,
+              width;
+
+          for (var i = 0; i < tabElements.length; i++) {
+            element = jQuery(tabElements[i])
+            offset = element.offset();
+
+            width = element.outerWidth();
+            /* // not needed at the moment.
+            height = element.outerHeight();
+            */
+
+            left = offset.left;
+            right = offset.left + width;
+            /* // Not needed at the moment.
+            top = offset.top;
+            bottom = offset.top + height;
+            */
+
+            tabAreas.push({
+              element: tabElements[i],
+              /* // not needed at the moment.
+              height: height,
+              top: top,
+              bottom: bottom,
+              middleY: Math.floor(top + (height / 2)),
+              */
+              width: width,
+              left: left,
+              right: right,
+              middleX: Math.floor(left + (width / 2))
+            });
+          }
+
+          return tabAreas;
+        },
+
+        createDraggableElement: function (x, y, element) {
+          var draggableElement = jQuery(element).clone();
+          var draggableElementStyle = draggableElement[0].style;
+          draggableElement.appendTo(document.body);
+          draggableElementStyle.position ='absolute';
+          draggableElementStyle.zIndex = '1';
+          draggableElementStyle.left = x + 'px';
+
+          draggableElement.addClass('dragging');
+
+          return draggableElement;
+        },
+
+        getTabElementPosition: function (tabElement, tabElementWrapper) {
+          tabElementWrapper = tabElementWrapper || tabElement.parents('.tabs:first');
+          console.log('tabElementWrapper', tabElementWrapper);
+        },
+
+        /**
+         * Given an element, get the main tab element associated with the element.
+         */
+        getTabElement: function (target) {
+          var tabElement;
+
+          if (target) {
+            tabElement = (target.className.indexOf('tab') == -1) ? target.parentNode : target;
+            this.tabElement = tabElement;
+          }
+          else if (this.tabElement){
+            tabElement =  this.tabElement;
+          }
+          else{
+            console.error('could not get tab element.');
+          }
+          return jQuery(tabElement);
+        },
+
+        /**
+         * Determines if the element is a tab.
+         */
+        isTabElement: function (element) {
+          var tabElement = false;
+          element = jQuery(element);
+          if (element.hasClass('tab')) {
+            tabElement = true;
+          }
+          if (element.parent().hasClass('tab')) {
+            tabElement = true;
+          }
+          return tabElement;
+        },
+
+        /**
+         * Determine where the new tab position should be given the x, y (mouse
+         * position)
+         */
+        gettabDestinationPos: function (x, y, tabAreas) {
+
+          var tabArea,
+              tabAreaLen = tabAreas.length,
+              towardsDirection,
+              position = false;
+
+          for (var i = 0; i < tabAreaLen; i++) {
+            tabArea = tabAreas[i];
+            towardsDirection = (x > tabArea.middleX) ? 'right' : 'left';
+
+            if (x > tabArea.left && (tabAreas[i + 1] && x <= tabAreas[i + 1].left || !tabAreas[i + 1] && x <= tabAreas.right)) {
+
+              if (towardsDirection == 'right') {
+                position = i + 1;
+              }
+              else { // Left
+                position = i;
+              }
+
+              if (i >= tabAreaLen - 2) {
+                position = tabAreaLen - 2;
+              }
+
+
+              return position;
+
+            }
+
+          }
+
+          return position;
+
+        },
+
+        /**
+         * When we are done dragging we need to "drop" the tab element in the
+         * new position, inserting it into the DOM.
+         */
+        insertTabElementAtPosition: function (tabElement, position, tabElementWrapper) {
+          var tabElementDestination,
+              tabs = tabElementWrapper.find('.tab');
+
+
+          if (position !== 0) {
+            tabElementDestination = tabs.eq(position - 1);
+            // Inserts the placeholder after the specified position
+            tabElement.insertAfter(tabElementDestination);
+          }
+           // Special case for when the position is zero.
+          else {
+            tabElementDestination = tabs.eq(position);
+            // Inserts the placeholder before the specified position
+            tabElement.insertBefore(tabElementDestination);
+          }
+
+          return tabElement;
+        },
+
+        createPlaceHolder: function () {
+          return jQuery('<div class="placeHolder"></div>');
+        },
+
+        animateShyTabLeft: function (shyTab) {
+          var offset = shyTab.outerWidth();
+
+            shyTab.css({
+              position: 'relative',
+              left: offset
+            });
+
+            shyTab.addClass('animate');
+
+            shyTab.animate({
+              left:0
+            }, 500, function () {
+            });
+
+        },
+
+        /**
+         * Provides a visual hint that will display where the tab is going to be
+         * inserted.
+         */
+        showDestinationHintAtPosition: function (position, tabElementWrapper) {
+
+//      console.log('position', position);
+
+          var tabElement,
+              tabs = tabElementWrapper.find('.tab'),
+              destinationHint = this.createPlaceHolder(),
+              lastHintPosition = this.lastHintPosition,
+              shouldAnimateShyTab,
+              shyTab;
+
+          // Remove any previous destination hints.
+          this.removeDestinationHint(tabElementWrapper);
+
+          tabs.removeClass('animate');
+
+          if (lastHintPosition !== false) {
+            if (lastHintPosition == undefined || lastHintPosition === position) {
+              lastHintPosition = false;
+              shouldAnimateShyTab = false;
+            }
+            else if (position < lastHintPosition) {
+              shyTab = tabs.eq(position);
+              shouldAnimateShyTab = true
+            }
+            else if (position > lastHintPosition) {
+              shyTab = tabs.eq(position - 1);
+            shouldAnimateShyTab = true;
+            }
+          }
+          else {
+            shouldAnimateShyTab = false;
+          }
+
+          if (position !== 0) {
+            tabElement = tabs.eq(position - 1);
+
+            // Inserts the placeholder after the specified position
+            destinationHint.insertAfter(tabElement);
+          }
+           // Special case for when the position is zero.
+          else {
+            tabElement = tabs.eq(position);
+
+            // Inserts the placeholder before the specified position
+            destinationHint.insertBefore(tabElement);
+          }
+
+          if (shouldAnimateShyTab) {
+            this.animateShyTabLeft(shyTab);
+          }
+
+          this.lastHintPosition = position;
+
+        },
+
+        /**
+         * Removes any previous destination hints.
+         */
+        removeDestinationHint: function (scope) {
+          scope = scope || document.body;
+          jQuery(scope).find('.placeHolder').remove();
+        },
+
+        getTabPosition: function (tabElement, tabWrapper) {
+          return tabElement.index();
+        },
+
+        attachEvents: function () {
+
+          var self = this;
+
+          jQuery(document).bind('mousedown', function (eMouseDown) {
+
+            var target = eMouseDown.target;
+
+            // If its not a tab element, skip it
+            if (!self.isTabElement(target)){
+              return false;
+            }
+
+            // Its not a left click, skip it
+            if (eMouseDown.which !== 1) {
+              return false;
+            }
+
+            var startedDragging = false;
+
+            // Get the main tab element from the target. (may be an element inside of the tab)
+            var tabElement = self.getTabElement(eMouseDown.target),
+
+                tabElementWrapper = tabElement.parents('.tabs:first'),
+
+                // Create a draggable element, which will follow the cursor as user drags.
+                draggableElement = self.createDraggableElement(mouseDownX, mouseDownY, tabElement),
+
+                tabAreas = self.getTabAreas(),
+
+                originalTabElement = tabElement, // for readability.,
+
+                tabDestinationPos = self.gettabDestinationPos(eMouseDown.clientX, eMouseDown.clientY, tabAreas),
+
+                lasttabDestinationPos,
+
+                mouseDownX = eMouseDown.clientX,
+
+                mouseDownY = eMouseDown.clientY,
+
+                elementMarginLeft = parseInt(tabElement.css('margin-left')),
+
+                tabOffsetLeft = tabElement.offset().left,
+
+                offsetLeft = mouseDownX - tabOffsetLeft + elementMarginLeft,
+
+                cursorDifferenceFromMiddle =  (tabElement.outerWidth() / 2) - ((tabElement.outerWidth() / 2) - (mouseDownX - tabOffsetLeft));
+
+            tabElement.after(self.createPlaceHolder());
+
+            tabElement.remove();
+
+            // Move the draggable Element along with the cursor x position.
+            draggableElement[0].style.left = (mouseDownX - offsetLeft) + 'px';
+
+                cursorDifferenceFromMiddle = cursorDifferenceFromMiddle;
+            /**
+             * On Mouse Move.
+             */
+            var mouseMoveFunc = function (eMouseMove) {
+
+              if (!startedDragging) {
+//                if (Math.abs(eMouseMove.clientX - eMouseDown.clientX) > TAB_MOVE_STICKYNESS  || Math.abs(eMouseMove.y - eMouseDown.y) > TAB_MOVE_STICKYNESS) {
+                  startedDragging = true;
+//                }
+              }
+              else {
+
+                var mouseMoveX = eMouseMove.clientX,
+                    mouseMoveY = eMouseMove.clientY;
+
+                if (!tabAreas) {
+                  return false;
+                }
+
+                // Determine where the new tab position should be according to the cursor position.
+                tabDestinationPos = self.gettabDestinationPos(mouseMoveX - cursorDifferenceFromMiddle, mouseMoveY, tabAreas);
+
+                // If the mouse isn't over a tab position, find out where it should go.
+                if (tabDestinationPos === false) {
+                  // If its to the right of the last tab.
+                  if (mouseMoveX - cursorDifferenceFromMiddle > tabAreas[tabAreas.length - 1].left) {
+                    // its at the last position.
+                    tabDestinationPos = tabAreas.length - 2;
+                  }
+                  // If its to the left of the first tab.
+                  else if (mouseMoveX - cursorDifferenceFromMiddle < tabAreas[0].left){
+                    tabDestinationPos = 0; // its at the first position
+                  }
+                }
+
+                // If we have a destination, and it is different than what the last destination was.
+                if (tabDestinationPos !== false && tabDestinationPos !== lasttabDestinationPos) {
+                  self.showDestinationHintAtPosition(tabDestinationPos, tabElementWrapper);
+
+                  // notate what the last destination position was so we can figure
+                  // out when we have moved to a new destination position
+                  lasttabDestinationPos = tabDestinationPos;
+                }
+
+                // Move the draggable Element along with the cursor x position.
+                draggableElement[0].style.left = (mouseMoveX - offsetLeft) + 'px';
+
+              }
+
+            };
+
+            /**
+             * On Mouse Up.
+             */
+            var mouseUpFunc = function (eMouseUp) {
+
+                var result = self.insertTabElementAtPosition(originalTabElement, tabDestinationPos, tabElementWrapper);
+
+                self.removeDestinationHint(tabElementWrapper);
+
+                draggableElement.remove();
+            };
+
+            // Run the above mouseMoveFunc function when the mouse moves.
+            jQuery(document).bind('mousemove', mouseMoveFunc);
+
+            // Run the above mouseUpFunc function when the mouse is up.
+            jQuery(document).bind('mouseup', function _mouseUpFunc(eMouseUp) {
+              mouseUpFunc.call(self,eMouseUp);
+              // Unbind Stuff so that it doesn't get re-bound every time the mouse goes down.
+              jQuery(document).unbind('mousemove', mouseMoveFunc); // Unbind mousemove.
+              jQuery(document).unbind('mouseup', _mouseUpFunc); // Unbind the current function.
+            });
+
+          });
+
+        }
+
+      };
+
+      new tabs();
+
+
+
+
+    });
+​

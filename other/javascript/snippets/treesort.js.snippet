@@ -1,0 +1,22 @@
+function addToTree(item,value,tree) {
+	if (tree.value === undefined) {
+		tree.value = value;
+		tree.item = item;
+	} else if (value < tree.value) {
+		if (tree.left === undefined)
+			tree.left = {};
+		addToTree(item,value,tree.left);
+	} else {
+		if (tree.right === undefined)
+			tree.right = {};
+		addToTree(item,value,tree.right);
+	}
+}
+
+function traverseTreeBackwards(tree,doFn) {
+	if (tree.right)
+		traverseTreeBackwards(tree.right,doFn);
+	doFn(tree.item);
+	if (tree.left)
+		traverseTreeBackwards(tree.left,doFn);
+}

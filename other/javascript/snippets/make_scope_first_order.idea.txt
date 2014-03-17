@@ -1,0 +1,10 @@
+11:00 < joeytwiddle_> also, have you ever thought it would be nice if scope was an object you could grab hold of and pass around?  (or more accurately the scope-chain)
+11:01 < joeytwiddle_> conversely, we might be able to put objects into the scope-chain if we wanted.  (eat that with-statement!)
+11:02 < joeytwiddle_> since JS made functions first-order, this would go a little further and give us horrible amounts of control :P
+
+11:14 < ckknight> joeytwiddle_: I kind of like that the scope isn't as malleable as that. It would completely destroy 
+                  static lexical scoping and would cause us the same issues as the old LISP dynamic bindings used to, 
+                  especially since the hygiene of any scope could be called into question.
+
+11:19 < joeytwiddle_> You're right, writing to scope might not be pretty.  But reading it could be pretty harmless.
+

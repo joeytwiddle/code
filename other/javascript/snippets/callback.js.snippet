@@ -1,0 +1,1 @@
+Callbacks: If a process will take time to complete (it is asynchronous), then your code should NOT "wait" for the response.  Instead it should construct a "callback function", and offer that to be called when the operation has completed.  Thanks to closure in JS scoping, when your function is called, it will still be able to see all the variables of the functions above/around it.

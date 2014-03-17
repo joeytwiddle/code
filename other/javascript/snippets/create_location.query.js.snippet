@@ -1,0 +1,11 @@
+(function()
+{
+	location.query={};
+	var kv, pairs = location.search.substr(1).split(/&/);
+	for(var i=0;i<pairs.length;i++)
+	{
+		kv = pairs[i].split(/=/);
+		if(kv.length == 2)
+			location.query[kv[0]]=kv[1];
+	}
+})();

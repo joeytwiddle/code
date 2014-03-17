@@ -1,0 +1,45 @@
+<SCRIPT LANGUAGE="JavaScript"><!--
+function demoMatchClick() {
+  var re = new RegExp(document.demoMatch.regex.value);
+  if (document.demoMatch.subject.value.match(re)) {
+    alert("Successful match");
+  } else {
+    alert("No match");
+  }
+}
+
+function demoShowMatchClick() {
+  var re = new RegExp(document.demoMatch.regex.value);
+  var m = re.exec(document.demoMatch.subject.value);
+  if (m == null) {
+    alert("No match");
+  } else {
+    var s = "Match at position " + m.index + ":\n";
+    for (i = 0; i < m.length; i++) {
+      s = s + m[i] + "\n";
+    }
+    alert(s);
+  }
+}
+
+function demoReplaceClick() {
+  var re = new RegExp(document.demoMatch.regex.value, "g");
+  document.demoMatch.result.value = 
+    document.demoMatch.subject.value.replace(re, 
+      document.demoMatch.replacement.value);
+}
+// -->
+</SCRIPT>
+
+<FORM ID="demoMatch" NAME="demoMatch" METHOD=POST ACTION="javascript:void(0)">
+<P>Regexp: <INPUT TYPE=TEXT NAME="regex" VALUE="\bt[a-z]+\b" SIZE=50></P>
+<P>Subject string: <INPUT TYPE=TEXT NAME="subject" 
+   VALUE="This is a test of the JavaScript RegExp object" SIZE=50></P>
+<P><INPUT TYPE=SUBMIT VALUE="Test Match" ONCLICK="demoMatchClick()">
+<INPUT TYPE=SUBMIT VALUE="Show Match" ONCLICK="demoShowMatchClick()"></P>
+
+<P>Replacement text: <INPUT TYPE=TEXT NAME="replacement" VALUE="replaced" SIZE=50></P>
+<P>Result: <INPUT TYPE=TEXT NAME="result" 
+   VALUE="click the button to see the result" SIZE=50></P>
+<P><INPUT TYPE=SUBMIT VALUE="Replace" ONCLICK="demoReplaceClick()"></P>
+</FORM>

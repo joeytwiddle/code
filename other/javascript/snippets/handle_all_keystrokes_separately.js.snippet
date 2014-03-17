@@ -1,0 +1,9 @@
+function getKeyCode(event) {
+  var key=event.keyCode;
+  if(gvar.isOpera) { if(key>96 && key<123) { key=key-32; } } // key.toUpperCase();
+  if(event.ctrlKey)  { key=key+1000; }
+  if(event.shiftKey) { key=key+2000; }
+  if(event.altKey)   { key=key+4000; }
+  if(event.metaKey)  { key=key+8000; }
+  return key;
+}

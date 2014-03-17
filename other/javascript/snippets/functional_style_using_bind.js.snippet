@@ -1,0 +1,9 @@
+<benvie> >> Array(50).join(' ').split(' ').map(Function.call.bind(Number)).map(Math.pow.bind(null, 2))
+
+<benvie> >>flatten = Function.call.bind([].concat,[]); flatten(1, 2, 3, ['a', 'b', 'c'], 5, 10, 20)
+
+<benvie> >>callbind = Function.bind.bind(Function.call); slice=callbind([].slice); slice(['a','b','c'], 2)
+
+
+<benvie> >>applybind = Function.bind.bind(Function.apply); pushall = applybind([].push); x=['a','b','c']; pushall(x, Object.getOwnPropertyNames(this)); x
+

@@ -1,0 +1,3 @@
+CSS inclusion - IE fires both events, onload first, then onreadystatechange. FF fires nothing.
+JS inclusion - IE fires onreadystatechange. FF fires onload. Both will execute the script before firing the event.
+http://www.phpied.com/javascript-include-ready-onload/

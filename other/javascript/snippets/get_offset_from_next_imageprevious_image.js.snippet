@@ -1,0 +1,4 @@
+  function getYOffset(node) {
+    for (var offset = 0; node; offset += node.offsetTop, node = node.offsetParent);
+    return offset;
+  }

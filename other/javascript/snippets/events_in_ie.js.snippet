@@ -1,0 +1,32 @@
+      var mousex = 0;
+      var mousey = 0;
+       
+       
+      function getMousepoints(ev)
+      {
+          mousex=ev.pageX;
+          mousey=ev.pageY;
+       
+       
+          return false;
+      }
+       
+      function getMousepointsIE()
+      {
+       
+          mousex = window.event.x+document.body.scrollLeft + document.documentElement.scrollLeft;
+          mousey = event.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+       
+          return false;
+      }
+       
+      if(document.all != null)
+      {
+         document.onmousemove=getMousepointsIE;
+      }
+      else
+      {
+          window.captureEvents(Event.MOUSEMOVE);
+          window.onmousemove = getMousepoints;
+       
+      }

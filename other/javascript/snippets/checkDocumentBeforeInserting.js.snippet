@@ -1,0 +1,5 @@
+function isSafeHTML(html) {
+  var doc = document.implementation.createHTMLDocument("Test");
+  doc.body.innerHTML = html;
+  return !doc.querySelector("scripts,style,link,object");
+}

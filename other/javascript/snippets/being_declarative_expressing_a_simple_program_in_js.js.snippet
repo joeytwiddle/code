@@ -1,0 +1,59 @@
+// by joey
+
+// fn main() { if (argc < 1) { echo "Say something!"; } }
+
+var program = [
+
+	{
+		type: "function"
+		name: "main"
+		argNames: ["argCount", "argList"],
+		content: [
+
+			{
+				type: "if",
+				condition: {
+					type: "expression",
+					content: {
+						type: "comparison",
+						direction: "lessThan",
+						operandA: {
+							type: "varRef",
+							name: "argc"
+						},
+						operandB: {
+							type: "numericLiteral",
+							value: 1
+						}
+					}
+				},
+				onTrue: [
+					{
+						type: "functionCall",
+						fnName: "echo",
+						argumentsToPass: [
+							{
+								type: "stringLiteral",
+								value: "Say something!"
+							}
+						]
+					}
+				],
+				onFalse: null
+			}
+
+		]
+	}
+
+];
+
+// We could be more specific and use a ` type: "commandBlock" `
+// object instead of arrays for instructions.
+
+// I also like the idea, although it requires a lot of
+// importing, of using `IF` and `NUMERIC_LITERAL` variable
+// references, rather than strings.  These vars would be
+// imported from the language, and throw a var-not-found
+// exception much earlier than the strings!
+
+

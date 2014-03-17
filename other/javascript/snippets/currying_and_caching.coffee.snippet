@@ -1,0 +1,11 @@
+cached = (fn) -> cache = {}; (arg) -> cache[arg] ?= fn arg
+curry = (fn, a...) -> (b...) -> fn a..., b...
+
+getter   = (key) ->        -> @[key]
+setter   = (key) -> (val) -> @[key] = val
+
+class Foo
+  getBar: getter 'bar'
+  setBaz: setter 'baz'
+  cachedFunc: cached (n) -> someHeavyComputationWith n
+  fetchQux: curry $.get, '/qux'

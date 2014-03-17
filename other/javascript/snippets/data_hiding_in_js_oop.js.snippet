@@ -1,0 +1,13 @@
+function Cat() {
+    var X = 'foo';
+    this.getX = function() { return X; }
+    this.setX = function(y) { X = y; }
+}
+
+var C1= new Cat();
+var C2 = new Cat();
+
+C1.setX('bar');
+
+alert(C1.getX());
+alert(C2.getX());

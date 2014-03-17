@@ -1,0 +1,12 @@
+var req = new XMLHttpRequest();
+function resHandler() {
+	if (this.readyState==4 && this.status==200) {
+		// OK to process this.responseText
+	} else {
+		// Inform developer of error, do fallback for user.
+	}
+}
+req.onreadystatechange = resHandler;
+req.open("GET", "http://example.com/foo", false);
+req.send();
+

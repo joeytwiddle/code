@@ -1,0 +1,24 @@
+// This worked for me in Node, but not in Chrome.
+
+var stack_holder = new Error;
+
+function stackPrepare(e,stacks) {
+  var stack = stacks;
+  for (var p in stack[0]) {
+    stack[p] = stack[0][p];
+  }
+  return stack;
+}
+
+
+function getStack(){
+  var old = Error.prepareStackTrace;
+  Error.prepareStackTrace = stackPrepare;
+  Error.captureStackTrace(stack_holder, getStack);
+  var stack = stack_holder.stack;
+  Error.prepareStackTrace = old;
+  return stack;
+}
+
+
+console.log(getStack())

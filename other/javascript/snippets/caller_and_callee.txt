@@ -1,0 +1,7 @@
+arguments.callee.caller is not deprecated, though it does make use of the Function.caller property. (arguments.callee will just give you a reference to the current function)
+
+Function.caller, though non-standard according to ECMA3, is implemented across all current major browsers.
+arguments.caller is deprecated in favour of Function.caller, and isn't implemented in some current major browsers (e.g. Firefox 3).
+So the situation is less than ideal, but if you want to access the calling function in Javascript across all major browsers, you can use the Function.caller property, either accessed directly on a named function reference, or from within an anonymous function via the arguments.callee property.
+
+-- From http://stackoverflow.com/questions/103598/why-was-the-arguments-callee-caller-property-deprecated-in-javascript

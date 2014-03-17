@@ -1,0 +1,25 @@
+
+if (!this.XMLHttpRequest) {
+	this.XMLHttpRequest = function() {
+		var nextURL;
+		var iframe = document.createElement("iframe");
+		this.open = function(method, url, sync) {
+			nextURL = url;
+		};
+		this.send = function() {
+			iframe.src = nextURL;
+			setTimeout(function(){
+				this.readyState = 4;
+				this.status = 200;
+				this.responseText = iframe.document.body.innerHTML;
+				if (this.onreadystatechange) {
+					this.onreadystatechange({});
+				}
+			},4000);
+		};
+	};
+}
+
+
+// XHR for IE:
+var req = new ActiveXObject("Microsoft.XMLHTTP");

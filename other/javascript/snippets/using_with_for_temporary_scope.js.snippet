@@ -1,0 +1,20 @@
+function good() {
+  with ({x: 'worked!'}) {
+    var f = function() {
+      document.getElementById('good').innerHTML = x;
+    }
+  }
+  f();
+}
+
+function bad() {
+  with ({x: 'worked!'}) {
+    function f() {
+      document.getElementById('bad').innerHTML = x;
+    }
+  }
+  f();
+}
+
+good();
+bad();

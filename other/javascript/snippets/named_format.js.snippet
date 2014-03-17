@@ -1,0 +1,12 @@
+String.prototype.namedFormat = function(obj) {
+	return String.prototype.fnFormat.call(this, function(capture) {
+		return obj[capture.match(/\w+/)];
+	}, /\{\w+\}/g);
+};
+
+String.prototype.fnFormat = function(fn, p) {
+	var pattern = p || /\{\w+\}/g;
+	return this.replace(pattern, fn);
+};
+
+// lets me do something like  "{animal} says {speak}!".namedFormat({animal:"dog", speak:"bark"});  /outputs "dog says bark!"
