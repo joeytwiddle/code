@@ -36,7 +36,7 @@ var init = function()
 			var d = new Date();
 			var now = d.valueOf();
 			if (nexttime <= now) {
-				var result = oldfunc.apply(this,arguments);
+				var result = oldfunc.apply(unsafeWindow,arguments);
 				if (!result) {
 					nexttime = now + 1000*resetTime;
 				}
