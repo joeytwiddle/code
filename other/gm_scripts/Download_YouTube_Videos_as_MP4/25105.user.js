@@ -28,10 +28,10 @@
 // ==/UserScript==
 
 (function () {
-  var FORMAT_LABEL={'5':'FLV 240p','18':'MP4 360p','22':'MP4 720p','34':'FLV 360p','35':'FLV 480p','37':'MP4 1080p','38':'MP4 2160p','43':'WebM 360p','44':'WebM 480p','45':'WebM 720p','46':'WebM 1080p','135':'MP4 480p - no audio','137':'MP4 1080p - no audio','138':'MP4 2160p - no audio','139':'M4A 48kbps - audio','140':'M4A 128kbps - audio','141':'M4A 256kbps - audio','264':'MP4 1440p - no audio'};
-  var FORMAT_TYPE={'5':'flv','18':'mp4','22':'mp4','34':'flv','35':'flv','37':'mp4','38':'mp4','43':'webm','44':'webm','45':'webm','46':'webm','135':'mp4','137':'mp4','138':'mp4','139':'m4a','140':'m4a','141':'m4a','264':'mp4'};
-  var FORMAT_ORDER=['5','18','34','43','35','135','44','22','45','37','46','264','38','139','140','141'];
-  var FORMAT_RULE={'flv':'max','mp4':'all','webm':'none','m4a':'max'};
+  var FORMAT_LABEL={'5':'FLV 240p','17':'3GP 176p','18':'MP4 360p','22':'MP4 720p','34':'FLV 360p','35':'FLV 480p','36':'3GP 320p','37':'MP4 1080p','38':'MP4 2160p','43':'WebM 360p','44':'WebM 480p','45':'WebM 720p','46':'WebM 1080p','135':'MP4 480p - no audio','137':'MP4 1080p - no audio','138':'MP4 2160p - no audio','139':'M4A 48kbps - audio','140':'M4A 128kbps - audio','141':'M4A 256kbps - audio','264':'MP4 1440p - no audio'};
+  var FORMAT_TYPE={'5':'flv','17':'3gp','18':'mp4','22':'mp4','34':'flv','35':'flv','36':'3gp','37':'mp4','38':'mp4','43':'webm','44':'webm','45':'webm','46':'webm','135':'mp4','137':'mp4','138':'mp4','139':'m4a','140':'m4a','141':'m4a','264':'mp4'};
+  var FORMAT_ORDER=['17','36','5','18','34','43','35','135','44','22','45','37','46','264','38','139','140','141'];
+  var FORMAT_RULE={'flv':'max','mp4':'all','webm':'none','m4a':'max','3gp':'all'};
   // all=display all versions, max=only highest quality version, none=no version  
   // the default settings show all MP4 videos, the highest quality FLV and no WebM
   var SHOW_DASH_FORMATS=false;
