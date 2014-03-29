@@ -3,7 +3,7 @@
 // @namespace      UNT
 // @description    When you paste a URL to a friend, it is useful if it contains the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs!
 // @include        http://*/*
-// @exclude        https://*/*
+// @include        https://github.com/*/*
 // ==/UserScript==
 
 var overwriteExistingHash = true;
@@ -97,7 +97,24 @@ var rules = [
             // Otherwise (good when viewing a script page)
             return document.title.replace(/ - .*/,'');
         }
+    },
+
+    {
+        hostMatch: "github.com",
+        pathMatch: "/[^/]*/[^/]*",
+        getTitle: function(){
+            // This is a naughty hack.  It doesn't return a title to put in the URL.
+            // Instead it grabs the repository description from the page, and puts that in the title.
+            // This is useful when bookmarking a git repository, because the name alone is often not very descriptive.
+            var repoDescriptionElems = document.getElementsByClassName("repository-description");
+            if (repoDescriptionElems) {
+                var repoDescription = repoDescriptionElems[0].textContent.trim();
+                document.title = document.title.replace(/(\s+[^ ]*\s+GitHub)/, " - "+repoDescription+"$1");
+            }
+            return null;
+        }
     }
+
 
 ];
 
