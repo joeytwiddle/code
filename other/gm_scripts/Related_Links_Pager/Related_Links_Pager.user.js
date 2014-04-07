@@ -46,7 +46,7 @@ var enableOnCtrlClick  = true;
 var enableOnShiftClick = true;        // Allows you to avoid the script when needed
 var enableOnRightClick = false;
 
-var keepNavigationHistory = false;    // When off, paging is not added to browser history.  The back button will return you to the page before you started paging.
+var keepNavigationHistory = false;    // When off, sideways paging is not added to the browser history.  The back button will return you to the page before you started paging, not the previous page you were on.
 var leaveHashUrlsAlone = true;        // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
 var forceTravel = false;              // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
                                       // BUG: I think this overrides Google Preview Pane's handler if we click a link expecting it to be previewed.
@@ -675,8 +675,13 @@ function createRelatedLinksPager(siblings) {
     link.title = (link.title ? link.title+' ' : '') + maybeHost(link);
     link.onclick = function(evt){
       if (!keepNavigationHistory) {
-        document.location.replace(this.href);
-        evt.preventDefault();
+        if (evt.ctrlKey || evt.metaKey) {
+          // User is trying to open this link in a new tab.  Don't disturb her!
+        } else {
+          // Navigate sideways (not forwards).  History will not remember current page.
+          document.location.replace(this.href);
+          evt.preventDefault();
+        }
       }
     };
     return link;
