@@ -125,6 +125,7 @@ function iterateAndDo(list,iterationFn) {
 
 function createFaviconFor(url) {
 
+	var protocol = url.replace(/^([^\/]*):\/\/.*/,'$1');
 	var host = url.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
 	// if (host == document.location.host) {
 		// return null;
@@ -141,7 +142,8 @@ function createFaviconFor(url) {
 			if (!alwaysUseGoogle) {
 				img.title = "Failed to find favicon for "+host;
 			}
-			img.src = 'http://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
+			//img.src = 'http://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
+			img.src = 'http://g.etfv.co/' + protocol + "://" + host; // As suggested by decembre
 			// @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
 			img.removeEventListener('error',tryExtension,true);
 		}
@@ -152,7 +154,8 @@ function createFaviconFor(url) {
 			// Answer: NO!
 		}
 	}
-	img.addEventListener('error',tryExtension,true);
+	// img.addEventListener('error',tryExtension,true);
+	img.onerror = tryExtension;
 	tryExtension();
 
 	img.title = ''+host;

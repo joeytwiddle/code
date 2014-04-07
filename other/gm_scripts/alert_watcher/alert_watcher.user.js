@@ -16,10 +16,10 @@
 
 var resetTime = 60; // This many seconds after user Cancels alerts, re-enable them.  60 gives you a whole minute to leave the page.  I prefer 10 when I am developing.
 
-// This version of the script:
+// The online version of the script at:
 //   http://hwi.ath.cx/javascript/alert_watcher.user.js
-// can be embedded into any web-page, to protect users who are not using
-// GreaseMonkey or Mozilla.
+// can be embedded into any web-page, to protect users who are not using GreaseMonkey or Mozilla.
+// However this version cannot, at least until we shim unsafeWindow.
 
 var init = function()
 {
@@ -36,6 +36,9 @@ var init = function()
 			var d = new Date();
 			var now = d.valueOf();
 			if (nexttime <= now) {
+				// Firefox 24.0 was reporting: NS_ERROR_XPC_BAD_OP_ON_WN_PROTO: Illegal operation on WrappedNative prototype object
+				//var result = oldfunc.apply(this,arguments);
+				// Fix:
 				var result = oldfunc.apply(unsafeWindow,arguments);
 				if (!result) {
 					nexttime = now + 1000*resetTime;
