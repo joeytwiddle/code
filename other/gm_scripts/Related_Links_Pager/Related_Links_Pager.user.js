@@ -754,9 +754,11 @@ if (grabbedList) {
   createRelatedLinksPager(siblings);
   if (clearDataFromLocation) {
     if (window.history.replaceState) {
-      // We can do away with the # entirely
-      var urlWithoutHash = document.location.href.replace(/#.*/,'');
-      window.history.replaceState(null, null, urlWithoutHash);
+      // Remove the siblings packet if it is found.  Try to preserve anything else in the URL.
+      var urlWithoutSiblingsPacket = document.location.href.replace(/(#siblings=.*|[?&]siblings=[^&]*)/,'');
+      if (urlWithoutSiblingsPacket != document.location.href) {
+        window.history.replaceState(null, null, urlWithoutSiblingsPacket);
+      }
     } else {
       // Just cleanup by adjusting the #.....
       //document.location.hash = ".";     // BAD.  "#." breaks google search results pages, tho we rarely page through them.
