@@ -36,10 +36,14 @@ var init = function()
 			var d = new Date();
 			var now = d.valueOf();
 			if (nexttime <= now) {
-				// Firefox 24.0 was reporting: NS_ERROR_XPC_BAD_OP_ON_WN_PROTO: Illegal operation on WrappedNative prototype object
 				//var result = oldfunc.apply(this,arguments);
-				// Fix:
-				var result = oldfunc.apply(unsafeWindow,arguments);
+				// But in Firefox 24 that was producing: NS_ERROR_XPC_BAD_OP_ON_WN_PROTO: Illegal operation on WrappedNative prototype object
+				// And another install said: 'confirm' called on an object that does not implement interface Window
+				// So I changed it to:
+				//var result = oldfunc.apply(unsafeWindow,arguments);
+				// I swear that worked for a while, but then in Firefox 28: Permission denied to access property 'length'
+				// Attempting another fix - this seems to work ... for now!
+				var result = oldfunc.apply(window,arguments);
 				if (!result) {
 					nexttime = now + 1000*resetTime;
 				}
