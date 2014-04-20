@@ -104,12 +104,13 @@ var rules = [
         pathMatch: "/[^/]*/[^/]*",
         getTitle: function(){
             // This is a naughty hack.  It doesn't return a title to put in the URL.
-            // Instead it grabs the repository description from the page, and puts that in the title.
+            // Instead it grabs the repository description from the page, and puts that in the title*.
             // This is useful when bookmarking a git repository, because the name alone is often not very descriptive.
             var repoDescriptionElems = document.getElementsByClassName("repository-description");
             if (repoDescriptionElems) {
                 var repoDescription = repoDescriptionElems[0].textContent.trim();
-                document.title = document.title.replace(/(\s+[^ ]*\s+GitHub)/, " - "+repoDescription+"$1");
+                // For a while their titles were "<author_name>/<repo_name> <weird-dot> GitHub" but right now they just have the repo path.
+                document.title = document.title.replace(/(\s+[^ ]*\s+GitHub|)$/, " - "+repoDescription+"$1");
             }
             return null;
         }
