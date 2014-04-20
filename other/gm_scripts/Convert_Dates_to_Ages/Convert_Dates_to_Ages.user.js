@@ -128,6 +128,10 @@ for (var i=elements.length-1; i-->0; ) {
 		text = text.trim().replace('-','/','g');
 		// Firefox will also pick the 19th century if none is specified:
 		text = text.replace(/(\d+\/\d+)\/(\d\d)/,'$1/20$2');
+		// If it is just a number, then it is not a date!
+		if (text.replace(/[,. ]/g,'').match(/^[0-9]*$/)) {
+			continue;
+		}
 		var date = new Date(text);
 		if (date && date.getTime()) {
 			var age = getAgeFromDate(date,1)+" ago";
