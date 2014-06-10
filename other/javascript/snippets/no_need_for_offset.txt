@@ -1,0 +1,6 @@
+<rezoner> IE9 amazes me
+<rezoner> it has event.x
+<rezoner> oh http://help.dottoro.com/ljvbvmsj.php
+<rezoner> Armen138, thanks for the link
+<rezoner> if it is true then var x = event.x || event.layerX
+<rezoner> will support all browsers

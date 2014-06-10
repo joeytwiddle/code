@@ -1,0 +1,6 @@
+http://jsperf.com/svg-element-manipulation/5
+
+Using the API appears to be fast, and readable:
+
+r2.transform.baseVal.getItem(0).setTranslate(x,0);
+

@@ -1,0 +1,128 @@
+// From: http://www.dynamicdrive.com/forums/blog.php?b=3
+
+var Generic = (function() {
+  var MATCH_FAIL = {},
+      MATCH_ANY  = function() { return MATCH_ANY; };
+
+  function create(fallback) {
+    var s = function() {
+      for (var i = 0, args = Array.prototype.slice.call(arguments), r; i < specs.length; ++i)
+        if ((r = specs[i].match(args)) !== MATCH_FAIL)
+          return r;
+
+      if (s._fallback)
+        return s._fallback.apply(this, args);
+
+      throw new Error("Generic: No methods matched and no fallback provided.");
+    }, specs = s._specs = [];
+
+    s.specialise = specialise;
+    s.addFallback = addFallback;
+    if (fallback)
+      s.addFallback(fallback);
+
+    return s;
+  }
+
+  function specialise(patterns, func) {
+    var s = this._specs;
+
+    s[s.length] = new Specialisation(patterns, func, this);
+
+    return this;
+  }
+
+  function addFallback(func) {
+    this._fallback = func;
+
+    return this;
+  }
+
+  /**** Begin Specialisation ****/
+
+  function Specialisation(patterns, func, context) {
+    this.patterns = patterns;
+    this.func = func;
+    this.context = context;
+  }
+
+  Specialisation.compatible = function(value, pattern) {
+    if (pattern === MATCH_ANY && value !== undefined)
+      return true;
+    else if ((typeof pattern === "string" || pattern instanceof String) && typeof value === pattern)
+      return true;
+    else if (typeof pattern === "function" && value instanceof pattern)
+      return true;
+    else if (pattern instanceof Pattern)
+      return pattern.guard(value);
+    else if (pattern instanceof Interface)
+      return pattern.match(value);
+
+    return false;
+  };
+
+  Specialisation.prototype = {
+    match: function(args) {
+      for (var i = 0, a = this.patterns, n = a.length; i < n; ++i)
+        if (!Specialisation.compatible(args[i], a[i]))
+          return MATCH_FAIL;
+
+      return this.func.apply(this.context, args);
+    }
+  };
+
+  /**** Begin Pattern ****/
+
+  function Pattern(guard) {
+    this.guard = guard;
+  }
+
+  function GUARD(func) {
+    return new Pattern(func);
+  }
+
+  function GUARD_IS(right) {
+    return new Pattern(function(val) {
+      return val === right;
+    });
+  }
+
+  /**** Begin Interface ****/
+
+  function Interface(obj) {
+    if (!(this instanceof Interface))
+      return new Interface(obj);
+
+    for (var x in obj)
+      if (obj.hasOwnProperty(x))
+        this[x] = obj[x];
+  }
+
+  Interface.getSkeleton = function(obj) {
+    var r = {};
+
+    for (var x in obj)
+      if (obj.hasOwnProperty(x))
+        r[x] = typeof obj[x];
+
+    return new Interface(r);
+  };
+
+  Interface.prototype = {
+    match: function(value) {
+      for (var x in this)
+        if (this.hasOwnProperty(x) && !Specialisation.compatible(value[x], this[x]))
+          return false;
+
+      return true;
+    }
+  };
+
+  return {
+    create: create,
+    Interface: Interface,
+    GUARD: GUARD,
+    GUARD_IS: GUARD_IS,
+    MATCH_ANY: MATCH_ANY
+  };
+})();

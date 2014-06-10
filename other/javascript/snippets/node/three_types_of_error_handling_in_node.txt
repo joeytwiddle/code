@@ -1,0 +1,5 @@
+1. throw-catch
+2. callback(err,result)
+3. emitter.emit("error",...);
+
+http://benno.id.au/blog/2011/08/08/nodejs-exceptions

@@ -1,0 +1,21 @@
+
+var clients = {};
+
+io.sockets.on('connection', function (socket) {
+  // remember the client by associating the socket.id with the socket
+  clients[socket.id] = socket; 
+  socket.on('sessionStart', function (message) {
+    // get the socket.id of the partner on each message
+    var partner = message.from; 
+    if (clients[partner]) {
+      // check if the partner exists and send a message to the user
+      clients[socket.id].emit('message', { from: partner, msg: message });
+    }
+  }
+
+  socket.on('disconnect', function() {
+    delete clients[socket.id]; // delete the client from the list
+  });
+}
+Note: In a real production application you would normally check for the session data and associate each client with a username and a socket.id.
+

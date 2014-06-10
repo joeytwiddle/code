@@ -1,0 +1,41 @@
+<HTML><BODY>
+<!-- From some guy (sorry) on StackOverdflow.com -->
+<canvas id="canvas" width="800" height="600"></canvas>
+<script type="text/javascript">
+var canvas = document.getElementById("canvas");
+var context = canvas.getContext("2d");
+var scale = 1;
+var originx = 0;
+var originy = 0;
+
+function draw(){
+    context.fillStyle = "white";
+    context.fillRect(originx,originy,800/scale,600/scale);
+    context.fillStyle = "black";
+    context.fillRect(50,50,100,100);
+}
+setInterval(draw,100);
+
+canvas.onmousewheel = function (event){
+    var mousex = event.clientX - canvas.offsetLeft;
+    var mousey = event.clientY - canvas.offsetTop;
+    var wheel = event.wheelDelta/120;//n or -n
+
+    var zoom = 1 + wheel/2;
+
+    context.translate(
+        originx,
+        originy
+    );
+    context.scale(zoom,zoom);
+    context.translate(
+        -( mousex / scale + originx - mousex / ( scale * zoom ) ),
+        -( mousey / scale + originy - mousey / ( scale * zoom ) )
+    );
+
+    originx = ( mousex / scale + originx - mousex / ( scale * zoom ) );
+    originy = ( mousey / scale + originy - mousey / ( scale * zoom ) );
+    scale *= zoom;
+}
+</script>
+</BODY></HTML>

@@ -1,0 +1,9 @@
+var source = new EventSource('updates.cgi');
+source.onmessage = function (event) {
+  alert(event.data);
+};
+
+
+var source = new EventSource('updates.cgi');
+source.addEventListener('add', addHandler, false);
+source.addEventListener('remove', removeHandler, false);

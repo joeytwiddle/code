@@ -1,0 +1,13 @@
+Essential knowledge: each time a function is called, JS creates a unique scope for the variables and arguments inside that function.
+
+Closure example: for (var i=0;i<20;i++) { doLater( function(j){ return function(){/* Here j is what i was. */}; }(i) ); }
+
+Replace the comment with your code, and you have created a callback function with its own copy of i (in j).
+
+What's happening?  We declare a function, which we call at the end with (i), which gets passed into the function's argument j.  Then we return our callback function which can use the scoped j.
+
+Alternatively:   for (var i=0;i<20;i++) { with ({j:i}) { doLater(function(){/* Here j is what i was. */}); } }
+
+How I usually do it: for (var i=0;i<20;i++) { setupCallback(i); }   function setupCallback(j) { doLater(function() {/* Here j is what i was. */}); }
+
+For experienced JavaScripters: http://jibbering.com/faq/faq_notes/closures.html  For newbies and those who don't like big words: http://www.javascriptkit.com/javatutors/closures.shtml (very loose, take with a grain of salt)

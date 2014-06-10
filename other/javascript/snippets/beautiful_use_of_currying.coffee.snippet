@@ -1,0 +1,1 @@
+<shesek_> joeytwiddle, usually for performance I just make the functions partial to begin with, I don't use `pap` that often... e.g. `searchByField = (field) -> (value) -> (object) -> object[field] is value; searchByName = searchByField 'name'; [{name:'joe'}, {name:'bob'}].filter searchByName 'bob'`

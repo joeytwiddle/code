@@ -1,0 +1,13 @@
+var hexDigits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
+function getHexDigit(n) {
+  return hexDigits[n];
+}
+
+function getHex(n) {
+  var s = "";
+  while (n > 0) {
+    s = getHexDigit(n & 0xf) + s;
+    n = n/16 | 0;
+  }
+  return s;
+}

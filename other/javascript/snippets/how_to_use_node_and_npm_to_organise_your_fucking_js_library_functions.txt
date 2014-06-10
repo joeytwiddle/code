@@ -1,0 +1,50 @@
+* substack uses hundreds of modules written for node and published to npm directly in the browser without modification with browserify
+<dr0id> is moot*
+<dr0id> browserify is nice but ...
+<Jan-> okay, let's look at this in terms of my actual code
+<riven> Let's not.
+<Jan-> I have one object, Basic 3D (it does 3D mesh manipulation and suchlike).
+<Jan-> It is represented by one global singleton (well, USUALLY it is), called b3d.
+<riven> No really, let's not.
+* Sorella is trying to catch up with SubStack on number of npm modules published. But I don't think I can achieve that anyways =/
+<Jan-> I have like eight or so files that add b3d.Mesh, b3d.Vert, etc, onto it.
+<hughfdjackson> Sorella: one module per function
+<hughfdjackson> gogogo
+<Jan-> How does node deal with that?
+<substack> Sorella: npm install -g npmtop
+<Sorella> haha
+<dr0id> hughfdjackson: :P
+<substack> Sorella: that's a good way to keep score
+<FireFly> Jan-, let mesh.js export the stuff that you'd put in b3d.Mesh
+<FireFly> Jan-, have b3d.js (or index.js or whatever) export a b3d object, and do b3d.Mesh = require('./mesh')
+<FireFly> or something
+<Sorella> >143
+<FireFly> That's how I'd do it
+<Sorella> O_o
+--> enjalot (~enjalot@c-24-7-78-230.hsd1.ca.comcast.net) has joined ##javascript
+<-- xinming has quit (Ping timeout: 244 seconds)
+<hughfdjackson> FireFly: and i
+<hughfdjackson> <3 so purdy
+* FireFly wonders if that 'O_o' was for me or for substack's module count
+<hughfdjackson> so lovely
+<hughfdjackson> mmmMmM
+--> a111 (~a111a111@host-2-98-108-36.as13285.net) has joined ##javascript
+<substack> hughfdjackson: yeah pretty much, once you get into the flow of it
+<substack> everybody here has written over 143 functions
+<substack> I just put them on npm when I write them
+<substack> because then I won't need to copy/paste them around later
+<Munter> yup
+<Munter> It's a nice workflow
+<-- Visualiza has quit (Ping timeout: 246 seconds)
+--> xinming (~hyy@125.87.100.156) has joined ##javascript
+<dr0id> lets all do that and eat up github's space :3
+<Munter> Isn't everybody already?
+<FireFly> substack, and one of those modules is npmtop itself
+<Munter> I see npm modules fly around everywhere :P
+<dr0id> heh :P
+<dr0id> npm install -g joke
+
+Jul 01 17:22:33 <ImBcmDth>	Jan-: ok I have a project that used to have each object add itself to a global namespace so you ended up with things like "new MyNamespace.Vector" all over the place. In converting it to node's module-style, I discovered that the modules that needed vectors simply require(Vector) directly. No more namespace! Now everything that needs Vector just uses "new Vector" much cleaner.
+Jul 01 17:22:34 <Sorella>	Well, I'm done discussing things with wierd troll-ish people. Time to work on useful stuff.
+Jul 01 17:22:36 <ImBcmDth>	Jan-: To make the *external* interface the same, I simply make one file called "MyNamespace" that imports everything and constructs a namespace-like object. So external code still just require(MyNamespace) and can then do "new MyNamespace.Vector".
+

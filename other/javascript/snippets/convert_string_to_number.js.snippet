@@ -1,0 +1,9 @@
+var numValue = +textValue;                // Most efficient?
+var numValue = textValue - 0;             // Equivalent
+var numValue = textValue * 1;             // Equivalent
+var numValue = textValue / 1;             // Equivalent
+var numValue = Number(textValue);         // Clear, but costs 1 function call
+var numValue = parseFloat(textValue,10);  // Usually slower (converts to string first)
+var numValue = parseInt(textValue,10);    // If you want an integer
+var numValue = Math.floor(textValue);     // If you want an integer
+var numValue = Math.round(textValue);     // If you want an integer

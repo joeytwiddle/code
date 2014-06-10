@@ -1,0 +1,16 @@
+// Only works on documents from the same domain.
+// Can be used as an alternative to XMLHttpRequest for Ajax.
+// Probably more efficient to re-use the iframe for multiple calls.
+
+function contentsOf(url) {
+	var iframe = document.createElement("iframe");
+	iframe.style.display = 'none';
+	iframe.src = url;
+	document.body.appendChild(iframe);
+	// iframe.contentWindow.document - for IE<7
+	var doc = iframe.contentDocument ? iframe.contentDocument: iframe.contentWindow.document;
+	var contents = doc.body.innerHTML;
+	document.body.removeChild(iframe);
+	return contents;
+}
+

@@ -1,0 +1,1 @@
+<Sorella> Munter, `browserify -r library -o build/library --prelude false` That'll give you only the library bundle, without the browserify prelude.

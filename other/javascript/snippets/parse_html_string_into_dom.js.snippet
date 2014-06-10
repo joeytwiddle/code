@@ -1,0 +1,8 @@
+// without innerHTML technique for Mozilla and similar browsers:
+var range = document.createRange();
+range.selectNode(document.body);
+var parsedHTML = range.createContextualFragment(SomeStringOfHTML);
+document.body.appendChild(parsedHTML)
+// createContextualFragment() is not part of any DOM specification AFAICT so this technique is dirty
+
+// See ecmanauts_wget.js for nicer and wider range of techniques

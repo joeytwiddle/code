@@ -1,0 +1,74 @@
+var cssAnimation = document.createElement('style');
+cssAnimation.type = 'text/css';
+var rules = document.createTextNode('@-webkit-keyframes slider {'+
+'from { left:100px; }'+
+'80% { left:150px; }'+
+'90% { left:160px; }'+
+'to { left:150px; }'+
+'}');
+cssAnimation.appendChild(rules);
+document.getElementsByTagName("head")[0].appendChild(cssAnimation);
+
+
+
+// Better:
+
+var style = document.documentElement.appendChild(document.createElement("style")),
+rule = " run {\
+    0%   {\
+        -webkit-transform: translate3d(0, 0, 0); }\
+        transform: translate3d(0, 0, 0); }\
+    }\
+    100% {\
+        -webkit-transform: translate3d(0, " + your_value_here + "px, 0);\
+        transform: translate3d(0, " + your_value_here + "px, 0);\
+    }\
+}";
+if (CSSRule.KEYFRAMES_RULE) { // W3C
+    style.sheet.insertRule("@keyframes" + rule, 0);
+} else if (CSSRule.WEBKIT_KEYFRAMES_RULE) { // WebKit
+    style.sheet.insertRule("@-webkit-keyframes" + rule, 0);
+}
+
+
+
+// If you want to modify a keyframe rule in a stylesheet that's already included, do the following:
+
+var
+      stylesheet = document.styleSheets[0] // replace 0 with the number of the stylesheet that you want to modify
+    , rules = stylesheet.rules
+    , i = rules.length
+    , keyframes
+    , keyframe
+;
+
+while (i--) {
+    keyframes = rules.item(i);
+    if (
+        (
+               keyframes.type === keyframes.KEYFRAMES_RULE
+            || keyframes.type === keyframes.WEBKIT_KEYFRAMES_RULE
+        )
+        && keyframes.name === "run"
+    ) {
+        rules = keyframes.cssRules;
+        i = rules.length;
+        while (i--) {
+            keyframe = rules.item(i);
+            if (
+                (
+                       keyframe.type === keyframe.KEYFRAME_RULE
+                    || keyframe.type === keyframe.WEBKIT_KEYFRAME_RULE
+                )
+                && keyframe.keyText === "100%"
+            ) {
+                keyframe.style.webkitTransform =
+                keyframe.style.transform =
+                    "translate3d(0, " + your_value_here + "px, 0)";
+                break;
+            }
+        }
+        break;
+    }
+}
+

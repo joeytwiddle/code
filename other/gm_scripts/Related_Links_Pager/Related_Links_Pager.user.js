@@ -46,11 +46,11 @@ var enableOnCtrlClick  = true;
 var enableOnShiftClick = true;        // Allows you to avoid the script when needed
 var enableOnRightClick = false;
 
-var keepNavigationHistory = false;    // When off, paging is not added to browser history.  The back button will return you to the page before you started paging.
+var keepNavigationHistory = false;    // When off, sideways paging is not added to the browser history.  The back button will return you to the page before you started paging, not the previous page you were on.
 var leaveHashUrlsAlone = true;        // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
 var forceTravel = false;              // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
                                       // BUG: I think this overrides Google Preview Pane's handler if we click a link expecting it to be previewed.
-var clearDataFromLocation = false;    // Tidies up your location bar URL, but prevents the pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.
+var clearDataFromLocation = true;     // Tidies up your location bar URL, but prevents the pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.  Disable this for debugging.
 
 var highlightLinkGroups = true;       // Change the background or border of links in the current group on hover.
 var changeBackgroundNotBorder = true; // If false, draws boxes around related links.  (Then you may want to increase the opacity of the colors below.)
@@ -233,7 +233,7 @@ function onAGoogleSearchPage() {
 // Dear Google: I don't mind giving you useful feedback about which links I
 // clicked, but I *need* my siblings packet in the final arrival URL!
 
-// Occasionally (when a web page has no title) the window will get the URL as its title.  If Related_Links_Pager has created a *very* long URL, this can be upsetting to window managers.  Detect and fix this...
+// Occasionally (when a web page has no title) the window will get the URL as its title.  If Related_Links_Pager has created a *very* long URL, this can be upsetting to window managers.  (Specifically it was slowing down Fluxbox, although they have fixed that bug now.)  Avoid that potential issue by restricting the title's length.
 if (document.title.length==0 && document.location.href.length>800) {
 	document.title = document.location.href.slice(0,100) + " ...";
 }
@@ -675,8 +675,13 @@ function createRelatedLinksPager(siblings) {
     link.title = (link.title ? link.title+' ' : '') + maybeHost(link);
     link.onclick = function(evt){
       if (!keepNavigationHistory) {
-        document.location.replace(this.href);
-        evt.preventDefault();
+        if (evt.ctrlKey || evt.metaKey) {
+          // User is trying to open this link in a new tab.  Don't disturb her!
+        } else {
+          // Navigate sideways (not forwards).  History will not remember current page.
+          document.location.replace(this.href);
+          evt.preventDefault();
+        }
       }
     };
     return link;
@@ -748,9 +753,18 @@ if (grabbedList) {
   var siblings = JSON.parse(grabbedList);
   createRelatedLinksPager(siblings);
   if (clearDataFromLocation) {
-    // document.location.hash = ".";    // BAD.  "#." breaks google search results pages, tho we rarely page through them.
-    document.location.hash = '';        // Creates an extra history step, but the user may want that, to retain the data!
-    // document.location.replace('#');  // Does not create history.  Data lost!  Fine if only navigating forwards.
+    if (window.history.replaceState) {
+      // Remove the siblings packet if it is found.  Try to preserve anything else in the URL.
+      var urlWithoutSiblingsPacket = document.location.href.replace(/(#siblings=.*|[?&]siblings=[^&]*)/,'');
+      if (urlWithoutSiblingsPacket != document.location.href) {
+        window.history.replaceState(null, null, urlWithoutSiblingsPacket);
+      }
+    } else {
+      // Just cleanup by adjusting the #.....
+      //document.location.hash = ".";     // BAD.  "#." breaks google search results pages, tho we rarely page through them.
+      document.location.hash = '';        // Creates an extra history step, but the user may want that, to retain the data!
+      //document.location.replace('#');   // Does not create history.  Data lost!  Fine if only navigating forwards.
+    }
   }
 }
 

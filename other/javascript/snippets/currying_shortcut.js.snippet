@@ -1,0 +1,7 @@
+// Note this does not allow for extra arguments to be applied later!
+Function.prototype.curry = function() {
+  var func = this, a = arguments;
+  return function() {
+    return func.apply(this, a);
+  }
+};

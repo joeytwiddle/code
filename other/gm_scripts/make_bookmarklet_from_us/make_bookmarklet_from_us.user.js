@@ -8,6 +8,8 @@
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // ==/UserScript==
 
+// BUG: We had (i%32) in a userscript (DLT) but when this was turned into a bookmarklet and dragged into Chrome, the debugger showed it had become (i2), causing the script to error with "i2 is not defined".  Changing the code to (i % 32) worked around the problem.
+
 // TODO: All links with using dummy=random should change the value on mouseover/mousemove/click, so they can be re-used live without refreshing the page.
 //       Static bookmarklets could timeout and re-build after ... 10 seconds?  ^^
 
@@ -19,8 +21,7 @@ var inGoogleChrome = window && window.navigator && window.navigator.vendor.match
 
 var preventBrowserFromCachingBookmarklets = inGoogleChrome;
 
-// Sometimes Chrome refuses to acknowledge that a script has been updated, and
-// repeatedly installs an old version from its cache!
+// Sometimes Chrome refuses to acknowledge that a script has been updated, and repeatedly installs an old version from its cache!
 var preventCachingOfInstallScripts = inGoogleChrome;
 // BUG: Chrome sometimes installs a new instance of an extension for each click, rather than overwriting (upgrading) the old.  However disabling preventBrowserFromCachingBookmarklets does not fix that.  It may have been the name "Wikimedia+"?
 
@@ -31,7 +32,7 @@ var addGreasemonkeyLibToBookmarklets = true;
 
 // DONE: Use onload event to ensure prerequisite scripts are loaded before dependent scripts.
 
-// TODO: We could provide neat catches for GM_ API commands so they won't fail entirely.
+// DONE via FBGMAPI: We could provide neat catches for GM_ API commands so they won't fail entirely.
 
 // TODO: Provide extra feature, which allows the Bookmarks to actually trigger
 // the userscript properly-running inside Greasemonkey, if this userscript is

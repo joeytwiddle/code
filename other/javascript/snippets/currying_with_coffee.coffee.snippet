@@ -1,0 +1,46 @@
+
+compose = (f, g) -> (x) -> f g x
+curry = (f) -> (x) -> (y) -> f(x, y)
+uncurry = (f) -> (x, y) -> (f x) y
+
+# Usage Examples:
+
+
+
+
+
+n-abstract
+uncurry = (n) -> (f) -> (args...) ->
+    if n == 1
+        f args[0]
+    else
+        ((uncurry n - 1) f args.shift()) args...
+
+accumulator = (n, accum, f) ->
+    return f accum... if n is 0
+    (x) ->
+        accum.push x
+        accumulator n - 1, accum, f
+
+curry = (n) ->
+    (f) -> accumulator n, [], f
+
+curry(3)((a,b,c) -> a + b + c)(1)(2)(3) # 6
+
+
+
+# From: http://stackoverflow.com/questions/8373367/n-ary-curry-in-coffeescript
+
+
+Alternatively:
+
+curry = (n, f) ->
+    acc = []
+    helper = (x) ->
+        acc.push x
+        if acc.length is n then f acc... else helper
+
+
+
+See also: http://autotelicum.github.com/Smooth-CoffeeScript/literate/partial.html
+

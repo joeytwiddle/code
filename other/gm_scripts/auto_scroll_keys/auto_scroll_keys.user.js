@@ -61,11 +61,11 @@ function u44573_handler(e) {
 		}
 	}
 	// if (Math.random()<0.001) { document.title = ""+upDelta+" : "+downDelta; }
-	if(e.ctrlKey && e.keyCode == DOM_VK_DOWN) { // Scroll downwards with CTRL-Down_Arrow
+	if((e.altKey || e.ctrlKey) && e.keyCode == DOM_VK_DOWN) { // Scroll downwards with CTRL-Down_Arrow or Opt-Down_Arrow on Mac
 		scrollSpeed += downDelta;
 		e.preventDefault(); // Most
 	}
-	if(e.ctrlKey && e.keyCode == DOM_VK_UP) { // Scroll upwards with CTRL-Up_Arrow
+	if((e.altKey || e.ctrlKey) && e.keyCode == DOM_VK_UP) { // Scroll upwards with CTRL-Up_Arrow or Opt-Up_Arrow on Mac
 		scrollSpeed -= upDelta;
 		e.preventDefault(); // Most
 	}

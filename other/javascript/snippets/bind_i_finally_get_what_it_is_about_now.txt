@@ -1,0 +1,26 @@
+Some JS newbie was trying to pass a function around, but with arguments
+applied:
+
+setTimeout( moveit(id,newxpos,timetotake), 1000 );
+
+which of course you can't do.  Normally I would solve this with a function
+wrapper.
+
+setTimeout( function(){ moveit(id,newxpos,timetotake); }, 1000 );
+
+But alternatively, we can just convert the function call into a partial
+application, by adding ".bind(null,":
+
+setTimeout( moveit.bind(null,id,newxpos,timetotake), 1000 );
+
+So that is what they mean when they say bind is a partial application.
+
+In fact it sort of represents a level above .call, in that:
+
+  myFunc.call(null, arg1, arg2);
+
+  // could be written
+
+  myFunc.bind(null, arg1, arg2)();
+
+

@@ -1,0 +1,1 @@
+<benvie> Object.defineProperties({}, { /*descs*/) is the same as Object.create(Object.prototype, { /*descs*/ })

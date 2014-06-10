@@ -1,0 +1,2 @@
+A list of TLDs can be found at the bottom of Greasemonkey's convert2RegExp.js
+Called tldStr, it is a regexp.

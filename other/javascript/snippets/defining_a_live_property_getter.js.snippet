@@ -1,0 +1,3 @@
+// Mozilla-only!
+if (!document.images)
+document.__defineGetter__('images', function(){return document.getElementsByTagName('img')});

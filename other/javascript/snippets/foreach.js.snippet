@@ -1,0 +1,12 @@
+$x("//a[@target='_blank']").forEach(function(v, i, a) {
+     v.removeAttribute('target');
+});
+
+function $x(xpath, root) { // From Johan Sundström
+  var doc = root ? root.evaluate ? root : root.ownerDocument : document, next;
+  var got = doc.evaluate(xpath, root||doc, null, null, null), result = [];
+  while(next = got.iterateNext())
+    result.push(next);
+  return result;
+}
+

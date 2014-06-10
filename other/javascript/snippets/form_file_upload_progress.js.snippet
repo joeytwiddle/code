@@ -1,0 +1,16 @@
+var data = new FormData();
+var fileControl = document.getElementById("photo");
+
+data.append("name", "Nicholas");
+data.append("photo", fileControl.files[0]);
+
+var xhr = new XMLHttpRequest();
+xhr.open("post", "/submit", true);
+
+xhr.upload.onprogress = function(event) {
+  var percentage = event.loaded/event.total * 100;
+  updateProgress(percentage);
+};
+
+xhr.send();
+

@@ -1,0 +1,69 @@
+
+From: http://jsfiddle.net/VLGjK/5/
+Author: systemfault in ##javscript
+
+
+.container {
+    display: block;
+    
+    margin: 1em;
+    
+    height: 10em;
+    width: 10em;
+   
+    border: 0.1em solid black;    
+    background-color: #aaa; 
+    
+}
+
+.inner {
+    display: block;
+    width: 3em;
+    height: 2em;  
+    
+    margin: 1em;
+    
+    border: 0.1em solid black;    
+    background-color: red;
+}
+
+body {
+    font-size: 1em;
+    -webkit-transition-property: font-size;
+    -webkit-transition-duration: 1s;
+}
+
+body.min {
+    font-size: .5em;
+}
+
+
+
+
+
+<div class="container">
+Hi Guy
+
+</div>
+<div class="container">
+Here's my suggestion
+    <div class="inner"></div>
+</div>
+<div class="container">
+What do ya think?
+</div>
+<div class="container">
+hmmm>?
+</div>
+
+
+
+
+var $container = $(".container"),
+    $body = $("body");
+
+$container.click(function(){
+    $body.toggleClass('min'); 
+});
+
+

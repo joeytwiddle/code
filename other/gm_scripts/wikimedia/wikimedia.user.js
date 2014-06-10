@@ -56,10 +56,10 @@ if (alwaysUseLocalStorage || typeof GM_getValue !== 'function' || (""+GM_test).i
    if (localStorage) {
       // We add and remove leading "s" to match records saved/loaded via FallbackGMAPI.
       // This stops the bookmarklet-loaded version from trashing the userscript version's values.
-      this.GM_getValue=function (key,def) {
+      GM_getValue=function (key,def) {
          return (""+localStorage.getItem(key)).replace(/^s/,'') || def;
       };
-      this.GM_setValue=function (key,value) {
+      GM_setValue=function (key,value) {
          localStorage.setItem(key, "s"+value);
          return value;
       };
@@ -159,7 +159,7 @@ setTimeout(function()
       return str.replace('"','&quot;','g').replace('<','&lt;','g').replace('>','&gt;','g');
    }
    var listItem = function(href,name) { return '<li><a href="' + myEscape(href) + '">' + myEscape(name) + '</a></li>\n'; }
-   var s = '<div class="portlet"><h5>Recent Pages</h5><div class="pBody"><ul>';
+   var s = '<h3 role="navigation">Recent Pages</h3><div class="body" style="display:block;"><ul>';
    // for(var x in hist)
    for(var x=0; x<numToShow; x++)
    {
@@ -171,12 +171,13 @@ setTimeout(function()
          s += "<hr>";
       }
    }
-   s += '</ul></div></div>';
+   s += '</ul></div>';
    var indentLaterLines = 'padding-left: 1.5em; text-indent: -1.5em;';
-   // Note that MediaWiki sites (but not Wikipedia) augument this rule with: .portlet ul { font-size: 95%; }
-   var reduceSidebarFontSize = 'div#mw-panel div.portal div.body ul li { font-size: 0.7em; }';
-   reduceSidebarFontSize += ' .portlet ul { font-size: 100%; }';
-   s += '<style type="text/css"> .pBody { font-size: 0.7em; } div.pBody li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } '+reduceSidebarFontSize+' </style>';
+   // Note that MediaWiki sites (but not Wikipedia) augument this rule with: .portal ul { font-size: 95%; }
+   var reduceSidebarFontSize = '/*div#mw-panel div.portal div.body ul li { font-size: 0.7em; }*/';
+   //reduceSidebarFontSize += ' .portal ul { font-size: 100%; }';
+   // The following .body rule applies to the whole sidebar, so none of the above is needed.
+   s += '<style type="text/css"> .body { font-size: 0.85em; } div.body li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } '+reduceSidebarFontSize+' </style>';
    var e = document.createElement ("div");
    e.innerHTML = s;
    e.id = "p-history";
@@ -186,9 +187,11 @@ setTimeout(function()
       || document.getElementById("jq-interiorNavigation");
    if (panel) {
       panel.insertBefore(e,panel.getElementsByClassName("portal")[1]);
-      e.getElementsByTagName("h5")[0].addEventListener("click",function(e){
-            document.getElementsByClassName("pBody")[0].style.display = ( document.getElementsByClassName("pBody")[0].style.display ? '' : 'none' );
+      /* Should be handled by Wiki's own JS.
+      e.getElementsByTagName("h3")[0].addEventListener("click",function(e){
+            document.getElementsByClassName("pBody")[0].style.display = ( document.getElementsByClassName("body")[0].style.display ? '' : 'none' );
       },true);
+      */
 
       if (hist.length > numToShow) {
          var openMore = document.createElement("div");

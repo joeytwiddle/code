@@ -1,0 +1,3 @@
+var selectVals = Array.prototype.slice.call(document.forms[2].elements[1], 0).map(function(opt) opt.value);
+// Slightly less magicly:
+var selectVals = []; for(var opt in document.forms[2].elements[1].options) selectVals.push(opt.value);

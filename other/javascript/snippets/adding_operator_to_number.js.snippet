@@ -1,0 +1,12 @@
+Number.prototype['@*'] = function(e) Math.pow(this, e);
+
+// Unfortunately this didn't really add an operator
+// We still have to refer to it as a function.
+// Usage: 5 .@* (2)
+//    or: 5 ['@*'] (2)
+
+// <sephr> heck, how about this: number .*::* (exponent)
+// <sephr> that uses two asterisks so it's more pythonic
+// <sephr> jseval Number.prototype.*::* = function(e) Math.pow(this, e); 5 .*::* (2)
+// <buubot> sephr: 25
+

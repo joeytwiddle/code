@@ -1,0 +1,51 @@
+var Base = {
+	create: function(preset) {		
+		var o = Object.create(this);
+		for(p in preset) {
+			if(preset.hasOwnProperty(p)) {
+				o[p] = preset[p];
+			}
+		}
+		return o;
+	}
+};
+
+var Vector = Base.create({
+	x: 0,
+	y: 0
+});
+
+var Position = Vector.create({
+	add: function(other) {
+		return Position.create({x: this.x + other.x, y: this.y + other.y});
+	},
+	subtract: function(other) {
+		return Position.create({x: this.x - other.x, y: this.y - other.y});
+	}
+});
+
+var HasPrivates = Base.create((function() {
+	var priv = "I'm private.";
+	return {
+		get pub() {
+			return priv;
+		},
+		set pub(newpub) {
+			priv = newpub;
+		}
+	}
+}()));
+
+var p1 = Position.create({x: 12, y: 12});
+var p2 = Position.create({x: 3, y: 3});
+var p3 = p1.add(p2);
+var p4 = HasPrivates.create({hello : "hi!"});
+var p5 = HasPrivates.create({hi : "hello!"});
+p5.pub = "Publicized";
+
+console.log(p3);
+console.log(p4);
+console.log(p4.pub);
+console.log(p4.hello);
+console.log(p5.pub);
+console.log(p5.hi);

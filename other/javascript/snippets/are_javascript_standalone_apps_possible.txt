@@ -1,0 +1,4 @@
+<lesshaste> can you write/run standalone javascript applications these days or does it have to run in a web browser?
+<systemfault> lesshaste: node-webkit and appjs
+
+<SillyTalker> Sorella, the script is on each page, the same exact copy, do you mean there's a way to just load it once and stick with it?

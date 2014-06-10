@@ -1,0 +1,42 @@
+<html>
+	<body>
+
+		<script>
+
+			(function(){
+
+				console.log("1: f="+f);
+
+				function f(){ "FF_needs_this_or_1_will_fail"; }
+
+				if (true) {
+
+					function f(){ "FF_shows_this_in_log_2"; }
+
+				} else {
+
+					function f(){ "Chrome_shows_this_both_times_LOL"; }
+
+				}
+
+				console.log("2: f="+f);
+
+			})();
+
+		</script>
+
+		<p>
+			Check your console.log for results.
+		</p>
+		<p>
+			My conclusion was: post-declaring callbacks seems to work in Node, but don't try it in Firefox or Coffeescript!
+		</p>
+		<p>
+			But <tt>ckknight</tt>, author of Gorillascript (<a href="http://ckknight.github.io/gorillascript/">check it out</a>) has a better conclusion: It is safe to post-declare in browser or server, IF the function is declared at the top level (i.e. not below either of the 'if' blocks in the example, although presumably within the body of another function is fine), and is not changed/set anywhere else.
+		</p>
+		<p>
+			Perhaps I should continue to avoid it, despite the readability benefits, to keep code more portable (e.g. to Coffeescript), and head clearer.
+		</p>
+
+	</body>
+</html>
