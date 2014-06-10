@@ -47,3 +47,16 @@ $("a").each(function(){
 $(".pikto-publish-hover-link *").filter(function(){ return $(this).text()=="open on web"; }).text("View");
 $("#pikto-hover-unpublish a").filter(function(){ return $(this).text()=="Unpublish It"; }).text("Unpublish");
 
+// ==== In editor ====
+
+if ( document.location.pathname.match("/editor/") ) {
+
+	// Dropdowns are too damn opaque!
+	GM_addStyle(".pikto-mainmenu .dropdown-menu { background: rgba(49,59,61,1.0); } .pikto-publish-dongle-popout { background-color: rgba(255,255,255,1.0); }");
+
+	// Some menu items are missing their '...'
+	$("#menu-rename").text("Rename...");
+	$("#menu-save-as").text("Save As...");
+
+}
+
