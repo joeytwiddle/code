@@ -26,14 +26,18 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	var notificationPage = $("<div>").append( $.parseHTML(data) );
 	var notificationsList = notificationPage.find(".notifications-list");
 	var notificationsDropdown = $("<div>").addClass("notifications-dropdown");
-	var seeAll = $("<center><a href='/notifications'>See all</a></center>");
-	notificationsDropdown.append(seeAll);
 	notificationsDropdown.append(notificationsList);
+	if (notificationsList.children().length == 0) {
+		notificationsDropdown.append("<center>No new notifications</center>");
+	}
+	var seeAll = $("<center><a href='/notifications'>Notifications page</a></center>");
+	notificationsDropdown.append(seeAll);
 	notificationsDropdown.css({
 		position: "absolute",
 		border: "1px solid black",
-		margin: "2px solid white",
+		padding: "2px 6px",
 		"background-color": "#dddddd",
+		"box-shadow": "2px 2px 5px 0px #888888",
 	});
 	$("body").append(notificationsDropdown); // Done sooner so we can get its width
 	var top = notificationButton.offset().top + notificationButton.height();
