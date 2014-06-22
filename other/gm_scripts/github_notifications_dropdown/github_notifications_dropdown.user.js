@@ -10,6 +10,10 @@ var notificationButton = $(".header a[href='/notifications']");
 function listenForNotificationClick(){
 	notificationButton.on("click", notificationButtonClicked);
 	function notificationButtonClicked(evt){
+		// Act normally, do nothing, if modifier key is pressed.
+		if (evt.ctrlKey || evt.shiftKey || evt.metaKey) {
+			return;
+		}
 		evt.preventDefault();
 		notificationButton.css("opacity", "0.3");
 		// Had to use .on and .off here because .one was firing multiple times, dunno why.  O_o
