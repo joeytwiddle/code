@@ -8,13 +8,11 @@
 var notificationButton = $(".header a[href='/notifications']");
 
 function listenForNotificationClick(){
-	console.log("Listening for open");
 	notificationButton.on("click", notificationButtonClicked);
 	function notificationButtonClicked(evt){
-		console.log("Open clicked.");
 		evt.preventDefault();
 		notificationButton.css("opacity", "0.3");
-		// Had to use .on and .off here because .one was firing multiple times.  O_o
+		// Had to use .on and .off here because .one was firing multiple times, dunno why.  O_o
 		notificationButton.off("click", notificationButtonClicked);
 		$.get("/notifications").then(receiveNotificationsPage);
 	}
@@ -55,6 +53,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 			if ($(this).closest(".notifications-dropdown").length){
 				// A click inside the dropdown doesn't count!
 			} else {
+				evt.preventDefault();
 				// We must use .on and .off because .one will fire once per element per event type!
 				listeners.off("click", considerClosingNoficiationDropdown);
 				notificationsDropdown.remove();
