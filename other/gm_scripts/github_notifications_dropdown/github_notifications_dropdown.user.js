@@ -34,7 +34,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	}
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
 	notificationsList.find("a").each(function(){
-		$(this).attr("title", $(this).text());
+		$(this).attr("title", $(this).text().trim());
 	});
 	notificationsDropdown.append(notificationsList);
 	var seeAll = $("<center><b><a href='/notifications'>Notifications page</a></b></center>");
