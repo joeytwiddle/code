@@ -32,9 +32,9 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	notificationsDropdown.append(seeAll);
 	notificationsDropdown.css({
 		position: "absolute",
-		border: "1px solid black",
+		border: "1px solid #ccc",
 		padding: "2px 6px",
-		"background-color": "#dddddd",
+		"background-color": "#fff",
 		"box-shadow": "0px 3px 8px 0px rgba(0,0,0,0.25)",
 	});
 	$("body").append(notificationsDropdown); // Done sooner so we can get its width
