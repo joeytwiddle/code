@@ -29,24 +29,25 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	var notificationsList = notificationPage.find(".notifications-list");
 	var notificationsDropdown = $("<div>").addClass("notifications-dropdown");
 	$("<center>Notifications:</center>").appendTo(notificationsDropdown);
-	if (notificationsList.children().length == 0) {
-		notificationsDropdown.append("<center>No new notifications</center>");
-	}
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
 	notificationsList.find("a").each(function(){
 		$(this).attr("title", $(this).text().trim());
 	});
+	var minWidth = Math.min(700, window.innerWidth-32);
+	if (notificationsList.children().length == 0) {
+		notificationsDropdown.append("<center>No new notifications</center>");
+		minWidth = 0;
+	}
 	notificationsDropdown.append(notificationsList);
 	var seeAll = $("<center><b><a href='/notifications'>Notifications page</a></b></center>");
 	notificationsDropdown.append(seeAll);
-	var width = Math.min(700, window.innerWidth);
 	notificationsDropdown.css({
 		position: "absolute",
 		border: "1px solid #ccc",
 		padding: "2px 6px",
 		"background-color": "#fff",
 		"box-shadow": "0px 3px 8px 0px rgba(0,0,0,0.25)",
-		"width": width+"px",
+		"min-width": minWidth+"px",
 	});
 	$("body").append(notificationsDropdown); // Done sooner so we can get its width
 	var top = notificationButton.offset().top + notificationButton.height();
