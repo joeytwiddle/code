@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
-// @description    When clicking the notifications icon, shows new notifications in a dropdown, rather than travelling to the /notifications page.
+// @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // ==/UserScript==
 
