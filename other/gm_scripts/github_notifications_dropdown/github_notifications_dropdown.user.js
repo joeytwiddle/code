@@ -30,14 +30,14 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	if (notificationsList.children().length == 0) {
 		notificationsDropdown.append("<center>No new notifications</center>");
 	}
-	var seeAll = $("<center><a href='/notifications'>Notifications page</a></center>");
+	var seeAll = $("<center><b><a href='/notifications'>Notifications page</a></b></center>");
 	notificationsDropdown.append(seeAll);
 	notificationsDropdown.css({
 		position: "absolute",
 		border: "1px solid black",
 		padding: "2px 6px",
 		"background-color": "#dddddd",
-		"box-shadow": "2px 2px 5px 0px #888888",
+		"box-shadow": "0px 3px 8px 0px rgba(0,0,0,0.25)",
 	});
 	$("body").append(notificationsDropdown); // Done sooner so we can get its width
 	var top = notificationButton.offset().top + notificationButton.height();
