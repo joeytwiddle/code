@@ -31,7 +31,11 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	var notificationPage = $("<div>").append( $.parseHTML(data) );
 	var notificationsList = notificationPage.find(".notifications-list");
 	var notificationsDropdown = $("<div>").addClass("notifications-dropdown");
-	$("<center><b>Notifications</b></center>").appendTo(notificationsDropdown);
+	var title = "Notifications";
+	if (targetPage != "/notifications") {
+		title += " for " + targetPage.replace(/^\/+|\/notifications$/g,'');
+	}
+	$("<center><b>" + title + "</b></center>").appendTo(notificationsDropdown);
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
 	notificationsList.find("a").each(function(){
 		$(this).attr("title", $(this).text().trim());
@@ -44,7 +48,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	notificationsDropdown.append(notificationsList);
 	var linkToPage = '/notifications';
 	//var linkToPage = targetPage;
-	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>See All</a></b></center>");
+	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>See all notifications</a></b></center>");
 	notificationsDropdown.append(seeAll);
 	notificationsDropdown.css({
 		position: "absolute",
