@@ -5,7 +5,9 @@
 // @include        https://github.com/*
 // ==/UserScript==
 
-var notificationButton = $(".header a[href='/notifications']");
+var notificationButton = $(".header a[href$='/notifications']");
+
+var targetPage;
 
 function listenForNotificationClick(){
 	notificationButton.on("click", notificationButtonClicked);
@@ -18,7 +20,8 @@ function listenForNotificationClick(){
 		notificationButton.css("opacity", "0.3");
 		// Had to use .on and .off here because .one was firing multiple times, dunno why.  O_o
 		notificationButton.off("click", notificationButtonClicked);
-		$.get("/notifications").then(receiveNotificationsPage).fail(receiveNotificationsPage);
+		targetPage = notificationButton.attr('href');
+		$.get(targetPage).then(receiveNotificationsPage).fail(receiveNotificationsPage);
 	}
 }
 
@@ -39,7 +42,9 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		minWidth = 0;
 	}
 	notificationsDropdown.append(notificationsList);
-	var seeAll = $("<center><b><a href='/notifications'>See All</a></b></center>");
+	var linkToPage = '/notifications';
+	//var linkToPage = targetPage;
+	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>See All</a></b></center>");
 	notificationsDropdown.append(seeAll);
 	notificationsDropdown.css({
 		position: "absolute",
@@ -64,15 +69,15 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	          + ".notifications-dropdown .notifications-list .box { margin-bottom: 4px; } ");
 
 	function listenForCloseNotificationDropdown(){
-		var listeners = $("body, .header a[href='/notifications']");
-		listeners.on("click", considerClosingNotificiationDropdown);
+		var closeClickTargets = $("body, .header a[href$='/notifications']");
+		closeClickTargets.on("click", considerClosingNotificiationDropdown);
 		function considerClosingNotificiationDropdown(evt){
 			if ($(evt.target).closest(".notifications-dropdown").length){
 				// A click inside the dropdown doesn't count!
 			} else {
 				evt.preventDefault();
 				// We must use .on and .off because .one will fire once per element per event type!
-				listeners.off("click", considerClosingNotificiationDropdown);
+				closeClickTargets.off("click", considerClosingNotificiationDropdown);
 				notificationsDropdown.remove();
 				listenForNotificationClick();
 			}
