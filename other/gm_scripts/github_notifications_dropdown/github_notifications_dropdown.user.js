@@ -5,7 +5,7 @@
 // @include        https://github.com/*
 // ==/UserScript==
 
-var notificationButton = $(".header a[href$='/notifications']");
+var notificationButton = $(".header a.notification-indicator[href]");
 
 var targetPage;
 
@@ -69,7 +69,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	          + ".notifications-dropdown .notifications-list .box { margin-bottom: 4px; } ");
 
 	function listenForCloseNotificationDropdown(){
-		var closeClickTargets = $("body, .header a[href$='/notifications']");
+		var closeClickTargets = $("body, .header a.notification-indicator[href]");
 		closeClickTargets.on("click", considerClosingNotificiationDropdown);
 		function considerClosingNotificiationDropdown(evt){
 			if ($(evt.target).closest(".notifications-dropdown").length){
