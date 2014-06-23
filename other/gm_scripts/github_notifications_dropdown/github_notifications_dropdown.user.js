@@ -28,7 +28,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	var notificationPage = $("<div>").append( $.parseHTML(data) );
 	var notificationsList = notificationPage.find(".notifications-list");
 	var notificationsDropdown = $("<div>").addClass("notifications-dropdown");
-	$("<center>Notifications:</center>").appendTo(notificationsDropdown);
+	$("<center><b>Notifications</b></center>").appendTo(notificationsDropdown);
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
 	notificationsList.find("a").each(function(){
 		$(this).attr("title", $(this).text().trim());
@@ -39,12 +39,12 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		minWidth = 0;
 	}
 	notificationsDropdown.append(notificationsList);
-	var seeAll = $("<center><b><a href='/notifications'>Notifications page</a></b></center>");
+	var seeAll = $("<center><b><a href='/notifications'>See All</a></b></center>");
 	notificationsDropdown.append(seeAll);
 	notificationsDropdown.css({
 		position: "absolute",
 		border: "1px solid #ccc",
-		padding: "2px 6px",
+		padding: "2px 0px",
 		"background-color": "#fff",
 		"box-shadow": "0px 3px 8px 0px rgba(0,0,0,0.25)",
 		"min-width": minWidth+"px",
@@ -54,12 +54,14 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	$("body").append(notificationsDropdown); // Done sooner so we can get its width
 	var top = notificationButton.offset().top + notificationButton.height();
 	var left = notificationButton.offset().left + notificationButton.width()/2 - notificationsDropdown.width()/2;
-	left = Math.max(left, 0);
+	left = Math.max(left, 4);
 	notificationsDropdown.css({
 		top: top + "px",
 		left: left + "px",
 		"max-height": "calc(100% - "+top+"px)",
 	});
+	GM_addStyle(".notifications-dropdown > center { padding: 8px 8px; } "
+	          + ".notifications-dropdown .notifications-list .box { margin-bottom: 4px; } ");
 
 	function listenForCloseNotificationDropdown(){
 		var listeners = $("body, .header a[href='/notifications']");
@@ -81,4 +83,3 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 }
 
 listenForNotificationClick();
-
