@@ -48,6 +48,8 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		"background-color": "#fff",
 		"box-shadow": "0px 3px 8px 0px rgba(0,0,0,0.25)",
 		"min-width": minWidth+"px",
+		"max-height": "100%",
+		overflow: "auto",
 	});
 	$("body").append(notificationsDropdown); // Done sooner so we can get its width
 	var top = notificationButton.offset().top + notificationButton.height();
@@ -56,6 +58,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	notificationsDropdown.css({
 		top: top + "px",
 		left: left + "px",
+		"max-height": "calc(100% - "+top+"px)",
 	});
 
 	function listenForCloseNotificationDropdown(){
