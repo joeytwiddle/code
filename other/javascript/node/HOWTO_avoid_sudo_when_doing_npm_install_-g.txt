@@ -1,0 +1,47 @@
+# The problem
+
+    npm install -g <some_package>
+
+complains about write permissions.  You need to run as root in order to install the files.  And you don't want to do that!  (Perhaps you don't always trust the install scripts, or perhaps you don't have root access!)
+
+
+# Old technique
+
+    sudo chown -R `whoami` /usr/local/lib/node_modules
+
+If you have already done some installing with sudo, you may need to regain permissions on some of your folders!
+
+    sudo chown -R `whoami` ~/.npm
+    sudo chown -R `whoami` ~/tmp
+
+However I have found this is unsuccessful with Chris Lea's nodejs=0.10.28-1chl1~quantal1 because when installing commandline scripts, it wants to create symlinks for each command in `/usr/bin/<command_name>`, and I'm not about to make `/usr/bin` writable by a user!
+
+# New technique - install cmdline node tools in a user-local folder
+
+    npm config set prefix ~/npm
+
+Now you will need to add `$HOME/npm/bin` to your `$PATH`.  Append this to your `.bashrc`:
+
+    export PATH=$HOME/npm/bin:$PATH
+
+## Using a prefix rather than setting config
+
+You can (could) also set the prefix in an environment variable:
+
+    export NPM_PREFIX=$HOME/npm
+    alias npmg="npm -g --prefix $NPM_PREFIX"
+
+
+# Also of note
+
+You could install `nvm` "Node Version Manager" which will handle the above for you, *and* let you switch between different versions of Node.
+
+
+# Keep using sudo
+
+If you really do want to use `sudo` to install packages, then you probably want to prevent the root user from creating root folders in your user's `~/.npm` folder.  By default `sudo` does not set `$HOME` to `/root` but you can force it to with the `-H` option:
+
+    sudo -H npm install -g ...
+
+The disadvantage is that root will now use a separate cache, so you cannot re-use the cache for both users.  (npm will do that without `-H` but you may periodically need to chown root-created folders back to the user.)
+
