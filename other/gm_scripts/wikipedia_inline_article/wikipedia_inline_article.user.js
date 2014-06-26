@@ -48,6 +48,8 @@ var allowPreviewsInPreviews = true;   // If false, feature is not available for 
 
 var inlineWindowCount = 0;
 
+var stylePreviewedLinks = true;
+
 /*
 var icon = document.createElement('img');
 icon.src = "data:image/png,%89PNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%0A%00%"+
@@ -216,11 +218,15 @@ function newInlineWindow(event, href, link, windowID){
 	
 	// setup the y-positioning of the inline window...
 
+	var windowAppearsOnSide;
+
 	// check to see if the window goes beyond the bottom of the viewport...
 	if ( elementTop + windowHeight + pageBoundPadding > window.pageYOffset + window.innerHeight ) {
 		ypos = elementTop - windowHeight;
+		windowAppearsOnSide = 'Top';
 	} else { 
 		ypos = elementTop + elementHeight;
+		windowAppearsOnSide = 'Bottom';
 	}
 	// If we put it above the element, make sure we didn't go off the top.
 	if (ypos < 4) {
@@ -288,6 +294,15 @@ function newInlineWindow(event, href, link, windowID){
 	container.addEventListener("click", function(){
 		document.body.appendChild(container);
 	}, true);
+
+	if (stylePreviewedLinks) {
+		link.style.backgroundColor = '#FFFFE0';
+		link.style.padding = '2px';
+		link.style.margin = '-2px';
+		link.style.border = '1px solid #E0E0E0';
+		link.style["border"+windowAppearsOnSide] = '0px';
+		container.previewedLink = link;   // naughty
+	}
 
 	populateInnerWindow(href,windowID);
 }
@@ -390,6 +405,15 @@ function closeInlineWindow(id){
 	if ( inlineWindow ) {
 		inlineWindow.style.display = 'none';
 		inlineWindow.parentNode.removeChild(inlineWindow);
+		if (stylePreviewedLinks && inlineWindow.previewedLink) {
+			var link = inlineWindow.previewedLink;
+			link.style.backgroundColor = '';
+			link.style.padding = '';
+			link.style.margin = '';
+			link.style.border = '';
+			link.style.borderTop = '';
+			link.style.borderBottom = '';
+		}
 	}
 	
 }
