@@ -15,10 +15,15 @@ if (typeof GM_addStyle == 'undefined') {
   };
 }
 
-// Tab-style top-bar for the front pages
 if ( document.location.pathname.match("/$|/themes|/infographics") ) {
+	// Tab-style top-bar for the front pages
 	var bgcol = document.location.pathname.match("/$|/themes") ? '#e3e3e3' : 'white';
 	GM_addStyle(" .top-menu-container ul.menu > li a.active { padding-top: 15px; padding-bottom: 15px; margin-bottom: -2px; border-radius: 10px 10px 0px 0px; -moz-border-radius: 10px 10px 0px 0px; -webkit-border-radius: 10px 10px 0px 0px; -ms-border-radius: 10px 10px 0px 0px; -o-border-radius: 10px 10px 0px 0px; background-color: "+bgcol+"; color: black; } ");
+	// Darker modal
+	GM_addStyle(" .modal-backdrop { background: #000000; } ");
+	// My Infographics page ( /infographics )
+	$(".pikto-publish-hover-link *").filter(function(){ return $(this).text()=="open on web"; }).text("View");
+	$("#pikto-hover-unpublish a").filter(function(){ return $(this).text()=="Unpublish It"; }).text("Unpublish");
 }
 
 // Centralised message boxes (instead of filling the whole width of the page)
@@ -41,15 +46,11 @@ $("a").each(function(){
 	}
 });
 
-// My Infographics page ( /infographics )
-$(".pikto-publish-hover-link *").filter(function(){ return $(this).text()=="open on web"; }).text("View");
-$("#pikto-hover-unpublish a").filter(function(){ return $(this).text()=="Unpublish It"; }).text("Unpublish");
-
 
 
 // ==== In editor ====
 
-if ( document.location.pathname.match("/editor/") ) {
+if ( document.location.pathname.match("/editor/|/editorv4/") ) {
 
 	// Dropdowns are too damn opaque!
 	GM_addStyle(".pikto-mainmenu .dropdown-menu { background: rgba(49,59,61,1.0); } .pikto-publish-dongle-popout { background-color: rgba(255,255,255,1.0); }");
