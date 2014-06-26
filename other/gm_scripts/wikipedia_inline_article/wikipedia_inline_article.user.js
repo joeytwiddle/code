@@ -44,7 +44,7 @@
 
 // BUG: Works fine under in Chrome, but not in Firefox!
 
-var allowPreviewsOfPreviews = false;
+var allowPreviewsInPreviews = true;   // If false, feature is not available for links inside previewed articles.
 
 var inlineWindowCount = 0;
 
@@ -235,7 +235,9 @@ function newInlineWindow(event, href, link, windowID){
 
 	container.innerHTML = '<div style="' +
 		'position: absolute; '+
-		'margin: ' + ypos + 'px 0 0 ' + xpos + 'px; ' +
+		//'margin: ' + ypos + 'px 0 0 ' + xpos + 'px; ' +
+		'top: ' + ypos + 'px;' +
+		'left: ' + xpos + 'px; ' +
 		'padding: ' + Math.round((windowPadding-windowButtonHeight)/2) +'px ' + windowPadding + 'px ' + windowPadding + 'px; ' +
 		'width: ' + cssBoxWidth + '%; ' +
 		'height: '+ cssBoxHeight + 'px; ' +
@@ -277,8 +279,16 @@ function newInlineWindow(event, href, link, windowID){
 				'height: ' + (windowHeight - (windowTextPadding+windowPadding+windowBorderSize)*2) + 'px; ' +
 			'">loading<span style="text-decoration: blink">...</span></div>'+	
 		'</div>';
-	document.body.insertBefore(container, document.body.firstChild);
-	
+	//document.body.insertBefore(container, document.body.firstChild);
+	// appendChild is preferable so that windows opened later will appear on top of the others.
+	// It required us to we perform positioning with top,left rather than margin in styling above.
+	document.body.appendChild(container);
+
+	// When clicking anywhere on an innerWindow, bring it to the top.
+	container.addEventListener("click", function(){
+		document.body.appendChild(container);
+	}, true);
+
 	populateInnerWindow(href,windowID);
 }
 
@@ -370,10 +380,8 @@ function findParentInlineWindow(node) {
 function closeInlineWindows(){
 	for(var i = 0; i < inlineWindowCount; i++) {
 		closeInlineWindow('inlineWindow-' + i);
-		if ( document.getElementById('inlineWindow-' + i) ) {
-			close
-		}
 	}
+	inlineWindowCount = 0;
 }
 
 function closeInlineWindow(id){ 
@@ -399,6 +407,8 @@ function getElementOffset(element,whichCoord) {
 //setTimeout(rewriteLinks,4000);
 
 // Joey's hover detection:
+// BUG TODO: Can fire when the user scrolls the page and that causes a link to appear under the mouse.
+//           Could be avoided by only checking for hover after a 'mousemove' event.
 var hoverTimer, hoverTarget;
 function isSuitableLink(evt) {
 	var target = evt.target || evt.sourceElement;
@@ -425,7 +435,7 @@ function onClick(evt) {
 	onMouseOut(evt);
 }
 function hoverDetected() {
-	if (!allowPreviewsOfPreviews && findParentInlineWindow(hoverTarget)) {
+	if (!allowPreviewsInPreviews && findParentInlineWindow(hoverTarget)) {
 		return;
 	}
 	if (!hoverTarget.getAttribute('inlinewindow')) {
