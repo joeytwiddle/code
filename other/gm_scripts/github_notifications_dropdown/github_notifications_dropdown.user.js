@@ -55,9 +55,10 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		border: "1px solid #ccc",
 		padding: "2px 0px",
 		"background-color": "#fff",
-		"box-shadow": "0px 3px 8px 0px rgba(0,0,0,0.25)",
+		"box-shadow": "0px 2px 8px 0px rgba(0,0,0,0.25)",
 		"min-width": minWidth+"px",
-		"max-height": "100%",
+		"max-height": "90%",
+		"border-radius": "4px",
 		overflow: "auto",
 	});
 	$("body").append(notificationsDropdown); // Done sooner so we can get its width
@@ -67,7 +68,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	notificationsDropdown.css({
 		top: top + "px",
 		left: left + "px",
-		"max-height": "calc(100% - "+top+"px)",
+		"max-height": "calc(100% - "+(top+8)+"px)",
 	});
 	GM_addStyle(".notifications-dropdown > center { padding: 8px 8px; } "
 	          + ".notifications-dropdown .notifications-list .box { margin-bottom: 4px; } ");
