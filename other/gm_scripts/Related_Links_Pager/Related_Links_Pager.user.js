@@ -21,10 +21,10 @@
 
 // DONE: Using the pager always sets the siblings packet in the target URL, even if passPacketByGM is enabled!  Fix that.
 // FIXED: Still problems with the pager not working when passPacketByGM is enabled.  For some reason the pager shows us focused on the wrong link in the list!  (Was browsing vim.org, URLs_Need_Titles was adding #s to the title but not the links.)  Also, sometimes the old packet was getting cleared and a new one was not loading when clicking pager clicks.
-// TODO: We want RLP to run on github, for lists of external links, just not for links to local pages (or it can always run if passPacketByGM!).  Same could be said for twitter, facebook, etc.
+// DONE: We want RLP to run on github, for lists of external links, just not for links to local pages (or it can always run if passPacketByGM!).  Same could be said for twitter, facebook, etc.
 // CONSIDER: When following same-domain links, Chrome could opt to use GM_set/get or localStorage, rather than the messy #siblings packet.
 
-// TODO: RLP and HTML5 History API are not working well together.  What we should probably do is drop to the localStorage method for same-host links.
+// TODO: RLP does not fire for sites which use HTML5 History API to "change" page.  We could detect use of push/replaceState, and rebuild the pager after a timeout or event.
 
 
 
