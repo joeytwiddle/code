@@ -72,6 +72,19 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	GM_addStyle(".notifications-dropdown > center { padding: 8px 8px; } "
 	          + ".notifications-dropdown .notifications-list .box { margin-bottom: 4px; } ");
 
+	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.  I don't know why we need the -2!
+	var tabArrow = $("<div>").css({
+		position: "absolute",
+		left: (notificationButton.offset().left + notificationButton.width()/2 - 4 - 2) + "px",
+		top: (notificationButton.offset().top + notificationButton.height() - 8 + 1) + "px",
+		width: 0,
+		height: 0,
+		"border-left": "8px solid transparent",
+		"border-right": "8px solid transparent",
+		"border-bottom": "8px solid white",
+		"z-index": 2,
+	}).appendTo("body");
+
 	function listenForCloseNotificationDropdown(){
 		var closeClickTargets = $("body, .header a.notification-indicator[href]");
 		closeClickTargets.on("click", considerClosingNotificiationDropdown);
@@ -83,6 +96,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 				// We must use .on and .off because .one will fire once per element per event type!
 				closeClickTargets.off("click", considerClosingNotificiationDropdown);
 				notificationsDropdown.remove();
+				tabArrow.remove();
 				listenForNotificationClick();
 			}
 		}
