@@ -111,7 +111,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 // TODO: This feature might be quite nice on the notifications page itself
 function makeBlocksToggleable(notificationsDropdown){
 	$(".box-header").click(function(e){
-		if (e.target === this){
+		if (e.target === this || $(e.target).closest(".mark-all-as-read").length){
 			$(this).next(".box-body").toggle();
 		}
 	}).css({ cursor: "pointer" });
