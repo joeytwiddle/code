@@ -60,7 +60,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   padding: 2px 16px; "
 	  + "   box-shadow: 0px 2px 8px 1px rgba(0,0,0,0.25); "
 	  + "   border-radius: 24px; "
-	  + "   max-height: 90%; "
+	  //+ "   max-height: 90%; "
 	  + " } "
 	  + " .notifications-dropdown > center { "
 	  + "   padding: 8px 8px; "
@@ -84,7 +84,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 
 	notificationsDropdown.css({
 		"min-width": minWidth+"px",
-		overflow: "auto",
+		//overflow: "auto",
 	}).appendTo("body"); // Done sooner so we can get its width
 	var top = notificationButton.offset().top + notificationButton.height();
 	var left = notificationButton.offset().left + notificationButton.width()/2 - notificationsDropdown.width()/2;
@@ -93,7 +93,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		position: "absolute",
 		top: top + "px",
 		left: left + "px",
-		"max-height": "calc(100% - "+(top+8)+"px)",
+		//"max-height": "calc(100% - "+(top+8)+"px)",
 	});
 
 	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.  I don't know why we need the -2!
