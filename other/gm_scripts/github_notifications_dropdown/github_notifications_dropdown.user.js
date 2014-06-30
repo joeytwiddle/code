@@ -112,7 +112,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 function makeBlocksToggleable(notificationsDropdown){
 	$(".box-header").click(function(e){
 		if (e.target === this || $(e.target).closest(".mark-all-as-read").length){
-			$(this).next(".box-body").toggle();
+			$(this).next(".box-body").slideToggle(150);
 		}
 	}).css({ cursor: "pointer" });
 }
