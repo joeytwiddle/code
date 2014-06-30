@@ -35,7 +35,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	if (targetPage != "/notifications") {
 		title += " for " + targetPage.replace(/^\/+|\/notifications$/g,'');
 	}
-	$("<center><b>" + title + "</b></center>").appendTo(notificationsDropdown);
+	$("<h3><center>" + title + "</center></h3>").appendTo(notificationsDropdown);
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
 	notificationsList.find("a").each(function(){
 		$(this).attr("title", $(this).text().trim());
@@ -48,15 +48,17 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	notificationsDropdown.append(notificationsList);
 	var linkToPage = '/notifications';
 	//var linkToPage = targetPage;
-	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>See all notifications</a></b></center>");
+	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>See all notifications</a></b></center>").css({
+		"margin-top": "-12px"
+	});
 	notificationsDropdown.append(seeAll);
 
 	GM_addStyle(""
 	  + " .notifications-dropdown { "
 	  + "   border: 1px solid #ddd; "
 	  + "   background-color: #fff; "
-	  + "   padding: 2px 0px; "
-	  + "   box-shadow: 0px 2px 8px 0px rgba(0,0,0,0.25); "
+	  + "   padding: 2px 16px; "
+	  + "   box-shadow: 0px 2px 8px 2px rgba(0,0,0,0.25); "
 	  + "   border-radius: 3px; "
 	  + "   max-height: 90%; "
 	  + " } "
@@ -64,7 +66,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   padding: 8px 8px; "
 	  + " } "
 	  + " .notifications-dropdown .notifications-list .box { "
-	  + "   margin-bottom: 4px; "
+	  + "   margin-bottom: 16px; "
 	  + " } "
 	  + " .notifications-dropdown .notifications-list { "
 	  + "   float: initial; "
@@ -86,7 +88,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	}).appendTo("body"); // Done sooner so we can get its width
 	var top = notificationButton.offset().top + notificationButton.height();
 	var left = notificationButton.offset().left + notificationButton.width()/2 - notificationsDropdown.width()/2;
-	left = Math.max(left, 4);
+	left = Math.max(left, 12);
 	notificationsDropdown.css({
 		position: "absolute",
 		top: top + "px",
