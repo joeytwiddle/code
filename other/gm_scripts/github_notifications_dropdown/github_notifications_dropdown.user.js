@@ -58,8 +58,8 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   border: 1px solid #ddd; "
 	  + "   background-color: #fff; "
 	  + "   padding: 2px 16px; "
-	  + "   box-shadow: 0px 2px 8px 2px rgba(0,0,0,0.25); "
-	  + "   border-radius: 3px; "
+	  + "   box-shadow: 0px 2px 8px 1px rgba(0,0,0,0.25); "
+	  + "   border-radius: 24px; "
 	  + "   max-height: 90%; "
 	  + " } "
 	  + " .notifications-dropdown > center { "
@@ -75,9 +75,9 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   position: absolute; "
 	  + "   width: 0px; "
 	  + "   height: 0px; "
-	  + "   border-left: 8px solid transparent; "
-	  + "   border-right: 8px solid transparent; "
-	  + "   border-bottom: 8px solid white; "
+	  + "   border-left: 12px solid transparent; "
+	  + "   border-right: 12px solid transparent; "
+	  + "   border-bottom: 12px solid white; "
 	  + "   z-index: 2; "
 	  + " } "
 	);
@@ -98,8 +98,8 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 
 	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.  I don't know why we need the -2!
 	var tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
-		left: (notificationButton.offset().left + notificationButton.width()/2 - 4 - 2) + "px",
-		top: (notificationButton.offset().top + notificationButton.height() - 8 + 1) + "px",
+		left: (notificationButton.offset().left + notificationButton.width()/2 - 8 - 2) + "px",
+		top: (notificationButton.offset().top + notificationButton.height() - 12 + 1) + "px",
 	}).appendTo("body");
 
 	makeBlocksToggleable(notificationsDropdown);
