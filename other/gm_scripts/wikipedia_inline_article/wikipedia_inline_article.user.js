@@ -396,7 +396,8 @@ function closeInlineWindows(){
 	for(var i = 0; i < inlineWindowCount; i++) {
 		closeInlineWindow('inlineWindow-' + i);
 	}
-	inlineWindowCount = 0;
+	// Do not reset inlineWindowCount.  Even though we closed the windows, we didn't clear the indexes on the hovered links.  And these will be re-used if they are encountered again!  It is simpler if we just keep increasing inlineWindowCount so it is unique for every hovered link, and covers all previously opened window IDs (including any which have been closed and re-opened again by a second hover).
+	//inlineWindowCount = 0;
 }
 
 function closeInlineWindow(id){ 
@@ -462,6 +463,7 @@ function hoverDetected() {
 	if (!allowPreviewsInPreviews && findParentInlineWindow(hoverTarget)) {
 		return;
 	}
+	// If we are using a previously hovered link then we will re-use his index.  If not, we will create a new index.
 	if (!hoverTarget.getAttribute('inlinewindow')) {
 		hoverTarget.setAttribute('inlinewindow',inlineWindowCount++);
 	}
