@@ -86,6 +86,8 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		"z-index": 2,
 	}).appendTo("body");
 
+	makeBlocksToggleable(notificationsDropdown);
+
 	function listenForCloseNotificationDropdown(){
 		var closeClickTargets = $("body, .header a.notification-indicator[href]");
 		closeClickTargets.on("click", considerClosingNotificiationDropdown);
@@ -104,6 +106,15 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	}
 
 	listenForCloseNotificationDropdown();
+}
+
+// TODO: This feature might be quite nice on the notifications page itself
+function makeBlocksToggleable(notificationsDropdown){
+	$(".box-header").click(function(e){
+		if (e.target === this){
+			$(this).next(".box-body").toggle();
+		}
+	}).css({ cursor: "pointer" });
 }
 
 listenForNotificationClick();
