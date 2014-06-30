@@ -16,7 +16,7 @@ If you have already done some installing with sudo, you may need to regain permi
 
 However I have found this is unsuccessful with Chris Lea's nodejs=0.10.28-1chl1~quantal1 because when installing commandline scripts, it wants to create symlinks for each command in `/usr/bin/<command_name>`, and I'm not about to make `/usr/bin` writable by a user!
 
-# New technique - install cmdline node tools in a user-local folder
+# **Recommended!** New technique - install cmdline node tools in a user-local folder
 
     npm config set prefix ~/npm
 
