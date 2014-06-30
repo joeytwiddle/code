@@ -50,40 +50,54 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	//var linkToPage = targetPage;
 	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>See all notifications</a></b></center>");
 	notificationsDropdown.append(seeAll);
+
+	GM_addStyle(""
+	  + " .notifications-dropdown { "
+	  + "   border: 1px solid #ddd; "
+	  + "   background-color: #fff; "
+	  + "   padding: 2px 0px; "
+	  + "   box-shadow: 0px 2px 8px 0px rgba(0,0,0,0.25); "
+	  + "   border-radius: 3px; "
+	  + "   max-height: 90%; "
+	  + " } "
+	  + " .notifications-dropdown > center { "
+	  + "   padding: 8px 8px; "
+	  + " } "
+	  + " .notifications-dropdown .notifications-list .box { "
+	  + "   margin-bottom: 4px; "
+	  + " } "
+	  + " .notifications-dropdown .notifications-list { "
+	  + "   float: initial; "
+	  + " } "
+	  + " .notifications-dropdown-arrow { "
+	  + "   position: absolute; "
+	  + "   width: 0px; "
+	  + "   height: 0px; "
+	  + "   border-left: 8px solid transparent; "
+	  + "   border-right: 8px solid transparent; "
+	  + "   border-bottom: 8px solid white; "
+	  + "   z-index: 2; "
+	  + " } "
+	);
+
 	notificationsDropdown.css({
-		position: "absolute",
-		border: "1px solid #ccc",
-		padding: "2px 0px",
-		"background-color": "#fff",
-		"box-shadow": "0px 2px 8px 0px rgba(0,0,0,0.25)",
 		"min-width": minWidth+"px",
-		"max-height": "90%",
-		"border-radius": "4px",
 		overflow: "auto",
-	});
-	$("body").append(notificationsDropdown); // Done sooner so we can get its width
+	}).appendTo("body"); // Done sooner so we can get its width
 	var top = notificationButton.offset().top + notificationButton.height();
 	var left = notificationButton.offset().left + notificationButton.width()/2 - notificationsDropdown.width()/2;
 	left = Math.max(left, 4);
 	notificationsDropdown.css({
+		position: "absolute",
 		top: top + "px",
 		left: left + "px",
 		"max-height": "calc(100% - "+(top+8)+"px)",
 	});
-	GM_addStyle(".notifications-dropdown > center { padding: 8px 8px; } "
-	          + ".notifications-dropdown .notifications-list .box { margin-bottom: 4px; } ");
 
 	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.  I don't know why we need the -2!
-	var tabArrow = $("<div>").css({
-		position: "absolute",
+	var tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
 		left: (notificationButton.offset().left + notificationButton.width()/2 - 4 - 2) + "px",
 		top: (notificationButton.offset().top + notificationButton.height() - 8 + 1) + "px",
-		width: 0,
-		height: 0,
-		"border-left": "8px solid transparent",
-		"border-right": "8px solid transparent",
-		"border-bottom": "8px solid white",
-		"z-index": 2,
 	}).appendTo("body");
 
 	makeBlocksToggleable(notificationsDropdown);
