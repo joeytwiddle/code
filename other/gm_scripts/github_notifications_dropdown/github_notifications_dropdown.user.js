@@ -61,6 +61,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   box-shadow: 0px 2px 8px 1px rgba(0,0,0,0.25); "
 	  + "   border-radius: 24px; "
 	  //+ "   max-height: 90%; "
+	  + "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
 	  + " } "
 	  + " .notifications-dropdown > center { "
 	  + "   padding: 8px 8px; "
