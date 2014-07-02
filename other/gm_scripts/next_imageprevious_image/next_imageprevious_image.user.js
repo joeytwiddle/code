@@ -3,9 +3,11 @@
 // @author arty <me@arty.name>
 // @namespace http://arty.name/
 // @version 1.0
-// @description  Quick scroll to next/previous image on a page with f/r buttons
+// @description  Quick scroll to next/previous image on a page with n/p buttons
 // @include *
 // ==/UserScript==
+
+// This is a minor adaptation of arty's original, by joeytwiddle
 
 // 2012/10 - Now sorting positions so out-of-order images do not break the sequence.
 
