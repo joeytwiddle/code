@@ -72,6 +72,15 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + " .notifications-dropdown .notifications-list { "
 	  + "   float: initial; "
 	  + " } "
+	  // There is a rule on the user profile page that applies to the notification ticks (which are usually never seen on that page).  The rule matches `body.page-profile .box-header .tooltipped`.
+	  // That rule messes up the position of each tick icon relative to its containing header.  So we override to the previous values.
+	  + " .notifications-dropdown .box-header .mark-all-as-read { "
+	  + "   top: auto !important; "
+	  + "   left: auto !important; "
+	  + "   right: auto !important; "
+	  + "   bottom: auto !important; "
+	  + "   float: right; "
+	  + " } "
 	  + " .notifications-dropdown-arrow { "
 	  + "   position: absolute; "
 	  + "   width: 0px; "
