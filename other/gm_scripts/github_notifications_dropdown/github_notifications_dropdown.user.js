@@ -60,7 +60,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	notificationsDropdown.append(seeAll);
 
 	//GM_addStyle(""
-	$("style")[0].innerHTML += ""
+	$("<style>").html(""
 	  + " .notifications-dropdown { "
 	  + "   border: 1px solid #ddd; "
 	  + "   background-color: #fff; "
@@ -97,7 +97,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   border-bottom: 12px solid white; "
 	  + "   z-index: 2; "
 	  + " } "
-	;
+	).appendTo("body");
 	//);
 
 	notificationsDropdown.css({
