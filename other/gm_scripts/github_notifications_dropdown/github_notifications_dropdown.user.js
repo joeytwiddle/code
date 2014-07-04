@@ -17,7 +17,11 @@ function listenForNotificationClick(){
 			return;
 		}
 		evt.preventDefault();
-		notificationButton.css("opacity", "0.3");
+		notificationButton.css({
+			"opacity": "0.3",
+			"background-color": "#ececec",
+			"background-image": "linear-gradient(#d9d9d9, #ececec)"
+		});
 		// Had to use .on and .off here because .one was firing multiple times, dunno why.  O_o
 		notificationButton.off("click", notificationButtonClicked);
 		targetPage = notificationButton.attr('href');
@@ -112,7 +116,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		top: (notificationButton.offset().top + notificationButton.height() - 12 + 1) + "px",
 	}).appendTo("body");
 
-	makeBlocksToggleable(notificationsDropdown);
+	makeBlocksCollapsable(notificationsDropdown);
 
 	function listenForCloseNotificationDropdown(){
 		var closeClickTargets = $("body, .header a.notification-indicator[href]");
@@ -126,6 +130,10 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 				closeClickTargets.off("click", considerClosingNotificiationDropdown);
 				notificationsDropdown.remove();
 				tabArrow.remove();
+				notificationButton.css({
+					"background-color": "",
+					"background-image": ""
+				});
 				listenForNotificationClick();
 			}
 		}
@@ -134,9 +142,8 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	listenForCloseNotificationDropdown();
 }
 
-// TODO: This feature might be quite nice on the notifications page itself
-function makeBlocksToggleable(notificationsDropdown){
-	$(".box-header").click(function(e){
+function makeBlocksCollapsable(parentElement){
+	$(".box-header", parentElement).click(function(e){
 		if (e.target === this || $(e.target).closest(".mark-all-as-read").length){
 			$(this).next(".box-body").slideToggle(150);
 		}
@@ -144,3 +151,6 @@ function makeBlocksToggleable(notificationsDropdown){
 }
 
 listenForNotificationClick();
+
+// If we are on the notifications page, add our feature there too
+makeBlocksCollapsable(document.body);
