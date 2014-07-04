@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           FaviconizeTheWeb
-// @description    Adds a favicon for the website next to every external link on the page.  Clearly shows when you will be leaving the current site, and where you will be going!
+// @description    Adds a favicon for the website next to every external link on the page.  Clearly shows when you will be leaving the current site, and where you will be going!  (Unfortunately making links longer than expected can result in unwanted overflow on various websites.  For example, Google header bar!)
 // @downstreamURL  http://userscripts.org/scripts/source/60833.user.js
 // @namespace      FTW
 // @include        *
