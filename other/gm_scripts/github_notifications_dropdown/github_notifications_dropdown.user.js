@@ -69,6 +69,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   border-radius: 24px; "
 	  //+ "   max-height: 90%; "
 	  + "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
+	  + "   z-index: 10; "           // To appear above the .bootcamp .desc on the front page.
 	  + " } "
 	  + " .notifications-dropdown > center { "
 	  + "   padding: 8px 8px; "
@@ -95,7 +96,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   border-left: 12px solid transparent; "
 	  + "   border-right: 12px solid transparent; "
 	  + "   border-bottom: 12px solid white; "
-	  + "   z-index: 2; "
+	  + "   z-index: 20; "
 	  + " } "
 	).appendTo("body");
 	//);
@@ -148,8 +149,9 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 
 function makeBlocksCollapsable(parentElement){
 	$(".box-header", parentElement).click(function(e){
-		if (e.target === this || $(e.target).closest(".mark-all-as-read").length){
-			// bug: If they happened to hit mark-all-as-read *after* collapsing the block already, it will open up again.  These users ... always causing trouble.
+		if ($(e.target).closest(".mark-all-as-read").length) {
+			$(this).next(".box-body").slideUp(150);
+		} else if (e.target === this) {
 			$(this).next(".box-body").slideToggle(150);
 		}
 	}).css({ cursor: "pointer" });
