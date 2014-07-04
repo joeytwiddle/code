@@ -3,7 +3,6 @@
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
 // @version        0.4
-// @grant          GM_addStyle
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // ==/UserScript==
@@ -60,7 +59,8 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	});
 	notificationsDropdown.append(seeAll);
 
-	GM_addStyle(""
+	//GM_addStyle(""
+	$("style")[0].innerHTML += ""
 	  + " .notifications-dropdown { "
 	  + "   border: 1px solid #ddd; "
 	  + "   background-color: #fff; "
@@ -97,7 +97,8 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   border-bottom: 12px solid white; "
 	  + "   z-index: 2; "
 	  + " } "
-	);
+	;
+	//);
 
 	notificationsDropdown.css({
 		"min-width": minWidth+"px",
@@ -148,6 +149,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 function makeBlocksCollapsable(parentElement){
 	$(".box-header", parentElement).click(function(e){
 		if (e.target === this || $(e.target).closest(".mark-all-as-read").length){
+			// bug: If they happened to hit mark-all-as-read *after* collapsing the block already, it will open up again.  These users ... always causing trouble.
 			$(this).next(".box-body").slideToggle(150);
 		}
 	}).css({ cursor: "pointer" });
