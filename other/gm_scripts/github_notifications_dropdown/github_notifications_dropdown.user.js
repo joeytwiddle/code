@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.4
+// @version        0.5
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // ==/UserScript==
@@ -93,9 +93,9 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   position: absolute; "
 	  + "   width: 0px; "
 	  + "   height: 0px; "
-	  + "   border-left: 12px solid transparent; "
-	  + "   border-right: 12px solid transparent; "
-	  + "   border-bottom: 12px solid white; "
+	  + "   border-left: 10px solid transparent; "
+	  + "   border-right: 10px solid transparent; "
+	  + "   border-bottom: 10px solid white; "
 	  + "   z-index: 20; "
 	  + " } "
 	).appendTo("body");
@@ -106,7 +106,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		"min-width": minWidth+"px",
 		//overflow: "auto",
 	}).appendTo("body"); // Done sooner so we can get its width
-	var top = notificationButton.offset().top + notificationButton.height();
+	var top = notificationButton.offset().top + notificationButton.height() - 2;
 	var left = notificationButton.offset().left + notificationButton.width()/2 - notificationsDropdown.width()/2;
 	left = Math.max(left, 12);
 	notificationsDropdown.css({
@@ -115,10 +115,10 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 		//"max-height": "calc(100% - "+(top+8)+"px)",
 	});
 
-	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.  I don't know why we need the -2!
+	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.  I cannot explain why we need the +2!
 	var tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
-		left: (notificationButton.offset().left + notificationButton.width()/2 - 8 - 2) + "px",
-		top: (notificationButton.offset().top + notificationButton.height() - 12 + 1) + "px",
+		left: (notificationButton.offset().left + notificationButton.width()/2 - 10 + 2) + "px",
+		top: (top - 10 + 1) + "px",
 	}).appendTo("body");
 
 	makeBlocksCollapsable(notificationsDropdown);
