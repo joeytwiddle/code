@@ -102,6 +102,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	//);
 
 	notificationsDropdown.css({
+		position: "absolute",   // Must be set before we can read width accurately
 		"min-width": minWidth+"px",
 		//overflow: "auto",
 	}).appendTo("body"); // Done sooner so we can get its width
@@ -109,7 +110,6 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	var left = notificationButton.offset().left + notificationButton.width()/2 - notificationsDropdown.width()/2;
 	left = Math.max(left, 12);
 	notificationsDropdown.css({
-		position: "absolute",
 		top: top + "px",
 		left: left + "px",
 		//"max-height": "calc(100% - "+(top+8)+"px)",
