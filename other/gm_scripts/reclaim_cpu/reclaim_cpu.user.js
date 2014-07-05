@@ -10,6 +10,7 @@
 // @exclude        http://youtube.*/*
 // @exclude        http://demoscene.tv/*
 // @exclude        http://*.other.sites/where/we/want/to/leave/the/page/running
+// @grant          none
 // ==/UserScript==
 
 ////// Config //////

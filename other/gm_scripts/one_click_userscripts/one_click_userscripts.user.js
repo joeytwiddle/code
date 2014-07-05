@@ -2,6 +2,7 @@
 // @name           One Click Userscripts
 // @namespace      OCU
 // @description    Don't use Greasemonkey to load your userscripts, use this lighter interface instead!  Also works as a bookmarklet.
+// @version        1.0.0
 // @include        *
 // ==/UserScript==
 
@@ -100,7 +101,7 @@ function loadUserscripts() {
 		log("[OCU] No config found, falling back to default script list.");
 		scriptsToLoad = defaultScripts;
 		// Some sites (e.g. wikitravel) replace the default JSON with an incomplete implementation.
-		if (this.JSON && JSON.stringify) {
+		if (this.JSON && JSON.stringify && typeof GM_setValue == 'function') {
 			GM_setValue("OCU_scriptList",JSON.stringify(scriptsToLoad));
 		}
 	}

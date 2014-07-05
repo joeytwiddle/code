@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name          Wikimedia+ for Chrome (localStorage)
 // @description   Add History box at wikimedia's leftmost column
+// @version        1.1.1
 // @downstreamURL http://userscripts.org/scripts/source/124389.user.js
 // @include       http://*.wikipedia.org/*
 // @include       http://*.wikimedia.org/wiki/*
 // @include       http://ssdl-wiki.cs.technion.ac.il/wiki/*
 // @include       http://wiki.greasespot.net/*
 // @include       *wiki*
+// @grant         none
 // ==/UserScript==
 
 /*
@@ -49,10 +51,10 @@ try {
 } catch (e) {
    // Greasemonkey: can't convert window.GM_getValue to primitive type
    // because: window.GM_getValue.toString is not a function
-   // GM_log("Getting GM_test: "+e);
+   // console.log("Getting GM_test: "+e);
 }
 if (alwaysUseLocalStorage || typeof GM_getValue !== 'function' || (""+GM_test).indexOf("not supported")>=0) {
-   GM_log("[Wikimedia+] Adding localStorage implementation of GMget/setValue for Chrome.");
+   console.log("[Wikimedia+] Adding localStorage implementation of GMget/setValue for Chrome.");
    if (localStorage) {
       // We add and remove leading "s" to match records saved/loaded via FallbackGMAPI.
       // This stops the bookmarklet-loaded version from trashing the userscript version's values.
@@ -151,7 +153,7 @@ setTimeout(function()
    // Fix for when running alongside Joey's Reclaim CPU
    titleStr = titleStr.replace(/^[*#+.?] /,'');
    var hist = read();
-   // GM_log("[Wikimedia+] Got "+hist.length+" recent entries.");
+   // console.log("[Wikimedia+] Got "+hist.length+" recent entries.");
    if(document.location.search.indexOf("&action=edit") < 0 && document.location.search.indexOf("&printable=yes") < 0)
       hist = addHist(newHistoryItem, titleStr, new Date().getTime(), hist);
    store(hist);
@@ -223,7 +225,7 @@ setTimeout(function()
       }
 
    } else {
-      GM_log("Found no sidebar to write to.");
+      console.log("Found no sidebar to write to.");
    }
    // Uncomment next three lines if you want to remove the copy warning message from the bottom of the edit page
    // var warn = document.getElementById("editpage-copywarn");
@@ -244,10 +246,10 @@ setTimeout(function()
            liNode.appendChild( aNode );
            liNode.className = 'plainlinks';
            node.appendChild( liNode );
-           GM_log("AppendCategoryTreeToSidebar(): Added "+liNode+" to "+node);
+           console.log("AppendCategoryTreeToSidebar(): Added "+liNode+" to "+node);
        } catch(e) {
            // lets just ignore what's happened
-          GM_log("Error in AppendCategoryTreeToSidebar(): "+e);
+          console.log("Error in AppendCategoryTreeToSidebar(): "+e);
            return;
        }
    }

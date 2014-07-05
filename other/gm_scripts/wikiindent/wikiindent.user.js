@@ -3,12 +3,17 @@
 // @namespace      joeytwiddle
 // @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // @downstreamURL  http://userscripts.org/scripts/source/60832.user.js
+// @version        1.2.5
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
 // @include        http://www.wormus.com/leakytap/*
 // @include        http://theinfosphere.org/*
 // @include        http://rosettacode.org/mw/*
+// @grant          GM_setValue
+// @grant          GM_addStyle
+// @grant          GM_getValue
+// @grant          GM_log
 // ==/UserScript==
 
 // Without this function wrapper, Mozilla Firefox rejects the whole script, because it sees the top-level 'return;' as invalid syntax!

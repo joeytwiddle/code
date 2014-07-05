@@ -2,7 +2,9 @@
 // @name           Fix_Width
 // @namespace      FW
 // @include        http://*/
-// @description    ...
+// @description    A trend emerged to place a webpage's main content within a thin column.  While this aids readability, it wastes screen space (leaving a blank area to the left and right) and thus makes it harder to quickly overview the article's content.  This userscript attempts to detect artificially limited width articles and expand them back to the full width available.  It occasionally works!
+// @grant          GM_addStyle
+// @grant          GM_log
 // ==/UserScript==
 
 var mainWidth = 800 - 32;

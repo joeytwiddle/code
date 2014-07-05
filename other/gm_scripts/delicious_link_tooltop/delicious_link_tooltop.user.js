@@ -3,6 +3,7 @@
 // @namespace      GPM
 // @description    Shows Delicious info for the target page in a tooltip when you hover over a link.
 // @downstreamURL  http://userscripts.org/scripts/source/60831.user.js
+// @version        1.0.0
 // @include        *
 // @exclude        http://facebook.com/*
 // @exclude        https://facebook.com/*
@@ -10,6 +11,7 @@
 // @exclude        https://*.facebook.com/*
 // @exclude        http://images.google.*/*
 // @exclude        http://*.google.*/images?*
+// @grant          none
 // ==/UserScript==
 // Some older browsers may need JSON, but this link is broken:
 // @require        http://json.org/json2.js

@@ -2,6 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
+// @version        1.2.0
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
 // @include        https://*/*
@@ -13,6 +14,10 @@
 // @no-longer-exclude        http://github.com/*
 // @no-longer-exclude        https://github.com/*
 // @exclude        https://chrome.google.com/webstore/
+// @grant          GM_addStyle
+// @grant          GM_log
+// @grant          GM_setValue
+// @grant          GM_getValue
 // ==/UserScript==
 
 

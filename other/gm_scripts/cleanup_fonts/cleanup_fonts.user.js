@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Cleanup Fonts
-// @namespace      noggieb
-// @description    Removes unwanted fonts and uses your own.
+// @namespace      joeytwiddle
+// @description    Removes unwanted fonts and applies your own.  (But I recommend my "Kill Fonts" bookmarklet instead.)
 // @include        *
 // ==/UserScript==
 
@@ -36,7 +36,7 @@ function convertFont(elemFont,elem,fromList,toFace) {
 		if (elemFont.indexOf(str) >= 0) {
 		// if (elemFont == str) {
 			if (toFace != undefined && toFace != elemFont) {
-				GM_log("Changing "+elem+": "+elemFont+" -> "+toFace);
+				console.log("Changing "+elem+": "+elemFont+" -> "+toFace);
 				elem.style.fontFamily = toFace;
 			}
 			return true;
@@ -75,7 +75,7 @@ function doThing(elem) {
 			|| convertFont(elemFont,elem,recognizeMono,myMono)
 			|| convertFont(elemFont,elem,fontsToKeep,undefined);
 		if (!changed) {
-			GM_log("Do not recognise font: "+elemFont+" so setting "+myUnknown);
+			console.log("Do not recognise font: "+elemFont+" so setting "+myUnknown);
 			elem.style.fontFamily = myUnknown;
 		}
 		 // if (/^courier($|,)/i.test(elementStyle.fontFamily)) {
@@ -103,10 +103,10 @@ if (unsafeWindow.document.styleSheets) {
 						// It includes the size and weight; maybe it's just a
 						// combination of the other properties, and it will change
 						// when we change them?  TODO: check that.
-						GM_log("Rule has font = "+rule.style.font);
+						console.log("Rule has font = "+rule.style.font);
 					}
 					if (rule.style.fontFamily) {
-						GM_log("Rule has fontFamily = "+rule.style.fontFamily);
+						console.log("Rule has fontFamily = "+rule.style.fontFamily);
 					}
 				}
 				doThing(rule);
@@ -119,7 +119,7 @@ var allStyleElements = unsafeWindow.document.getElementsByTagName('STYLE');
 for (var i = 0; i < allStyleElements.length; i++) {
 	var elem = allStyleElements[i];
 	if (!elem.style)
-		GM_log("Style block "+i+" has no style!");
+		console.log("Style block "+i+" has no style!");
 	doThing(elem);
 }
 

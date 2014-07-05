@@ -2,6 +2,7 @@
 // @name           YouTube Popout Button
 // @description    Provides a button to pupout the current YouTube video in a new window.
 // @downstreamURL  http://userscripts.org/scripts/source/150631.user.js
+// @version        1.0.0
 // @include        http://*.youtube.com/watch*
 // @include        http://youtube.com/watch*
 // ==/UserScript==
@@ -69,7 +70,7 @@
                    flink += "#at="+(time|0);
                 }
              } catch (e) {
-                GM_log(""+e);
+                console.error(""+e);
              }
 
              // window.location = flink;

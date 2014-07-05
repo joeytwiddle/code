@@ -2,6 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
+// @version        1.0.0
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -10,6 +11,8 @@
 //// For thumbnails when google search presents video results - but probably fails from XSS in Chrome
 // @include        http://www.google.co.uk/search?q=*&tbm=vid&*
 // @include        https://www.google.co.uk/search?q=*&tbm=vid&*
+// @grant          GM_log
+// @grant          GM_xmlhttpRequest
 // ==/UserScript==
 
 // Some YouTube videos get lots of views even though they are rubbish, maybe

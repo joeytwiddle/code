@@ -2,6 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
+// @version        1.0.0
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -11,6 +12,8 @@
 // @include        https://www.google.co.uk/search?*&tbm=vid&*
 //// YouTube thumbnails occasionally appear in normal Google search results:
 // @include        https://www.google.co.uk/search*
+// @grant          GM_addStyle
+// @grant          GM_log
 // ==/UserScript==
 
 // TODO: In case for some reason YouTube or another script redirects us to

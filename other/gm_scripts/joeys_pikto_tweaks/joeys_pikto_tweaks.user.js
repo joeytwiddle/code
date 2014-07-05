@@ -4,6 +4,8 @@
 // @description    Just some style improvements I like when using Piktochart.com
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
+// @version        1.1.1
+// @grant          none
 // ==/UserScript==
 
 if (typeof GM_addStyle == 'undefined') {

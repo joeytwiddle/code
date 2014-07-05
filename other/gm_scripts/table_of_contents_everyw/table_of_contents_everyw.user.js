@@ -2,8 +2,10 @@
 // @name           Table of Contents Everywhere
 // @description    On pages which do not have a Table of Contents, but should do, create one!
 // @downstreamURL  http://userscripts.org/scripts/source/123255.user.js
+// @version        1.0.0
 // @include        http://*/*
 // @include        https://*/*
+// @grant          none
 // ==/UserScript==
 
 var minimumItems = 4;    // Don't display a TOC for fewer than this number of entries.

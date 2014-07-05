@@ -5,6 +5,7 @@
 // @version        0.5.2
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
+// @grant          none
 // ==/UserScript==
 
 var notificationButton = $(".header a.notification-indicator[href]");
@@ -61,7 +62,6 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 
 	var arrowSize = 10;
 
-	//GM_addStyle(""
 	$("<style>").html(""
 	  + " .notifications-dropdown { "
 	  + "   border: 1px solid #ddd; "
@@ -101,7 +101,6 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   z-index: 20; "
 	  + " } "
 	).appendTo("body");
-	//);
 
 	notificationsDropdown.css({
 		position: "absolute",   // Must be set before we can read width accurately

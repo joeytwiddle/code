@@ -2,11 +2,13 @@
 // @name           FallbackGMAPI
 // @namespace      FallbackGMAPI
 // @description    Default functions for GM_ API library for wider browser compatibility and execution of userscripts from bookmarklets.
+// @version        1.0.0
 // @downstreamURL  http://userscripts.org/scripts/source/123254.user.js
 // @include        http://nowhere.example.com/@require_me_to_make_your_userscript_compatible_in_many_browsers
 // @copyright      2009, 2010, 2011 James Campos, Paul Clark
 // @license        cc-by-3.0; http://creativecommons.org/licenses/by/3.0/
 // @exclude        *
+// @grant          none
 // ==/UserScript==
 
 // This is a shim to provide the Greasemonkey API functions if they are not already available.

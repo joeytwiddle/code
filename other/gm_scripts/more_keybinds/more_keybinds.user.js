@@ -2,6 +2,7 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
+// @version        1.0.5
 // @include        *
 // ==/UserScript==
 

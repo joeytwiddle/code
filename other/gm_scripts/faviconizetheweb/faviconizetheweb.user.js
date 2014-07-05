@@ -11,7 +11,7 @@
 // @exclude        https://duckduckgo.com/*
 //// Causes login dialogs to open!
 // @exclude        http://www.jobs.ac.uk/*
-// @version        1.5
+// @version        1.5.1
 // ==/UserScript==
 // Based on FaviconizeGoogle.
 

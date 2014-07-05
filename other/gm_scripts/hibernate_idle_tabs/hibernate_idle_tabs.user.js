@@ -2,6 +2,7 @@
 // @name           Hibernate Idle Tabs
 // @namespace      HIT
 // @description    If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions.
+// @version        1.1.1
 // @downstreamURL  http://userscripts.org/scripts/source/123252.user.js
 // @include        *
 // ==/UserScript==
@@ -97,7 +98,7 @@ function handleNormalPage() {
 					params.favicon_data = faviconDataURL;
 				} catch (e) {
 					var extra = ( window != top ? " (running in frame or iframe)" : "" );
-					GM_log("[HIT] Got error"+extra+": "+e+" doc.loc="+document.location.href);
+					console.error("[HIT] Got error"+extra+": "+e+" doc.loc="+document.location.href);
 					// We get "Error: SECURITY_ERR: DOM Exception 18" (Chrome) if
 					// the favicon is from a different host.
 				}
@@ -179,7 +180,7 @@ function handleHoldingPage() {
 		}
 		writeFaviconFromDataString(faviconDataURL);
 	} catch (e) {
-		GM_log(""+e);
+		console.error(""+e);
 	}
 
 	function restoreTab(evt) {
@@ -395,7 +396,7 @@ function loadFaviconForHost(targetHost,callback) {
 	function tryNextExtension() {
 		var ext = extsToTry.pop();
 		if (ext == null) {
-			GM_log("Ran out of extensions to try for "+targetHost+"/favicon.???");
+			console.log("Ran out of extensions to try for "+targetHost+"/favicon.???");
 			// We run the callback anyway!
 			callback(null);
 		} else {
@@ -410,7 +411,7 @@ function loadFaviconForHost(targetHost,callback) {
 function writeFaviconFromCanvas(canvas) {
 	var faviconDataURL = canvas.toDataURL("image/png");
 	// var faviconDataURL = canvas.toDataURL("image/x-icon;base64");
-	// GM_log("Got data URL: "+faviconDataURL.substring(0,10+"... (length "+faviconDataURL.length+")");
+	// console.log("Got data URL: "+faviconDataURL.substring(0,10+"... (length "+faviconDataURL.length+")");
 	writeFaviconFromDataString(faviconDataURL);
 }
 
@@ -447,7 +448,7 @@ function writeFaviconFromDataString(faviconDataURL) {
 
 function loadFaviconIntoCanvas(targetHost,callback) {
 
-	// GM_log("Getting favicon for: "+targetHost);
+	// console.log("Getting favicon for: "+targetHost);
 
 	var canvas = document.createElement('canvas');
 	var ctx = canvas.getContext('2d');
@@ -456,7 +457,7 @@ function loadFaviconIntoCanvas(targetHost,callback) {
 
 	function gotFavicon(favicon) {
 		if (favicon) {
-			// GM_log("Got favicon from: "+favicon.src);
+			// console.log("Got favicon from: "+favicon.src);
 			canvas.width = favicon.width;
 			canvas.height = favicon.height;
 			ctx.drawImage( favicon, 0, 0 );

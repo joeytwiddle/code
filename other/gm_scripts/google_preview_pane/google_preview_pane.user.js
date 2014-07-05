@@ -2,7 +2,7 @@
 // @name           Google Preview Pane
 // @namespace      GPP
 // @homepage       http://userscripts.org/users/89794
-// @description    Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page.  (Unfortunately no longer works on https - only works when you are logged out!)
+// @description    Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page.  (Unfortunately no longer works on https - only works when you are logged out of your Google account...)
 // @include        http://*.google.*/*q=*
 // @include        http://google.*/*q=*
 // @include        https://*.google.*/*q=*
@@ -13,7 +13,9 @@
 // @exclude        https://*.google.*/images*
 // @exclude        https://google.*/images*
 // @exclude        https://images.google.*/*
-// @version        2012.02.07
+// @version        2014.07.06
+// @grant          GM_addStyle
+// @grant          GM_log
 // ==/UserScript==
 
 // Notes on the patterns:

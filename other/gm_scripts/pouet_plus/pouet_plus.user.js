@@ -2,8 +2,10 @@
 // @name           Pouet Plus
 // @namespace      PP
 // @description    Preview screenshots straight from the prods search by hovering over links.
+// @version        1.0.0
 // @include        http://pouet.net/*
 // @include        http://www.pouet.net/*
+// @grant          none
 // ==/UserScript==
 
 var bg_color = "#EAEAEA";
@@ -53,7 +55,7 @@ function create_div(event,elem) {
 function tryOtherExtensionsIfNeeded(tt_image,demo_num,imageTypes) {
 	tt_image.addEventListener("error",function(){
 		if (imageTypes.length == 0) {
-			GM_log("We have run out of image types to try!");
+			console.log("We have run out of image types to try!");
 		} else {
 			var ext = imageTypes.pop();
 			setImageSource(tt_image, demo_num, ext);

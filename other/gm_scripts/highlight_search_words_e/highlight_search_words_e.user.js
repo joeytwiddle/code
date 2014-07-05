@@ -7,6 +7,7 @@
 //// Exclude sites which already highlight search terms!
 // @exclude        http://*.google.*/*
 // @exclude        http://*.imdb.com/*
+// @grant          none
 // ==/UserScript==
 
 var highlightWholePhrase = true;
@@ -98,7 +99,7 @@ function cleanupTitle() {
 var clearingTimer = null;
 var oldSetTimeout = window.setTimeout;
 function setTimeout(fn,time) {
-	// GM_log("Setting fn for +"+time);
+	// console.log("Setting fn for +"+time);
 	oldSetTimeout(fn,time);
 	if (clearingTimer)
 		clearTimeout(clearingTimer);
@@ -149,7 +150,7 @@ function startSearch(word) {
 	if (word.length > 0) {
 		// Stagger start time of different words
 		setTimeout(function(){
-			// GM_log("Starting search for word: "+word);
+			// console.log("Starting search for word: "+word);
 			searchWithinNode(document.body, word.toUpperCase(), word.length, getNextColor());
 		},startSearchDelay);
 		startSearchDelay += 1000;
@@ -236,7 +237,7 @@ if (words) {
 		return colstr;
 	}
 
-	GM_log("Highlighting words: "+words);
+	console.log("Highlighting words: "+words);
 	/* window.status="Searching for '"+words+"'..."; */
 
 	words = unescape(words.replace(/\+/g,' '));
@@ -269,6 +270,6 @@ if (words) {
 	}
 
 } else {
-	// GM_log("No search terms found in "+document.referrer+" or "+document.location);
+	// console.log("No search terms found in "+document.referrer+" or "+document.location);
 }
 

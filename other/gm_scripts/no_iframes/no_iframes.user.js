@@ -18,7 +18,7 @@ var dontBlockJustRemove = false;
 var removed = 0;
 
 var iframes = document.getElementsByTagName("IFRAME");
-// GM_log("Removing "+iframes.length+" IFrames...");
+// console.log("Removing "+iframes.length+" IFrames...");
 for (var i=iframes.length-1;i>=0;i--) {
 	var iframe = iframes[i];
 	if (keepLocalIframes) {
@@ -28,16 +28,16 @@ for (var i=iframes.length-1;i>=0;i--) {
 			continue;
 	}
 	if (dontBlockJustRemove) {
-		// GM_log("Removing IFrame: "+iframe.src);
+		// console.log("Removing IFrame: "+iframe.src);
 		iframe.parentNode.removeChild(iframe);
 	} else {
 		iframe.oldSrc = iframe.src;
 		iframe.src = 'about:blank';
 		removed++;
-		// GM_log("IFrame's window = " + iframe.contentWindow);
-		// GM_log("IFrame's document = " + iframe.contentDocument);
+		// console.log("IFrame's window = " + iframe.contentWindow);
+		// console.log("IFrame's document = " + iframe.contentDocument);
 		// if (iframe.contentDocument)
-			// GM_log("IFrame's document body = " + iframe.contentDocument.body);
+			// console.log("IFrame's document body = " + iframe.contentDocument.body);
 	}
 }
-GM_log("[NIF] Removed "+removed+" IFrames.");
+console.log("[NIF] Removed "+removed+" IFrames.");
