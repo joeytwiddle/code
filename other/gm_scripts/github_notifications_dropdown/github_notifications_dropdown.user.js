@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.5.1
+// @version        0.5.2
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // ==/UserScript==
@@ -54,7 +54,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	notificationsDropdown.append(notificationsList);
 	var linkToPage = '/notifications';
 	//var linkToPage = targetPage;
-	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>See all notifications</a></b></center>").css({
+	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>Notifications page</a></b></center>").css({
 		"margin-top": "-12px"
 	});
 	notificationsDropdown.append(seeAll);
