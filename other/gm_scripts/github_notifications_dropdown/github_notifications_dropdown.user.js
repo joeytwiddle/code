@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.5.2
+// @version        0.5.3
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // @grant          none
@@ -55,9 +55,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	notificationsDropdown.append(notificationsList);
 	var linkToPage = '/notifications';
 	//var linkToPage = targetPage;
-	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>Notifications page</a></b></center>").css({
-		"margin-top": "-12px"
-	});
+	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>Notifications page</a></b></center>");
 	notificationsDropdown.append(seeAll);
 
 	var arrowSize = 10;
@@ -76,8 +74,12 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + " .notifications-dropdown > center { "
 	  + "   padding: 8px 8px; "
 	  + " } "
-	  + " .notifications-dropdown .notifications-list .box { "
+	  // GitHub uses default 20px here, but it applies to the last one too, which messes up our layout.
+	  + " .notifications-dropdown .notifications-list .box:not(:last-child) { "
 	  + "   margin-bottom: 16px; "
+	  + " } "
+	  + " .notifications-dropdown .notifications-list .box:last-child { "
+	  + "   margin-bottom: 0px; "
 	  + " } "
 	  + " .notifications-dropdown .notifications-list { "
 	  + "   float: initial; "
