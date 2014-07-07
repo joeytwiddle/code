@@ -23,7 +23,7 @@ if ( document.location.pathname.match("/$|/themes|/infographics|/gallery") ) {
 	//var bgcol = document.location.pathname.match("/$|/themes") ? '#e3e3e3' : 'white';
 	//GM_addStyle(" .top-menu-container ul.menu > li a.active { padding-top: 15px; padding-bottom: 15px; margin-bottom: -2px; border-radius: 10px 10px 0px 0px; -moz-border-radius: 10px 10px 0px 0px; -webkit-border-radius: 10px 10px 0px 0px; -ms-border-radius: 10px 10px 0px 0px; -o-border-radius: 10px 10px 0px 0px; background-color: "+bgcol+"; color: black; } ");
 	// Active tab is a bit taller, and bevelled, with slightly wider borders
-	GM_addStyle(" .top-menu-container ul.menu > li a.active { padding-top: 0.5em; border: 1px solid; border-color: rgba(0,0,0,0.4) rgba(255,255,255,0.1) rgba(255,255,255,0.1) rgba(0,0,0,0.4); } ");
+	GM_addStyle(" .top-menu-container ul.menu > li a.active { padding-top: 0.6em; padding-bottom: 0.6em; border: 1px solid; border-color: rgba(0,0,0,0.4) rgba(255,255,255,0.1) rgba(255,255,255,0.1) rgba(0,0,0,0.4); } ");
 	GM_addStyle(" .top-menu-container ul.menu > li a.active { -webkit-border-radius: 4px; } ");
 	// Grey rounded tab
 	//GM_addStyle(" .top-menu-container ul.menu > li a.active { padding-bottom: 1.0em; margin-bottom: -0.5em; -webkit-border-radius: 10px 10px 0px 0px; } ");
