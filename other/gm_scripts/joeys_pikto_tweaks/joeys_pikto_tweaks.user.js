@@ -17,7 +17,10 @@ if (typeof GM_addStyle == 'undefined') {
   };
 }
 
-// On the front pages
+
+
+// ==== On the front pages ====
+
 if ( document.location.pathname.match("/$|/themes|/infographics|/gallery") ) {
 	// Active tab is white (or light grey) and rounded
 	//var bgcol = document.location.pathname.match("/$|/themes") ? '#e3e3e3' : 'white';
@@ -34,6 +37,10 @@ if ( document.location.pathname.match("/$|/themes|/infographics|/gallery") ) {
 	$(".pikto-publish-hover-link *").filter(function(){ return $(this).text()=="open on web"; }).text("View");
 	$("#pikto-hover-unpublish a").filter(function(){ return $(this).text()=="Unpublish It"; }).text("Unpublish");
 }
+
+
+
+// ==== Everywhere ====
 
 // Centralised message boxes (instead of filling the whole width of the page)
 var messageBoxes = document.getElementsByClassName("msg-container");

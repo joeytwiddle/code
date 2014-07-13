@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.5.3
+// @version        0.5.4
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // @grant          none
@@ -65,7 +65,7 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	  + "   border: 1px solid #ddd; "
 	  + "   background-color: #fff; "
 	  + "   padding: 2px 16px; "
-	  + "   box-shadow: 0px 2px 8px 1px rgba(0,0,0,0.25); "
+	  + "   box-shadow: 0px 2px 8px 0px rgba(0,0,0,0.25); "
 	  + "   border-radius: 24px; "
 	  //+ "   max-height: 90%; "
 	  + "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
