@@ -27,6 +27,7 @@ if ( document.location.pathname.match("/$|/themes|/templates|/infographics|/gall
 	//GM_addStyle(" .top-menu-container ul.menu > li a.active { padding-top: 15px; padding-bottom: 15px; margin-bottom: -2px; border-radius: 10px 10px 0px 0px; -moz-border-radius: 10px 10px 0px 0px; -webkit-border-radius: 10px 10px 0px 0px; -ms-border-radius: 10px 10px 0px 0px; -o-border-radius: 10px 10px 0px 0px; background-color: "+bgcol+"; color: black; } ");
 	// Active tab is a bit taller, and bevelled, with slightly wider borders
 	//GM_addStyle(" .top-menu-container ul.menu > li a.active { padding-top: 0.5em; border: 1px solid; border-color: rgba(0,0,0,0.4) rgba(255,255,255,0.1) rgba(255,255,255,0.1) rgba(0,0,0,0.4); -webkit-border-radius: 4px; } ");
+	//GM_addStyle(" .top-menu-container ul.menu > li a.active { padding-top: 0.6em; padding-bottom: 0.6em; border: 1px solid; border-color: rgba(0,0,0,0.4) rgba(255,255,255,0.1) rgba(255,255,255,0.1) rgba(0,0,0,0.4); -webkit-border-radius: 4px; } ");
 	//GM_addStyle(" .top-menu-container ul.menu > li a.active { padding: 0.7em; border: 1px solid; border-color: rgba(0,0,0,0.4) rgba(255,255,255,0.1) rgba(255,255,255,0.1) rgba(0,0,0,0.4); -webkit-border-radius: 4px; } ");
 	// Now it is a solid block, not a small box, I am happy with the default.
 	// Grey rounded tab

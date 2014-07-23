@@ -8,52 +8,75 @@
 // @grant          none
 // ==/UserScript==
 
-var notificationButton = $(".header a.notification-indicator[href]");
+// bug: If the notifications list is longer than the page, scroll down to the bottom and then try to click on the white space below the Github document's content.  The event does not fire there!
 
-var targetPage;
+var mainNotificationsPath = "/notifications";
+
+var notificationButton = $(".header a.notification-indicator[href]");
+var closeClickTargets = $("body, .header a.notification-indicator[href]");
+
+var notificationsDropdown = null;
+var tabArrow = null;
 
 function listenForNotificationClick(){
-	notificationButton.on("click", notificationButtonClicked);
-	function notificationButtonClicked(evt){
-		// Act normally, do nothing, if modifier key is pressed.
-		if (evt.ctrlKey || evt.shiftKey || evt.metaKey) {
-			return;
-		}
-		evt.preventDefault();
-		notificationButton.css({
-			"opacity": "0.3",
-			"background-color": "#ececec",
-			"background-image": "linear-gradient(#d9d9d9, #ececec)"
-		});
-		// Had to use .on and .off here because .one was firing multiple times, dunno why.  O_o
-		notificationButton.off("click", notificationButtonClicked);
-		targetPage = notificationButton.attr('href');
-		$.get(targetPage).then(receiveNotificationsPage).fail(receiveNotificationsPage);
-	}
+	notificationButton.on("click", onNotificationButtonClicked);
 }
 
-function receiveNotificationsPage(data, textStatus, jqXHR){
+function onNotificationButtonClicked(evt){
+	// Act normally, do nothing, if modifier key is pressed.
+	if (evt.ctrlKey || evt.shiftKey || evt.metaKey) {
+		return;
+	}
+	evt.preventDefault();
+	notificationButton.off("click", onNotificationButtonClicked);
+	var targetPage = notificationButton.attr('href');
+	fetchNotifications(targetPage);
+}
+
+function fetchNotifications(targetPage){
+	notificationButton.css({
+		"opacity": "0.3",
+		"background-color": "#ececec",
+		"background-image": "linear-gradient(#d9d9d9, #ececec)"
+	});
+	$.get(targetPage).then(receiveNotificationsPage.bind(null,targetPage)).fail(receiveNotificationsPage);
+}
+
+function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	notificationButton.css("opacity", "");
+
+	notificationsDropdown = $("<div>").addClass("notifications-dropdown");
+
+	var title = "Notifications";
+	var extra = null;
+	if (targetPage != mainNotificationsPath) {
+		title += " for " + targetPage.replace(/^\/+|\/notifications$/g,'');
+	}
+	var titleElem = $('<h3>').text(title);
+	if (targetPage != mainNotificationsPath) {
+		var buttonToSeeAll = $('<a href="#">').text('See all');
+		buttonToSeeAll.on('click', function(evt){
+			evt.preventDefault();
+			closeNotificationsDropdown();
+			fetchNotifications(mainNotificationsPath);
+		});
+		titleElem.append( textNode(" ("), buttonToSeeAll, textNode(")") );
+	}
+	notificationsDropdown.append( $("<center>").append(titleElem) );
 
 	var notificationPage = $("<div>").append( $.parseHTML(data) );
 	var notificationsList = notificationPage.find(".notifications-list");
-	var notificationsDropdown = $("<div>").addClass("notifications-dropdown");
-	var title = "Notifications";
-	if (targetPage != "/notifications") {
-		title += " for " + targetPage.replace(/^\/+|\/notifications$/g,'');
-	}
-	$("<h3><center>" + title + "</center></h3>").appendTo(notificationsDropdown);
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
 	notificationsList.find("a").each(function(){
 		$(this).attr("title", $(this).text().trim());
 	});
-	var minWidth = Math.min(700, window.innerWidth-32);
+	var minWidth = Math.min(750, window.innerWidth-48);
 	if (notificationsList.children().length == 0) {
 		notificationsDropdown.append("<center>No new notifications</center>");
 		minWidth = 0;
 	}
 	notificationsDropdown.append(notificationsList);
-	var linkToPage = '/notifications';
+	var linkToPage = mainNotificationsPath;
 	//var linkToPage = targetPage;
 	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>Notifications page</a></b></center>");
 	notificationsDropdown.append(seeAll);
@@ -119,35 +142,38 @@ function receiveNotificationsPage(data, textStatus, jqXHR){
 	});
 
 	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.  I cannot explain why we need the +2!
-	var tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
+	tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
 		left: (notificationButton.offset().left + notificationButton.width()/2 - arrowSize + 2) + "px",
 		top: (topOfDropdown - arrowSize + 1) + "px",
 	}).appendTo("body");
 
 	makeBlocksCollapsable(notificationsDropdown);
 
-	function listenForCloseNotificationDropdown(){
-		var closeClickTargets = $("body, .header a.notification-indicator[href]");
-		closeClickTargets.on("click", considerClosingNotificiationDropdown);
-		function considerClosingNotificiationDropdown(evt){
-			if ($(evt.target).closest(".notifications-dropdown").length){
-				// A click inside the dropdown doesn't count!
-			} else {
-				evt.preventDefault();
-				// We must use .on and .off because .one will fire once per element per event type!
-				closeClickTargets.off("click", considerClosingNotificiationDropdown);
-				notificationsDropdown.remove();
-				tabArrow.remove();
-				notificationButton.css({
-					"background-color": "",
-					"background-image": ""
-				});
-				listenForNotificationClick();
-			}
-		}
-	}
-
 	listenForCloseNotificationDropdown();
+}
+
+function listenForCloseNotificationDropdown(){
+	closeClickTargets.on("click", considerClosingNotificiationDropdown);
+}
+
+function considerClosingNotificiationDropdown(evt){
+	if ($(evt.target).closest(".notifications-dropdown").length){
+		// A click inside the dropdown doesn't count!
+	} else {
+		evt.preventDefault();
+		closeNotificationsDropdown();
+		listenForNotificationClick();
+	}
+}
+
+function closeNotificationsDropdown(){
+	closeClickTargets.off("click", considerClosingNotificiationDropdown);
+	notificationsDropdown.remove();
+	tabArrow.remove();
+	notificationButton.css({
+		"background-color": "",
+		"background-image": ""
+	});
 }
 
 function makeBlocksCollapsable(parentElement){
@@ -160,7 +186,11 @@ function makeBlocksCollapsable(parentElement){
 	}).css({ cursor: "pointer" });
 }
 
+function textNode(text){
+	return document.createTextNode(text);
+}
+
 listenForNotificationClick();
 
-// If we are on the notifications page, add our feature there too
+// Optional: If we are on the notifications page, add our rollup feature there too!
 makeBlocksCollapsable(document.body);
