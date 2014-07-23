@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.0.1
+// @version       1.2.4
 // @include       http://wikipedia.tld/*
 // @include       http://*.wikipedia.tld/*
 //// Since TLD doesn't work in Chrome:
@@ -199,8 +199,10 @@ function newInlineWindow(event, href, link, windowID){
 	var xpos, ypos;
 	
 	// get the position of the element that was clicked on...
-	var elementTop = getElementOffset(link,'Top');
-	var elementLeft = getElementOffset(link,'Left');
+	//var elementTop = getElementOffset(link,'Top');
+	//var elementLeft = getElementOffset(link,'Left');
+	var elementTop = $(link).offset().top;
+	var elementLeft = $(link).offset().left;
 	var elementHeight = parseInt(window.getComputedStyle(link,"").getPropertyValue('line-height'));
 
 	
@@ -315,11 +317,10 @@ function populateInnerWindow(href,windowID) {
 	printHref = document.location.protocol + '//' + document.location.host + (document.location.port ? ':' + document.location.port : '');
 	printHref += href + (href.indexOf('?') > -1 ? '&' : '?' ) + 'printable=yes';
 
-	GM_xmlhttpRequest
-	   ({
-	   method:'GET',
-	   url: printHref,
-	   onload:function(response) {
+	GM_xmlhttpRequest({
+		method:'GET',
+		url: printHref,
+		onload:function(response) {
 			var headings, header, content;
 			var innerWindowContentBox = document.getElementById('innerWindowCont-' + windowID);
 			var xmlDoc;
@@ -368,7 +369,12 @@ function populateInnerWindow(href,windowID) {
 			}else{
 				GM_log("Couldn't find a window '" + windowID + "' to populate content for '" + href + "'");
 			}
-		}});
+		} /*,
+		onerror:function(err){
+			GM_log("Error loading "+printHref+": "+err);
+			console.error(err);
+		} */
+	});
 }
 
 function findElementById(node, id) {
@@ -422,9 +428,11 @@ function closeInlineWindow(id){
 	
 }
 
+// BUG: I broke this when I started positioning divs with top,left instead of margin.
 function getElementOffset(element,whichCoord) {
 	var count = 0
 	while (element!=null) {
+		//GM_log("Getting offset"+whichCoord+" from "+element.tagName+"#"+element.id+": "+element['offset'+whichCoord]);
 	 	count += element['offset' + whichCoord];
 		element = element.offsetParent;
 	}
