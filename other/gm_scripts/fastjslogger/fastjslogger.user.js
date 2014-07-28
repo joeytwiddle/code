@@ -270,11 +270,15 @@
 							// str += " [no type]";
 						}
 					}
-					if (str.length > 77) {
+					if (str.length > 202) {
 						str = shortenString(str);
 					}
 					var gap = (i>0?' ':'');
 					out += gap + str;
+				}
+
+				if (logContainer.childNodes.length >= 1000) {
+					logContainer.removeChild(logContainer.firstChild);
 				}
 
 				// logContainer.appendChild(document.createElement("br"));
@@ -665,8 +669,8 @@
 			s = s.replace(/\n[ \t]+/,'\\n ','g');
 			s = s.replace(/\n/,'\\n','g');
 			s = s.replace(/\t/,'  ','g');
-			if (s.length>77) {
-				s = s.substring(0,77)+"...";
+			if (s.length>202) {
+				s = s.substring(0,202)+"...";
 			}
 			return s;
 		}
