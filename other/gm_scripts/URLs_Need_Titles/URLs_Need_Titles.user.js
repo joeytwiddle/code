@@ -7,8 +7,15 @@
 // @include        https://github.com/*/*
 // ==/UserScript==
 
-// For example, if you visit this address: http://www.imdb.com/title/tt1155592/
-// this script will give you this address: http://www.imdb.com/title/tt1155592/#Man_on_Wire_(2008)
+// For example, this script will change this address:
+//
+//   http://www.imdb.com/title/tt1155592/
+//
+// into this address:
+//
+//   http://www.imdb.com/title/tt1155592/#Man_on_Wire_(2008)
+//
+// which is far more useful to paste to other people.
 
 var overwriteExistingHash = true;
 
