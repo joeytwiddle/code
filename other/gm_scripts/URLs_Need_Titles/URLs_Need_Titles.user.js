@@ -2,10 +2,13 @@
 // @name           URLs Need Titles
 // @namespace      UNT
 // @description    When you paste a URL to a friend, it is useful if it contains the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs!
-// @version        1.2.2
+// @version        1.2.3
 // @include        http://*/*
 // @include        https://github.com/*/*
 // ==/UserScript==
+
+// For example, if you visit this address: http://www.imdb.com/title/tt1155592/
+// this script will give you this address: http://www.imdb.com/title/tt1155592/#Man_on_Wire_(2008)
 
 var overwriteExistingHash = true;
 
@@ -37,25 +40,26 @@ var rules = [
         hostMatch: "youtube.TLD",
         pathMatch: "/watch",
         getTitle: function(){
-            return document.title.replace(/^YouTube - /,'');
+            return document.title.replace(/ - YouTube$/,'');
         }
     },
 
     {
         hostMatch: "xkcd.TLD",
         pathMatch: ".*[0-9]+/",
-        getTitle: function(){ return (""+document.title).replace(/^[^:]*: /,'','g'); }
+        getTitle: function(){ return document.title.replace(/^xkcd: /,''); }
     },
 
     {
         hostMatch: "imdb.TLD",
         pathMatch: ".*title.*",
-        getTitle: function(){ return (""+document.title).replace(/ - IMDb/,'','g'); }
+        getTitle: function(){ return document.title.replace(/ - IMDb/,''); }
     },
 
     {
         hostMatch: "pouet.net",
-        pathMatch: ".*"
+        pathMatch: ".*",
+        getTitle: function(){ return document.title.replace(/ :: pouët.net$/,''); }
     },
 
     {
@@ -79,7 +83,7 @@ var rules = [
     {
         hostMatch: "9gag.com",
         pathMatch: "/gag/.*",
-        getTitle: function(){ return document.title.replace(/9GAG - /,''); }
+        getTitle: function(){ return document.title.replace(/ - 9GAG$/,''); }
     },
 
     {
