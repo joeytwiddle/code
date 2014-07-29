@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.5.4
+// @version        0.5.5
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // @grant          none
@@ -92,7 +92,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  + "   border-radius: 24px; "
 	  //+ "   max-height: 90%; "
 	  + "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
-	  + "   z-index: 10; "           // To appear above the .bootcamp .desc on the front page.
+	  + "   z-index: 10000000; "     // To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues
 	  + " } "
 	  + " .notifications-dropdown > center { "
 	  + "   padding: 8px 8px; "
@@ -123,7 +123,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  + "   border-left: "+arrowSize+"px solid transparent; "
 	  + "   border-right: "+arrowSize+"px solid transparent; "
 	  + "   border-bottom: "+arrowSize+"px solid white; "
-	  + "   z-index: 20; "
+	  + "   z-index: 10000001; "
 	  + " } "
 	).appendTo("body");
 
@@ -177,6 +177,7 @@ function closeNotificationsDropdown(){
 }
 
 function makeBlocksCollapsable(parentElement){
+	// If we also wanted to apply collapsability to files in diffs, we could target `.file > .meta`, and toggle the next sibling `.data.highlight`.
 	$(".box-header", parentElement).click(function(e){
 		if ($(e.target).closest(".mark-all-as-read").length) {
 			$(this).next(".box-body").slideUp(150);
