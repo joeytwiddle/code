@@ -2,8 +2,8 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.5.5
-// @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
+// @version        0.6.0
+// @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @grant          none
 // ==/UserScript==
@@ -147,7 +147,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 		top: (topOfDropdown - arrowSize + 1) + "px",
 	}).appendTo("body");
 
-	makeBlocksCollapsable(notificationsDropdown);
+	makeNotificationBlocksCollapsable(notificationsDropdown);
 
 	listenForCloseNotificationDropdown();
 }
@@ -176,13 +176,22 @@ function closeNotificationsDropdown(){
 	});
 }
 
-function makeBlocksCollapsable(parentElement){
-	// If we also wanted to apply collapsability to files in diffs, we could target `.file > .meta`, and toggle the next sibling `.data.highlight`.
-	$(".box-header", parentElement).click(function(e){
-		if ($(e.target).closest(".mark-all-as-read").length) {
-			$(this).next(".box-body").slideUp(150);
+function makeNotificationBlocksCollapsable(parentElement){
+	makeBlocksCollapsable(parentElement, ".box-header", ".box-body", ".mark-all-as-read");
+}
+
+function makeFileAndDiffBlocksCollapsable(parentElement){
+	makeBlocksCollapsable(parentElement, ".file > .meta", ".data.highlight", null);
+}
+
+// When an element matching headerSelector is clicked, the next sibling bodySelector will be collapsed or expanded (toggled).
+// If the target (or an ancestor) of the clicked element matches specialCase, we will collapse but not expand the body.
+function makeBlocksCollapsable(parentElement, headerSelector, bodySelector, specialCase){
+	$(headerSelector, parentElement).click(function(e){
+		if (specialCase && $(e.target).closest(specialCase).length) {
+			$(this).next(bodySelector).slideUp(150);
 		} else if (e.target === this) {
-			$(this).next(".box-body").slideToggle(150);
+			$(this).next(bodySelector).slideToggle(150);
 		}
 	}).css({ cursor: "pointer" });
 }
@@ -191,7 +200,12 @@ function textNode(text){
 	return document.createTextNode(text);
 }
 
+
+// Init:
 listenForNotificationClick();
 
 // Optional: If we are on the notifications page, add our rollup feature there too!
-makeBlocksCollapsable(document.body);
+makeNotificationBlocksCollapsable(document.body);
+
+// Optional: Also add the rollup feature for individual files on diff pages.
+makeFileAndDiffBlocksCollapsable(document.body);
