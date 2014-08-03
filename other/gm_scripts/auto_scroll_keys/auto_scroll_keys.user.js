@@ -132,10 +132,11 @@ function u44573_goScroll() {
 		var jumpPixels = abs(scrollSpeed) * elapsed/1000;
 		var timeToNext = 1000/maxPerSecond;
 
+		// Rather than running at a fixed FPS, at slow speeds the approaches below would delay the next callback until it was time to move to the next pixel.  This was more efficient on slow machines.
+		/*
 		// The browser can only jump a whole number of pixels, and it rounds down.
 		// We had to do the following anyway for jumpPixels<1 but by doing it for
 		// small numbers (<5) we workaround the analogue/digital bug.  (5*1.2=6)
-		/*
 		if (jumpPixels < 3) {
 			timeToNext /= jumpPixels;
 			// jumpPixels /= jumpPixels;
@@ -143,17 +144,17 @@ function u44573_goScroll() {
 		}
 		*/
 		/*
-			var timeToNext = 1000/abs(scrollSpeed);
-			if (timeToNext < 1000/maxPerSecond) {
-				jumpPixels = abs(scrollSpeed)/maxPerSecond;
-				timeToNext = 1000/maxPerSecond;
-			} else {
-				jumpPixels = 1;
-			}
+		var timeToNext = 1000/abs(scrollSpeed);
+		if (timeToNext < 1000/maxPerSecond) {
+			jumpPixels = abs(scrollSpeed)/maxPerSecond;
+			timeToNext = 1000/maxPerSecond;
+		} else {
+			jumpPixels = 1;
+		}
 		*/
-		// unsafeWindow.scroll(s[0], s[1] + jumpPixels*sgn(scrollSpeed));
 
 		realy += jumpPixels*sgn(scrollSpeed);
+
 		unsafeWindow.scroll(realx, realy); // Leave it to browser to round real values to ints
 
 		lastTime = timeNow;
