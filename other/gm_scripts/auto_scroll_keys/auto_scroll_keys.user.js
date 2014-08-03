@@ -1,50 +1,52 @@
 // ==UserScript==
 // @name           Auto scroll keys
 // @namespace      http://userscripts.org/users/44573
-// @description    Auto scroll page on Ctrl+Down. Escape to stop.
+// @version        1.0.9
+// @description    Auto scroll page on Ctrl+Down.  Escape or Space to stop.
 // @include        *
 // ==/UserScript==
 
+// This script is a derivative of http://userscripts-mirror.org/scripts/show/70300 by PaC1250
+
+// Options:
+
 var initialSpeed = 10;
 
-// var resetThreshold = 1;   // Detects when user scrolls during auto-scroll (occasionally!)
-var resetThreshold = 10;   // Allows auto-scroll to work when zoomed in.
+var maxPerSecond = 60;     // Target frames per second
+
+var resetThreshold = 10;   // If the user scrolls the page manually by more pixels than this value, then we will start scrolling from the new position.
+
+// The user may perform normal scrolling actions during auto-scroll (e.g. by pressing Up or PageUp or using the scroll bar).  We will detect and ackowledge these (update realy) if we see a difference of more than this many pixels.
+// If the threshold is set too low, the script's own scrolling will trigger it, especially on slower machines or under heavy load.
+// But if set too high, the threshold may fail to fire if, when the user presses Up to scroll back a little, the browser performs that with a smooth scroll of lots of small movements, rather than one larger jump.
+
+// BUG: When zoomed in, jumping by a whole (unzoomed) pixel it too coarse, because we see the text move by more than one screen pixel.  But we cannot control that: we give the browser a float for scrolling but it rounds it to an int!
+// A possible workaround would be to perform some scrolling (perhaps just the remainder part before rounding) as a transform on the page.  This might not work in all browsers.
 
 // 2012/10/09  Now runs at 60fps or whatever machine can handle
-// However, this means PageDown/PageUp now have no effect, because the real value is always used.
-// DONE: We could check if getScrollPosition gives us something far from realy, and if so assume the user has moved the page, then re-init realy if we want to continue scrolling.
-// Result: PageUp/Down seem to work fine in Konqueror, but poorly in Firefox.  My guess is that Firefox issues a PageUp as a series of small movements, which do not trigger the resetThreshold.
 
-/* BUG: Does not work well when zoomed in Chrome.
- * It does scroll, if you hold down the key long enough.
- * But when the threshold is passed, movement is quite fast.  Perhaps we can
- * overcome this by holding our own analogue (non-integer) scroll position, and
- * setting the page scroll from this.
- * Perhaps this should catch up if the real value differs significantly from
- * the stored value, indicating perhaps that the user jumped the page manually.
- */
+// Constants:
 
-/* BUG:
- * I think at times we are moving 1.2pixels each timeout, then accelerating to
- * say 1.4pixels per timeout, but in reality the browser is always doing 1
- * pixel!
- */
+var DOM_VK_DOWN   = 40;
+var DOM_VK_UP     = 38;
+var DOM_VK_ESCAPE = 27;
+var DOM_VK_SPACE  = 32;
+var DOM_VK_ENTER  = 13;
+
+// Runtime:
 
 var u44573_go = false;
 var scrollSpeed = 0;
 
-var DOM_VK_DOWN = 40;
-var DOM_VK_UP = 38;
-var DOM_VK_ESCAPE = 27;
-var DOM_VK_SPACE = 32;
-var DOM_VK_ENTER = 13;
+var lastTime;
+var realx, realy;   // We store scroll position as floats; basing scrolling on a float is smoother than the browser's int-rounded scrollTop.  But we may need to keep realy in sync with scrollTop, if the user changes the later during auto-scroll.
 
 window.addEventListener('keydown', u44573_handler, true);
 
-function sgn(x) { return ( x>0 ? 1 : x<0 ? -1 : 0 ); }
 function u44573_handler(e) {
 	var change = 0.60;   // Probably could be lowered a bit if we make scrollSpeed truly analogue.
 	var upDelta, downDelta; // The acceleration of each key
+
 	if (scrollSpeed === 0 || !u44573_go) {
 		upDelta = initialSpeed;
 		downDelta = initialSpeed;
@@ -60,38 +62,39 @@ function u44573_handler(e) {
 			upDelta = tmpDelta;
 		}
 	}
-	// if (Math.random()<0.001) { document.title = ""+upDelta+" : "+downDelta; }
-	if((e.altKey || e.ctrlKey) && e.keyCode == DOM_VK_DOWN) { // Scroll downwards with CTRL-Down_Arrow or Opt-Down_Arrow on Mac
+
+	// Scroll downwards with CTRL-Down_Arrow or Opt-Down_Arrow on Mac
+	if((e.altKey || e.ctrlKey) && e.keyCode == DOM_VK_DOWN) {
 		scrollSpeed += downDelta;
-		e.preventDefault(); // Most
+		e.preventDefault();
 	}
-	if((e.altKey || e.ctrlKey) && e.keyCode == DOM_VK_UP) { // Scroll upwards with CTRL-Up_Arrow or Opt-Up_Arrow on Mac
+	// Scroll upwards with CTRL-Up_Arrow or Opt-Up_Arrow on Mac
+	if((e.altKey || e.ctrlKey) && e.keyCode == DOM_VK_UP) {
 		scrollSpeed -= upDelta;
-		e.preventDefault(); // Most
+		e.preventDefault();
 	}
+
 	if(!u44573_go && scrollSpeed != 0) {
 		startScroller();
 	}
-	if (e.keyCode == DOM_VK_ESCAPE || e.keyCode == DOM_VK_ENTER || e.keyCode == DOM_VK_SPACE) { // Stop (ESCAPE or ENTER or SPACE)
+
+	// Stop (ESCAPE or ENTER or SPACE)
+	if (e.keyCode == DOM_VK_ESCAPE || e.keyCode == DOM_VK_ENTER || e.keyCode == DOM_VK_SPACE) {
 		if (u44573_go) {
 			u44573_go = false;
 			scrollSpeed = 0;
 			// Do not pass keydown event to page:
-			e.preventDefault(); // Most
+			e.preventDefault(); // Most browsers
 			return false; // IE
 		}
 	}
 }
 
 function sgn(x) {
-	return (x>0 ? +1 : x<0 ? -1 : 0);
+	return ( x>0 ? +1 : x<0 ? -1 : 0 );
 }
 
 var abs = Math.abs;
-
-var maxPerSecond = 60;
-
-var realx,realy,lastTime;   // real as in float, we store fractional position for smoothness
 
 function startScroller() {
 	u44573_go = true;
@@ -100,6 +103,14 @@ function startScroller() {
 	realy = s[1];
 	lastTime = new Date().getTime();
 	u44573_goScroll();
+}
+
+function queueNextFrame(callback, duration) {
+	if (typeof requestAnimationFrame === 'function') {
+		requestAnimationFrame(callback);
+	} else {
+		setTimeout(callback, duration);
+	}
 }
 
 function u44573_goScroll() {
@@ -150,7 +161,7 @@ function u44573_goScroll() {
 		if (scrollSpeed == 0) {
 			u44573_go = false;
 		} else {
-			setTimeout(u44573_goScroll, timeToNext);
+			queueNextFrame(u44573_goScroll, timeToNext);
 		}
 
 	}
