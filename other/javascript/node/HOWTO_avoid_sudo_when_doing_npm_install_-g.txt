@@ -45,3 +45,20 @@ If you really do want to use `sudo` to install packages, then you probably want 
 
 The disadvantage is that root will now use a separate cache, so you cannot re-use the cache for both users.  (npm will do that without `-H` but you may periodically need to chown root-created folders back to the user.)
 
+
+# Don't install packages globally
+
+I believe this is the best practice solution for a developer working on various different Node projects.  Each project can keep its own version of the build tools it requires.  However this does require some changes to the build scripts!
+
+Instead of installing build tools globally using `npm install -g`, install them into your local `node_modules` folder using a plain `npm install`.
+
+Now you need to tell your build scripts where to find the binaries.  For example when calling `browserify` you *could* do:
+
+    ./node_modules/bin/browserify ...        # BAD
+
+but this will only work if you are at the root of your project.  A better solution is to change your build scripts to do:
+
+    $(npm bin)/browserify ...                # GOOD
+
+Of course if you are using Grunt or Gulp or Brocolli, these will handle the location of executables for you.
+

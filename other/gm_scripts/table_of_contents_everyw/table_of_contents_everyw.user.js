@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           Table of Contents Everywhere
-// @description    On pages which do not have a Table of Contents, but should do, create one!
+// @description    On pages which do not have a Table of Contents, but should do, create one!  (I actually use this as a bookmarklet, so I can load it onto the current page only when I want it.)
 // @downstreamURL  http://userscripts.org/scripts/source/123255.user.js
 // @version        1.0.0
 // @include        http://*/*
