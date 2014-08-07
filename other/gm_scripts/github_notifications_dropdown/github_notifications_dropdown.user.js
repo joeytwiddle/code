@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.6.0
+// @version        0.6.1
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @grant          none
@@ -39,7 +39,10 @@ function fetchNotifications(targetPage){
 		"background-color": "#ececec",
 		"background-image": "linear-gradient(#d9d9d9, #ececec)"
 	});
-	$.get(targetPage).then(receiveNotificationsPage.bind(null,targetPage)).fail(receiveNotificationsPage);
+	$.ajax({
+		url: targetPage,
+		dataType: "html"
+	}).then(receiveNotificationsPage.bind(null,targetPage)).fail(receiveNotificationsPage);
 }
 
 function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
