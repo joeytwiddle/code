@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.7.0
+// @version        0.7.1
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @grant          none
@@ -101,17 +101,19 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  + "   padding: 8px 8px; "
 	  + " } "
 	  // GitHub uses default 20px here, but it applies to the last one too, which messes up our layout.
-	  + " .notifications-dropdown .notifications-list .box:not(:last-child) { "
+	  + " .notifications-dropdown .notifications-list .boxed-group:not(:last-child) { "
 	  + "   margin-bottom: 16px; "
 	  + " } "
-	  + " .notifications-dropdown .notifications-list .box:last-child { "
+	  + " .notifications-dropdown .notifications-list .boxed-group:last-child { "
 	  + "   margin-bottom: 0px; "
 	  + " } "
 	  + " .notifications-dropdown .notifications-list { "
 	  + "   float: initial; "
 	  + " } "
-	  // There is a rule on the user profile page that applies to the notification ticks (which are usually never seen on that page).  The rule matches `body.page-profile .box-header .tooltipped`.
+	  // No longer an issue:
+	  // There was a rule on the user profile page that applies to the notification ticks (which are usually never seen on that page).  The rule matches `body.page-profile .box-header .tooltipped`.
 	  // That rule messes up the position of each tick icon relative to its containing header.  So we override to the previous values.
+	  /*
 	  + " .notifications-dropdown .box-header .mark-all-as-read { "
 	  + "   top: auto !important; "
 	  + "   left: auto !important; "
@@ -119,6 +121,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  + "   bottom: auto !important; "
 	  + "   float: right; "
 	  + " } "
+	  */
 	  + " .notifications-dropdown-arrow { "
 	  + "   position: absolute; "
 	  + "   width: 0px; "
@@ -198,7 +201,7 @@ function makeBlocksCollapsable(parentElement, headerSelector, bodySelector, spec
 		//if (specialCase && $(e.target).closest(specialCase).length) {
 			//$divToCollapse.slideUp(150);
 		//}
-		// Under the new styling, while the top border is part of the header, the bottom border is part of the box.
+		// Under the new styling, while the top border is placed on the header, the bottom border is placed on the box.  (This is the case for notifications, but not for file/diff boxes.)
 		// If we hide the box entirely, we will lose the bottom border.
 		// So our plan is to rollup the box, hide its children, and then show the box again.
 		if (hideContent) {
