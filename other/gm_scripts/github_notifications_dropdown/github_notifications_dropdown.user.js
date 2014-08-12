@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.6.1
+// @version        0.7.0
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @grant          none
@@ -180,21 +180,39 @@ function closeNotificationsDropdown(){
 }
 
 function makeNotificationBlocksCollapsable(parentElement){
-	makeBlocksCollapsable(parentElement, ".box-header", ".box-body", ".mark-all-as-read");
+	makeBlocksCollapsable(parentElement, ".js-notifications-browser > h3", ".boxed-group-inner.notifications", ".octicon-check");
 }
 
 function makeFileAndDiffBlocksCollapsable(parentElement){
-	makeBlocksCollapsable(parentElement, ".file > .meta", ".data.highlight", null);
+	makeBlocksCollapsable(parentElement, ".file.js-details-container > .meta", ".data.highlight", null);
 }
 
 // When an element matching headerSelector is clicked, the next sibling bodySelector will be collapsed or expanded (toggled).
 // If the target (or an ancestor) of the clicked element matches specialCase, we will collapse but not expand the body.
 function makeBlocksCollapsable(parentElement, headerSelector, bodySelector, specialCase){
 	$(headerSelector, parentElement).click(function(e){
-		if (specialCase && $(e.target).closest(specialCase).length) {
-			$(this).next(bodySelector).slideUp(150);
-		} else if (e.target === this) {
-			$(this).next(bodySelector).slideToggle(150);
+		var $divToCollapse = $(this).next(bodySelector);
+		var wasHidden = $divToCollapse.hasClass("ghndd-collapsed");
+		var hideContent = !wasHidden;
+		// TODO: This never fires any more, because the .octicon-check now lives outside the .js-notifications-browser
+		//if (specialCase && $(e.target).closest(specialCase).length) {
+			//$divToCollapse.slideUp(150);
+		//}
+		// Under the new styling, while the top border is part of the header, the bottom border is part of the box.
+		// If we hide the box entirely, we will lose the bottom border.
+		// So our plan is to rollup the box, hide its children, and then show the box again.
+		if (hideContent) {
+			$divToCollapse.addClass("ghndd-collapsed");
+			$divToCollapse.slideUp(150, function(){
+				$divToCollapse.children().hide();
+				$divToCollapse.slideDown(1);
+			});
+		} else {
+			$divToCollapse.removeClass("ghndd-collapsed");
+			$divToCollapse.slideUp(1, function(){
+				$divToCollapse.children().show();
+				$divToCollapse.slideDown(150);
+			});
 		}
 	}).css({ cursor: "pointer" });
 }
@@ -211,4 +229,5 @@ listenForNotificationClick();
 makeNotificationBlocksCollapsable(document.body);
 
 // Optional: Also add the rollup feature for individual files on diff pages.
+// TODO: This should be run on-demand, in case we reached a file or diff page via pushState().
 makeFileAndDiffBlocksCollapsable(document.body);
