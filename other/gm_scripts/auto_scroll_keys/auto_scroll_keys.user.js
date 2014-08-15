@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Auto scroll keys
 // @namespace      http://userscripts.org/users/44573
-// @version        1.0.9
+// @version        1.1.0
 // @description    Auto scroll page on Ctrl+Down.  Escape or Space to stop.
 // @include        *
 // ==/UserScript==
@@ -15,6 +15,8 @@ var initialSpeed = 10;
 var maxPerSecond = 60;     // Target frames per second
 
 var resetThreshold = 10;   // If the user scrolls the page manually by more pixels than this value, then we will start scrolling from the new position.
+
+var attemptSubPixelScrolling = true;
 
 // The user may perform normal scrolling actions during auto-scroll (e.g. by pressing Up or PageUp or using the scroll bar).  We will detect and ackowledge these (update realy) if we see a difference of more than this many pixels.
 // If the threshold is set too low, the script's own scrolling will trigger it, especially on slower machines or under heavy load.
@@ -42,6 +44,8 @@ var lastTime;
 var realx, realy;   // We store scroll position as floats; basing scrolling on a float is smoother than the browser's int-rounded scrollTop.  But we may need to keep realy in sync with scrollTop, if the user changes the later during auto-scroll.
 
 window.addEventListener('keydown', u44573_handler, true);
+
+var transformBeforeScrolling = document.body.style.transform;
 
 function u44573_handler(e) {
 	var change = 0.60;   // Probably could be lowered a bit if we make scrollSpeed truly analogue.
@@ -83,6 +87,11 @@ function u44573_handler(e) {
 		if (u44573_go) {
 			u44573_go = false;
 			scrollSpeed = 0;
+
+			if (attemptSubPixelScrolling) {
+				document.body.style.transform = transformBeforeScrolling;
+			}
+
 			// Do not pass keydown event to page:
 			e.preventDefault(); // Most browsers
 			return false; // IE
@@ -106,8 +115,8 @@ function startScroller() {
 }
 
 function queueNextFrame(callback, duration) {
-	if (typeof requestAnimationFrame === 'function') {
-		requestAnimationFrame(callback);
+	if (typeof unsafeWindow.requestAnimationFrame === 'function') {
+		unsafeWindow.requestAnimationFrame(callback);
 	} else {
 		setTimeout(callback, duration);
 	}
@@ -155,7 +164,16 @@ function u44573_goScroll() {
 
 		realy += jumpPixels*sgn(scrollSpeed);
 
-		unsafeWindow.scroll(realx, realy); // Leave it to browser to round real values to ints
+		//var inty = Math.round(realy);
+		var inty = Math.floor(realy);
+
+		if (attemptSubPixelScrolling) {
+			var remaindery = realy - inty;
+			var transform = transformBeforeScrolling + " translate(0px, "+(-remaindery)+"px)";
+			document.body.style.transform = transform;
+		}
+
+		unsafeWindow.scroll(realx, inty); // Leave it to browser to round real values to ints
 
 		lastTime = timeNow;
 
@@ -172,3 +190,4 @@ function u44573_goScroll() {
 function u44573_getScrollPosition() {
 	return Array((document.documentElement && document.documentElement.scrollLeft) || window.pageXOffset || self.pageXOffset || document.body.scrollLeft,(document.documentElement && document.documentElement.scrollTop) || window.pageYOffset || self.pageYOffset || document.body.scrollTop);
 }
+
