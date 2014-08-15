@@ -154,6 +154,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	}).appendTo("body");
 
 	makeNotificationBlocksCollapsable(notificationsDropdown);
+	listenForMarkAsReadClick(notificationsDropdown);
 
 	listenForCloseNotificationDropdown();
 }
@@ -182,25 +183,28 @@ function closeNotificationsDropdown(){
 	});
 }
 
+function listenForMarkAsReadClick(parentElement) {
+	$(".mark-all-as-read", parentElement).click(function(){
+		// Always collapse the repo's notifications block when the mark-as-read tick icon is clicked.
+		var $divToCollapse = $(this).closest(".js-notifications-browser").find(".boxed-group-inner.notifications");
+		collapseBlock($divToCollapse);
+	});
+}
+
 function makeNotificationBlocksCollapsable(parentElement){
-	makeBlocksCollapsable(parentElement, ".js-notifications-browser > h3", ".boxed-group-inner.notifications", ".octicon-check");
+	makeBlocksCollapsable(parentElement, ".js-notifications-browser > h3", ".boxed-group-inner.notifications");
 }
 
 function makeFileAndDiffBlocksCollapsable(parentElement){
-	makeBlocksCollapsable(parentElement, ".file.js-details-container > .meta", ".data.highlight", null);
+	makeBlocksCollapsable(parentElement, ".file.js-details-container > .meta", ".data.highlight");
 }
 
 // When an element matching headerSelector is clicked, the next sibling bodySelector will be collapsed or expanded (toggled).
-// If the target (or an ancestor) of the clicked element matches specialCase, we will collapse but not expand the body.
-function makeBlocksCollapsable(parentElement, headerSelector, bodySelector, specialCase){
+function makeBlocksCollapsable(parentElement, headerSelector, bodySelector){
 	$(headerSelector, parentElement).click(function(e){
 		var $divToCollapse = $(this).next(bodySelector);
 		var wasHidden = $divToCollapse.hasClass("ghndd-collapsed");
 		var hideContent = !wasHidden;
-		// TODO: This never fires any more, because the .octicon-check now lives outside the .js-notifications-browser
-		//if (specialCase && $(e.target).closest(specialCase).length) {
-			//$divToCollapse.slideUp(150);
-		//}
 		if (hideContent) {
 			collapseBlock($divToCollapse);
 		} else {
