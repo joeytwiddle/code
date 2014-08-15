@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.7.1
+// @version        0.7.2
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @grant          none
@@ -201,23 +201,30 @@ function makeBlocksCollapsable(parentElement, headerSelector, bodySelector, spec
 		//if (specialCase && $(e.target).closest(specialCase).length) {
 			//$divToCollapse.slideUp(150);
 		//}
-		// Under the new styling, while the top border is placed on the header, the bottom border is placed on the box.  (This is the case for notifications, but not for file/diff boxes.)
-		// If we hide the box entirely, we will lose the bottom border.
-		// So our plan is to rollup the box, hide its children, and then show the box again.
 		if (hideContent) {
-			$divToCollapse.addClass("ghndd-collapsed");
-			$divToCollapse.slideUp(150, function(){
-				$divToCollapse.children().hide();
-				$divToCollapse.slideDown(1);
-			});
+			collapseBlock($divToCollapse);
 		} else {
-			$divToCollapse.removeClass("ghndd-collapsed");
-			$divToCollapse.slideUp(1, function(){
-				$divToCollapse.children().show();
-				$divToCollapse.slideDown(150);
-			});
+			expandBlock($divToCollapse);
 		}
 	}).css({ cursor: "pointer" });
+}
+
+// Under the new styling, while the top border is placed on the header, the bottom border is placed on the box.  (This is the case for notifications, but not for file/diff boxes.)
+// If we hide the box entirely, we will lose the bottom border.
+// So our plan is to rollup the box, hide its children, and then show the box again.
+function collapseBlock($divToCollapse) {
+	$divToCollapse.addClass("ghndd-collapsed");
+	$divToCollapse.slideUp(150, function(){
+		$divToCollapse.children().hide();
+		$divToCollapse.slideDown(1);
+	});
+}
+function expandBlock($divToCollapse) {
+	$divToCollapse.removeClass("ghndd-collapsed");
+	$divToCollapse.slideUp(1, function(){
+		$divToCollapse.children().show();
+		$divToCollapse.slideDown(150);
+	});
 }
 
 function textNode(text){
