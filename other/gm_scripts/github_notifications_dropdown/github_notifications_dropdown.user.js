@@ -12,14 +12,15 @@
 
 var mainNotificationsPath = "/notifications";
 
-var notificationButton = $(".header a.notification-indicator[href]");
+var notificationButtonLink = $(".header a.notification-indicator[href]");
+var notificationButtonContainer = notificationButtonLink.parent();
 var closeClickTargets = $("body, .header a.notification-indicator[href]");
 
 var notificationsDropdown = null;
 var tabArrow = null;
 
 function listenForNotificationClick(){
-	notificationButton.on("click", onNotificationButtonClicked);
+	notificationButtonContainer.on("click", onNotificationButtonClicked);
 }
 
 function onNotificationButtonClicked(evt){
@@ -28,13 +29,13 @@ function onNotificationButtonClicked(evt){
 		return;
 	}
 	evt.preventDefault();
-	notificationButton.off("click", onNotificationButtonClicked);
-	var targetPage = notificationButton.attr('href');
+	notificationButtonContainer.off("click", onNotificationButtonClicked);
+	var targetPage = notificationButtonLink.attr('href');
 	fetchNotifications(targetPage);
 }
 
 function fetchNotifications(targetPage){
-	notificationButton.css({
+	notificationButtonContainer.css({
 		"opacity": "0.3",
 		"background-color": "#ececec",
 		"background-image": "linear-gradient(#d9d9d9, #ececec)"
@@ -46,7 +47,7 @@ function fetchNotifications(targetPage){
 }
 
 function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
-	notificationButton.css("opacity", "");
+	notificationButtonContainer.css("opacity", "");
 
 	notificationsDropdown = $("<div>").addClass("notifications-dropdown");
 
@@ -138,8 +139,8 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 		"min-width": minWidth+"px",
 		//overflow: "auto",
 	}).appendTo("body"); // Done sooner so we can get its width
-	var topOfDropdown = notificationButton.offset().top + notificationButton.innerHeight() + 4;
-	var leftOfDropdown = notificationButton.offset().left + notificationButton.innerWidth()/2 - notificationsDropdown.innerWidth()/2;
+	var topOfDropdown = notificationButtonContainer.offset().top + notificationButtonContainer.innerHeight() + 4;
+	var leftOfDropdown = notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth()/2 - notificationsDropdown.innerWidth()/2;
 	leftOfDropdown = Math.max(leftOfDropdown, 12);
 	leftOfDropdown = Math.min(leftOfDropdown, window.innerWidth - 12 - notificationsDropdown.innerWidth() - 20);
 	notificationsDropdown.css({
@@ -150,7 +151,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 
 	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.
 	tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
-		left: (notificationButton.offset().left + notificationButton.innerWidth()/2 - arrowSize) + "px",
+		left: (notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth()/2 - arrowSize) + "px",
 		top: (topOfDropdown - arrowSize + 1) + "px",
 	}).appendTo("body");
 
@@ -178,7 +179,7 @@ function closeNotificationsDropdown(){
 	closeClickTargets.off("click", considerClosingNotificiationDropdown);
 	notificationsDropdown.remove();
 	tabArrow.remove();
-	notificationButton.css({
+	notificationButtonContainer.css({
 		"background-color": "",
 		"background-image": ""
 	});
