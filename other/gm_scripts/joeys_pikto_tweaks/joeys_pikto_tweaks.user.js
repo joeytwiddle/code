@@ -4,7 +4,7 @@
 // @description    Just some style improvements I like when using Piktochart.com
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
-// @version        1.1.5
+// @version        1.1.6
 // @grant          none
 // ==/UserScript==
 
@@ -78,4 +78,11 @@ if ( document.location.pathname.match("/editor/|/editorv4/") ) {
 	$("#menu-save-as").text("Save As...");
 
 }
+
+
+
+// ==== Social network ====
+
+// Make the line touch the tabs above it, also make it a bit thicker and teal.
+GM_addStyle("#v-nav hr { marginTop: -1px; height: 3px; background-color: #23b0a3; }");
 
