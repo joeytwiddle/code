@@ -70,12 +70,22 @@ $("a").each(function(){
 
 if ( document.location.pathname.match("/editor/|/editorv4/") ) {
 
-	// Dropdowns are too damn opaque!
+	// The dropdowns in the top-right are too damn opaque.
 	GM_addStyle(".pikto-mainmenu .dropdown-menu { background: rgba(49,59,61,1.0); } .pikto-publish-dongle-popout { background-color: rgba(255,255,255,1.0); }");
 
-	// Some menu items are missing their '...'
+	// Some menu items are missing their '...'s
 	$("#menu-rename").text("Rename...");
 	$("#menu-save-as").text("Save As...");
+
+	// The 'Saving...' dialog should have a background
+	GM_addStyle("#modal-generic .modal-dialog .modal-content { background: whitesmoke; padding: 20px 10px; } "
+	          + "#modal-generic .modal-dialog .modal-content .modal-title h4 { color: black; } "
+	          + "#modal-generic .modal-dialog .modal-content #general-modal-message { color: black; }"
+	);
+
+	// The File menu should have a Save option!
+	var $saveAsItem = $('#menu-save-as').parent('li');
+	$('<li><a href="#" id="menu-save" class="ttips" data-placement="right" title="Save this infographic">Save</a></li>').insertBefore($saveAsItem);
 
 }
 
