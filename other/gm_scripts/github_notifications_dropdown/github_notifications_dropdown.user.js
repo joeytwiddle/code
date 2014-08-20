@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.7.2
+// @version        0.8.0
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @grant          none
@@ -138,18 +138,19 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 		"min-width": minWidth+"px",
 		//overflow: "auto",
 	}).appendTo("body"); // Done sooner so we can get its width
-	var topOfDropdown = notificationButton.offset().top + notificationButton.height() - 2;
-	var leftOfDropdown = notificationButton.offset().left + notificationButton.width()/2 - notificationsDropdown.width()/2;
+	var topOfDropdown = notificationButton.offset().top + notificationButton.innerHeight() + 4;
+	var leftOfDropdown = notificationButton.offset().left + notificationButton.innerWidth()/2 - notificationsDropdown.innerWidth()/2;
 	leftOfDropdown = Math.max(leftOfDropdown, 12);
+	leftOfDropdown = Math.min(leftOfDropdown, window.innerWidth - 12 - notificationsDropdown.innerWidth() - 20);
 	notificationsDropdown.css({
 		top: topOfDropdown + "px",
 		left: leftOfDropdown + "px",
 		//"max-height": "calc(100% - "+(topOfDropdown+8)+"px)",
 	});
 
-	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.  I cannot explain why we need the +2!
+	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.
 	tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
-		left: (notificationButton.offset().left + notificationButton.width()/2 - arrowSize + 2) + "px",
+		left: (notificationButton.offset().left + notificationButton.innerWidth()/2 - arrowSize) + "px",
 		top: (topOfDropdown - arrowSize + 1) + "px",
 	}).appendTo("body");
 
