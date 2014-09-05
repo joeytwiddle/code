@@ -3,6 +3,7 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
+// @version        1.2.3
 // @include      http://www.google.*/search?*
 // @include      https://www.google.*/search?*
 // @include      http://www.google.com.*/search?*
