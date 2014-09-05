@@ -1,11 +1,10 @@
 // ==UserScript==
 // @name Download YouTube Videos as MP4
 // @description Adds a button that lets you download YouTube videos.
-// @homepageURL http://userscripts.org/scripts/show/25105
-// @updateURL https://userscripts.org/scripts/source/25105.meta.js
+// @homepageURL https://github.com/gantt/downloadyoutube
 // @author Gantt
-// @version 1.7.18
-// @date 2014-01-14
+// @version 1.7.26
+// @date 2014-09-03
 // @namespace http://googlesystem.blogspot.com
 // @include http://www.youtube.com/*
 // @include https://www.youtube.com/*
@@ -92,11 +91,6 @@ function run() {
   var isSignatureUpdatingStarted=false;
   var operaTable=new Array();
   var language=document.documentElement.getAttribute('lang');
-  var textDirection='left';
-  if (document.body.getAttribute('dir')=='rtl') {
-    textDirection='right';
-  }
-  fixTranslations(language, textDirection);
         
   // obtain video ID, formats map   
   
@@ -286,9 +280,9 @@ function run() {
     debug('DYVAM - Error: No download URL found. Probably YouTube uses encrypted streams.');
     return; // no format
   } 
-  
+    
   // find parent container
-  var parentElement=document.getElementById('watch7-action-buttons');
+  var parentElement=document.getElementById('watch8-secondary-actions');
   if (parentElement==null) {
     debug('DYVAM - No container for adding the download button. YouTube must have changed the code.');
     return;
@@ -300,14 +294,21 @@ function run() {
     
   // generate download code for regular interface
   var mainSpan=document.createElement('span');
+
+  var spanIcon=document.createElement('span');
+  spanIcon.setAttribute('class', 'yt-uix-button-icon-wrapper');
+  var imageIcon=document.createElement('img');
+  imageIcon.setAttribute('src', 'https://s.ytimg.com/yts/img/pixel-vfl3z5WfW.gif');
+  imageIcon.setAttribute('class', 'yt-uix-button-icon');
+  imageIcon.setAttribute('style', 'width:20px;height:20px;background-size:20px 20px;background-repeat:no-repeat;background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABG0lEQVRYR+2W0Q3CMAxE2wkYAdiEEWADmIxuACMwCmzABpCTEmRSO7YTQX+ChECV43t2nF7GYeHPuLD+0AKwC/DnWMAp/N5qimkBuAfBdRTF/+2/AV6ZYFUxVYuicAfoHegd6B3oHfhZB+ByF+JyV8FkrAB74pqH3DU5L3iGoBURhdVODIQF4EjEkWLmmhYALOQgNIBcHHke4buhxXAAaFnaAhqbQ5QAOHHkwhZ8balkx1ICCiEBWNZ+CivdB7REHIC2ZjZK2oWklDDdB1NSdCd/Js2PqQMpSIKYVcM8kE6QCwDBNRCqOBJrW0CL8kCYxL0A1k6YxWsANAiXeC2ABOEWbwHAWrwxpzgkmA/JtIqnxTOElmPnjlkc4A3FykAhA42AxwAAAABJRU5ErkJggg==);');
+  spanIcon.appendChild(imageIcon);
+  mainSpan.appendChild(spanIcon);
+
   var spanButton=document.createElement('span');
   spanButton.setAttribute('class', 'yt-uix-button-content');
   spanButton.appendChild(document.createTextNode(buttonText+' '));
   mainSpan.appendChild(spanButton);
-  var imgButton=document.createElement('img');
-  imgButton.setAttribute('class', 'yt-uix-button-arrow');
-  imgButton.setAttribute('src', '//s.ytimg.com/yt/img/pixel-vfl3z5WfW.gif');
-  mainSpan.appendChild(imgButton);
+
   var listItems=document.createElement('ol');
   listItems.setAttribute('style', 'display:none;');
   listItems.setAttribute('class', 'yt-uix-button-menu');
@@ -317,32 +318,30 @@ function run() {
     listLink.setAttribute('style', 'text-decoration:none;');
     listLink.setAttribute('href', downloadCodeList[i].url);
     listLink.setAttribute('download', videoTitle+'.'+FORMAT_TYPE[downloadCodeList[i].format]);
-    var listSpan=document.createElement('span');
-    listSpan.setAttribute('class', 'yt-uix-button-menu-item');
-    listSpan.setAttribute('loop', i+'');
-    listSpan.setAttribute('id', LISTITEM_ID+downloadCodeList[i].format);
-    listSpan.appendChild(document.createTextNode(downloadCodeList[i].label));
-    listLink.appendChild(listSpan);
+    var listButton=document.createElement('span');
+    listButton.setAttribute('class', 'yt-uix-button-menu-item');
+    listButton.setAttribute('loop', i+'');
+    listButton.setAttribute('id', LISTITEM_ID+downloadCodeList[i].format);
+    listButton.appendChild(document.createTextNode(downloadCodeList[i].label));
+    listLink.appendChild(listButton);
     listItem.appendChild(listLink);
     listItems.appendChild(listItem);
   }
   mainSpan.appendChild(listItems);
   var buttonElement=document.createElement('button');
   buttonElement.setAttribute('id', BUTTON_ID);
-  buttonElement.setAttribute('class', 'yt-uix-button yt-uix-tooltip yt-uix-button-empty yt-uix-button-text');
-  buttonElement.setAttribute('style', 'margin-top:4px; margin-left:'+((textDirection=='left')?5:10)+'px;');
-  buttonElement.setAttribute('data-tooltip-text', buttonLabel);
+  buttonElement.setAttribute('class', 'yt-uix-button  yt-uix-button-size-default yt-uix-button-opacity yt-uix-tooltip');
   buttonElement.setAttribute('type', 'button');
   buttonElement.setAttribute('role', 'button');
-  buttonElement.addEventListener('click', function(){return false;}, false);  
+  buttonElement.addEventListener('click', function(){return false;}, false);
   buttonElement.appendChild(mainSpan);
-                                            
-  // add the button
   var containerSpan=document.createElement('span');
-  containerSpan.setAttribute('id', CONTAINER_ID);      
+  containerSpan.setAttribute('id', CONTAINER_ID);
   containerSpan.appendChild(document.createTextNode(' '));
   containerSpan.appendChild(buttonElement);
-  parentElement.appendChild(containerSpan);
+                                            
+  // add the button
+  parentElement.insertBefore(containerSpan, parentElement.firstChild);
   
   if (!isSignatureUpdatingStarted) {
     for (var i=0;i<downloadCodeList.length;i++) {    
@@ -414,13 +413,6 @@ function run() {
         });
     }  
   }
-    
-  function injectStyle(code) {
-    var style=document.createElement('style');
-    style.type='text/css';
-    style.appendChild(document.createTextNode(code));
-    document.getElementsByTagName('head')[0].appendChild(style);
-  }
   
   function injectScript(code) {
     var script=document.createElement('script');
@@ -444,23 +436,6 @@ function run() {
     elem.setAttribute('style', 'display:none;');
     document.body.appendChild(elem);
     return elem;
-  }
-  
-  function fixTranslations(language, textDirection) {  
-    if (/^af|bg|bn|ca|cs|de|el|es|et|eu|fa|fi|fil|fr|gl|hi|hr|hu|id|it|iw|kn|lv|lt|ml|mr|ms|nl|pl|pt|ro|ru|sl|sk|sr|sw|ta|te|th|uk|ur|vi|zu$/.test(language)) { // fix international UI
-      var likeButton=document.getElementById('watch-like');
-      if (likeButton) {
-        var spanElements=likeButton.getElementsByClassName('yt-uix-button-content');
-        if (spanElements) {
-          spanElements[0].style.display='none'; // hide like text
-        }
-      }
-      var marginPixels=10;
-      if (/^bg|ca|cs|el|es|eu|fr|hr|it|ml|ms|pl|ro|ru|sl|sw|te$/.test(language)) {
-        marginPixels=1;
-      }
-      injectStyle('#watch7-secondary-actions .yt-uix-button{margin-'+textDirection+':'+marginPixels+'px!important}');
-    }
   }
   
   function findMatch(text, regexp) {
@@ -577,30 +552,49 @@ function run() {
   }
   
   function findSignatureCode(sourceCode) {
-    var functionName=findMatch(sourceCode, /\.signature\s*=\s*(\w+)\(\w+\)/);
-    if (functionName==null) return setPref(STORAGE_CODE, 'error');
-    var regCode=new RegExp('function '+functionName+
-    '\\s*\\(\\w+\\)\\s*{\\w+=\\w+\\.split\\(""\\);(.+);return \\w+\\.join');
-    var functionCode=findMatch(sourceCode, regCode);
-    if (functionCode==null) return setPref(STORAGE_CODE, 'error');
-    var regSlice=new RegExp('slice\\s*\\(\\s*(.+)\\s*\\)');
-    var regSwap=new RegExp('\\w+\\s*\\(\\s*\\w+\\s*,\\s*([0-9]+)\\s*\\)');
-    var regInline=new RegExp('\\w+\\[0\\]\\s*=\\s*\\w+\\[([0-9]+)\\s*%\\s*\\w+\\.length\\]');    
+    var signatureFunctionName = findMatch(sourceCode, 
+    /\.signature\s*=\s*([a-zA-Z_$][\w$]*)\([a-zA-Z_$][\w$]*\)/);
+    if (signatureFunctionName == null) return setPref(STORAGE_CODE, 'error');
+    signatureFunctionName=signatureFunctionName.replace('$','\\$');    
+    var regCode = new RegExp('function \\s*' + signatureFunctionName +
+    '\\s*\\([\\w$]*\\)\\s*{[\\w$]*=[\\w$]*\\.split\\(""\\);(.+);return [\\w$]*\\.join');
+    var functionCode = findMatch(sourceCode, regCode);
+    debug('DYVAM - Info: signaturefunction ' + signatureFunctionName + ' -- ' + functionCode);            
+    if (functionCode == null) return setPref(STORAGE_CODE, 'error');
+    
+    var reverseFunctionName = findMatch(sourceCode, 
+    /([\w$]*)\s*:\s*function\s*\(\s*[\w$]*\s*\)\s*{\s*(?:return\s*)?[\w$]*\.reverse\s*\(\s*\)\s*}/);
+    debug('DYVAM - Info: reversefunction ' + reverseFunctionName);
+    if (reverseFunctionName) reverseFunctionName=reverseFunctionName.replace('$','\\$');        
+    var sliceFunctionName = findMatch(sourceCode, 
+    /([\w$]*)\s*:\s*function\s*\(\s*[\w$]*\s*,\s*[\w$]*\s*\)\s*{\s*(?:return\s*)?[\w$]*\.(?:slice|splice)\(.+\)\s*}/);
+    debug('DYVAM - Info: slicefunction ' + sliceFunctionName);
+    if (sliceFunctionName) sliceFunctionName=sliceFunctionName.replace('$','\\$');    
+    
+    var regSlice = new RegExp('\\.(?:'+'slice'+(sliceFunctionName?'|'+sliceFunctionName:'')+
+    ')\\s*\\(\\s*(?:[a-zA-Z_$][\\w$]*\\s*,)?\\s*([0-9]+)\\s*\\)'); // .slice(5) sau .Hf(a,5)
+    var regReverse = new RegExp('\\.(?:'+'reverse'+(reverseFunctionName?'|'+reverseFunctionName:'')+
+    ')\\s*\\([^\\)]*\\)');  // .reverse() sau .Gf(a,45)
+    var regSwap = new RegExp('[\\w$]+\\s*\\(\\s*[\\w$]+\\s*,\\s*([0-9]+)\\s*\\)');
+    var regInline = new RegExp('[\\w$]+\\[0\\]\\s*=\\s*[\\w$]+\\[([0-9]+)\\s*%\\s*[\\w$]+\\.length\\]');
     var functionCodePieces=functionCode.split(';');
     var decodeArray=[], signatureLength=81;
     for (var i=0; i<functionCodePieces.length; i++) {
       functionCodePieces[i]=functionCodePieces[i].trim();
-      if (functionCodePieces[i].length==0) {
-      } else if (functionCodePieces[i].indexOf('slice') >= 0) { // slice
-        var slice=findMatch(functionCodePieces[i], regSlice);
-        slice=parseInt(slice, 10);
+      var codeLine=functionCodePieces[i];
+      if (codeLine.length>0) {
+        var arrSlice=codeLine.match(regSlice);
+        var arrReverse=codeLine.match(regReverse);
+        debug(i+': '+codeLine+' --'+(arrSlice?' slice length '+arrSlice.length:'') +' '+(arrReverse?'reverse':''));
+        if (arrSlice && arrSlice.length >= 2) { // slice
+        var slice=parseInt(arrSlice[1], 10);
         if (isInteger(slice)){ 
           decodeArray.push(-slice);
           signatureLength+=slice;
         } else return setPref(STORAGE_CODE, 'error');
-      } else if (functionCodePieces[i].indexOf('reverse') >= 0) {
+      } else if (arrReverse && arrReverse.length >= 1) { // reverse
         decodeArray.push(0);
-      } else if (functionCodePieces[i].indexOf('[0]') >= 0) {
+      } else if (codeLine.indexOf('[0]') >= 0) { // inline swap
           if (i+2<functionCodePieces.length &&
           functionCodePieces[i+1].indexOf('.length') >= 0 &&
           functionCodePieces[i+1].indexOf('[0]') >= 0) {
@@ -609,19 +603,21 @@ function run() {
             decodeArray.push(inline);
             i+=2;
           } else return setPref(STORAGE_CODE, 'error');
-      } else if (functionCodePieces[i].indexOf(',') >= 0) {
-        var swap=findMatch(functionCodePieces[i], regSwap);      
+      } else if (codeLine.indexOf(',') >= 0) { // swap
+        var swap=findMatch(codeLine, regSwap);      
         swap=parseInt(swap, 10);
-        if (isInteger(swap)){
+        if (isInteger(swap) && swap>0){
           decodeArray.push(swap);
         } else return setPref(STORAGE_CODE, 'error');
       } else return setPref(STORAGE_CODE, 'error');
+      }
     }
     
     if (decodeArray) {
       setPref(STORAGE_URL, scriptURL);
       setPref(STORAGE_CODE, decodeArray.toString());
       DECODE_RULE[signatureLength]=decodeArray;
+      debug('DYVAM - Info: signature '+decodeArray.toString()+' '+scriptURL);
       // update download links and add file sizes
       for (var i=0;i<downloadCodeList.length;i++) {        
         var elem=document.getElementById(LISTITEM_ID+downloadCodeList[i].format);
@@ -649,14 +645,17 @@ function run() {
   function fetchSignatureScript(scriptURL) {
     var storageURL=getPref(STORAGE_URL);
     var storageCode=getPref(STORAGE_CODE);
+    if (!(/,0,|^0,|,0$|\-/.test(storageCode))) storageCode=null; // hack for only positive items
     if (storageCode && isValidSignatureCode(storageCode) && storageURL &&
         scriptURL.replace(/^https?/i,'')==storageURL.replace(/^https?/i,'')) return;
     try {
+      debug('DYVAM fetch '+scriptURL);
       isSignatureUpdatingStarted=true;    
       crossXmlHttpRequest({
         method:'GET',
         url:scriptURL,
         onload:function(response) {
+          debug('DYVAM fetch status '+response.status);
           if (response.readyState === 4 && response.status === 200 && response.responseText) {
             findSignatureCode(response.responseText);
           }
@@ -675,6 +674,7 @@ function run() {
         if (arr[i]<0) signatureLength-=arr[i];
       }
       rules[signatureLength]=arr;
+      debug('DYVAM - Info: signature '+arr.toString()+' '+scriptURL);
     }
     return rules;
   }
@@ -698,6 +698,9 @@ function run() {
     if (arr) {
       var sig2=decode(sig, arr);
       if (sig2 && sig2.length==81) return sig2;
+    } else {
+      setPref(STORAGE_URL, '');
+      setPref(STORAGE_CODE, '');
     }
     return sig; 
   }  
