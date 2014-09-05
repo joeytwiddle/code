@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
-// @version        1.0.1
+// @version        1.1.0
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -81,22 +81,25 @@ if (addScrollbars) {
 		if (document.location.href.indexOf("/all_comments?") >= 0) {
 			return;   // Leave the full comments page alone.
 		}
+
 		// The top of watch7-content has become very large, so put a scrollbar on the whole lot.
 		var watchDiscussion = /* document.getElementById("watch-discussion") || */ document.getElementById("watch7-content");
 		if (watchDiscussion) {
-			var toSubtract = 435;     // Small video screen
-			//var toSubtract = 515;   // Medium size video screen
+			var toSubtract = 464;     // Small video screen
+			//var toSubtract = 544;   // Medium size video screen
 			var roomForComments = window.innerHeight - toSubtract;
 			if (roomForComments < 200) {
 				roomForComments = 200;
 			}
 			watchDiscussion.style.overflow = "auto";
 			watchDiscussion.style.maxHeight = roomForComments+"px"; /* For a video height 360p */
+			GM_addStyle(" #watch7-content { border: 1px solid; border-color: #bbb #ddd #ddd #bbb; margin-top: 5px; } #watch-header { margin-top: 0px; } ");
 		}
+
 		var watchSidebar = document.getElementById("watch-sidebar") || document.getElementById("watch7-sidebar");
 		if (watchSidebar) {
 			watchSidebar.style.overflow = "auto";
-			watchSidebar.style.maxHeight = (window.innerHeight - 26)+"px";
+			watchSidebar.style.maxHeight = (window.innerHeight - 69)+"px";
 			// May 2012 - fixes below no longer needed.
 			// Now the text wraps because of the scrollbar, so we widen the element:
 			// watchSidebar.style.width = (320+24)+"px";
@@ -124,6 +127,7 @@ if (addScrollbars) {
 			// if (watchContainer) {
 			// 	watchContainer.scrollIntoView();
 			// }
+			GM_addStyle(" #watch-sidebar, #watch7-sidebar { border: 1px solid; border-color: #bbb #ddd #ddd #bbb; } ");
 		}
 
 		// ~ October 2014
