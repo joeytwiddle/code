@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
-// @version        1.1.0
+// @version        1.1.2
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -33,7 +33,7 @@
 var addTitleToLocation = true;
 var reduceFontSizes    = true;
 var addScrollbars      = true;
-var scrollDownToVideo  = true;
+var scrollDownToVideo  = false; // YouTube's header ("masthead") is now floating.  Setting this true will un-float it, then scroll down to hide it.  But scrolling containers should then be enlarged.
 var animateThumbnails  = true;
 
 
@@ -107,8 +107,12 @@ if (addScrollbars) {
 			// And we must widen its container also:
 			// TODO BUG: Why does this work in the console, but not from the userscript?
 			// document.getElementById("watch-main").style.width = (960+24)+"px";
+			GM_addStyle(" #watch-sidebar, #watch7-sidebar { border: 1px solid; border-color: #bbb #ddd #ddd #bbb; } ");
 		}
+
 		if (scrollDownToVideo) {
+			// Un-float the header:
+			GM_addStyle(" #masthead-positioner { position: initial; } #masthead-positioner-height-offset { height: 0px; } ");
 			//// Title text
 			// document.getElementById("eow-title").scrollIntoView();
 			//// Uploader info and videolist popdown.
@@ -127,7 +131,6 @@ if (addScrollbars) {
 			// if (watchContainer) {
 			// 	watchContainer.scrollIntoView();
 			// }
-			GM_addStyle(" #watch-sidebar, #watch7-sidebar { border: 1px solid; border-color: #bbb #ddd #ddd #bbb; } ");
 		}
 
 		// ~ October 2014
