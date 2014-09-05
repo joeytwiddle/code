@@ -2,17 +2,17 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.0.5
+// @version        1.1.2
 // @include        *
 // ==/UserScript==
+
+var SCROLL_AMOUNT = 60;
 
 // Not all keys fire a keypress event (Chrome 2010), so we use keydown.
 document.addEventListener('keydown', keypressListener, false);
 
 function keypressListener(evt) {
 	var code = evt.keyCode || evt.which;
-
-	// TODO: We should skip most of these checks if the user is focused on an input box or textarea.
 
 	/*
 	var modifierReport = "";
@@ -48,7 +48,7 @@ function keypressListener(evt) {
 
 	*/
 
-	// Ctrl+Shift+Up goes Up
+	// Ctrl+Shift+Up goes up in the URL path (removes the tail leaf)
 	if (code == 38 && evt.ctrlKey && evt.shiftKey) {
 		var newURL = document.location.href;
 		if (newURL.slice(-1)=='/') {
@@ -57,5 +57,38 @@ function keypressListener(evt) {
 		document.location.href = document.location.href.replace(/[#/?][^#/?]*[/]*$/,'');
 	}
 
+	// Do not intercept any of the keys below when the user is focused on an input or textarea.
+	/*
+	//var focusedElement = document.activeElement;   // document.body if no input is focused
+	var focusedElement = evt.target || event.srcElement;
+	if (focusedElement) {
+		var isInput = focusedElement.nodeName === 'INPUT' || focusedElement.nodeName === 'TEXTAREA';
+		if (isInput) {
+			return;
+		}
+	}
+	*/
+	// From next_imageprevious_image.user.js:
+	if (evt.target.tagName && evt.target.tagName.match(/input|select|textarea/i)) {
+		return;
+	}
+
+	if (!evt.ctrlKey || !evt.shiftKey && !evt.metaKey) {
+		if (document.location.host !== "9gag.com") {
+			if (code === 'K'.charCodeAt(0)) {
+				scrollBy(-SCROLL_AMOUNT);
+			}
+
+			if (code === 'J'.charCodeAt(0)) {
+				scrollBy(+SCROLL_AMOUNT);
+			}
+		}
+	}
+
+}
+
+function scrollBy(amount) {
+	// TODO: In Firefox we must use document.documentElement.scrollTop
+	document.body.scrollTop += amount;
 }
 
