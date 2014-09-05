@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
-// @version        1.0.0
+// @version        1.0.1
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -125,6 +125,10 @@ if (addScrollbars) {
 			// 	watchContainer.scrollIntoView();
 			// }
 		}
+
+		// ~ October 2014
+		// This feels like a bug in Chrome 38.  The element is given position:absolute but it does not move up when its parent does!  We can fix it anyway:
+		GM_addStyle(" #watch8-secondary-actions { position: initial; } ");
 	},1000);
 
 }
