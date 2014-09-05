@@ -3,7 +3,7 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @version        1.2.3
+// @version        1.2.4
 // @include      http://www.google.*/search?*
 // @include      https://www.google.*/search?*
 // @include      http://www.google.com.*/search?*
@@ -83,7 +83,7 @@ if (links.length == 0)
 
 var style = document.createElement('STYLE');
 var padSide = (placeFaviconAfter?'left':'right');
-style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; }";
+style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; width: 1em; height: 1em; padding-bottom: 0.2em; }";
 document.getElementsByTagName('head')[0].appendChild(style);
 
 // for (var i=0;i<links.snapshotLength;i++) {
