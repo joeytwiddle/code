@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
-// @version        1.1.3
+// @version        1.1.4
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -93,7 +93,7 @@ if (addScrollbars) {
 			}
 			watchDiscussion.style.overflow = "auto";
 			watchDiscussion.style.maxHeight = roomForComments+"px"; /* For a video height 360p */
-			GM_addStyle(" #watch7-content { border: 1px solid; border-color: #c8c8c8 #dddddd #dddddd #c8c8c8; margin-top: 5px; } #watch-header { margin-top: 0px; } ");
+			GM_addStyle(" #watch7-content { border: 1px solid; border-color: #c8c8c8 #dddddd #dddddd #c8c8c8; margin-top: 5px; } #watch-header { margin-top: 0px; margin-bottom: 0px; } ");
 		}
 
 		var watchSidebar = document.getElementById("watch-sidebar") || document.getElementById("watch7-sidebar");
