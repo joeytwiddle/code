@@ -3,10 +3,19 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @include        http://google.*/search?*
-// @include        http://www.google.*/search?*
-//// TODO DEV: This is just here so I can *see* if it works on other Google pages, e.g. Google Images (altho it would suck there unless we target urls instead of links).
-// @include        http://*google.*/*
+// @include      http://www.google.*/search?*
+// @include      https://www.google.*/search?*
+// @include      http://www.google.com.*/search?*
+// @include      https://www.google.com.*/search?*
+// @include      http://www.google.*/webhp*
+// @include      https://www.google.*/webhp*
+// @include      http://www.google.com.*/webhp*
+// @include      https://www.google.com.*/webhp*
+// @include      http://www.google.*/
+// @include      https://www.google.*/
+// @include      http://www.google.com.*/
+// @include      https://www.google.com.*/
+// @include      https://encrypted.google.*/search?*
 // ==/UserScript==
 
 // DONE: Provided more options where to place favicon: by the link or by the
