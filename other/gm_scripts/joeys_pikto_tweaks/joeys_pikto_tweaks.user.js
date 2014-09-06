@@ -4,7 +4,7 @@
 // @description    Just some style improvements I like when using Piktochart.com
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
-// @version        1.1.8
+// @version        1.1.9
 // @grant          none
 // ==/UserScript==
 
@@ -40,6 +40,12 @@ if ( document.location.pathname.match("/$|/themes|/templates|/infographics|/gall
 	$("#pikto-hover-unpublish a").filter(function(){ return $(this).text()=="Unpublish It"; }).text("Unpublish");
 }
 
+
+
+// === On the theme selector page ===
+
+// Centralise the theme search box (don't let it fill the whole width).
+GM_addStyle(" .themes-container #themes-wrapper .filter-container { /*background: #f1f4f5;*/ } .themes-container #themes-wrapper .search-container { text-align: center; } .themes-container #themes-wrapper .search-container input[type='text'] { width: 600px; } .themes-container #themes-wrapper .search-icon { position: initial; transform: translate(-35px, 0px); } ");
 
 
 // ==== Everywhere ====
