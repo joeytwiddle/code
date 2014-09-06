@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Auto scroll keys
 // @namespace      http://userscripts.org/users/44573
-// @version        1.1.0
+// @version        1.1.1
 // @description    Auto scroll page on Ctrl+Down.  Escape or Space to stop.
 // @include        *
 // ==/UserScript==
@@ -10,13 +10,17 @@
 
 // Options:
 
-var initialSpeed = 10;
+var initialSpeed = 10;     // Pixels per second
 
-var maxPerSecond = 60;     // Target frames per second
+var maxPerSecond = 60;     // Target FPS
 
 var resetThreshold = 10;   // If the user scrolls the page manually by more pixels than this value, then we will start scrolling from the new position.
 
 var attemptSubPixelScrolling = true;
+
+// Sub-pixel scrolling may look a little bit jittery, so we could use it only when it's needed.
+// But personally in Chrome I found sub-pixel zooming looked preferable even at zoom 100%.
+var attemptSubPixelScrollingOnlyIfZoomedIn = false; // Clobbers the value of attemptSubPixelScrolling.
 
 // The user may perform normal scrolling actions during auto-scroll (e.g. by pressing Up or PageUp or using the scroll bar).  We will detect and ackowledge these (update realy) if we see a difference of more than this many pixels.
 // If the threshold is set too low, the script's own scrolling will trigger it, especially on slower machines or under heavy load.
@@ -25,7 +29,7 @@ var attemptSubPixelScrolling = true;
 // BUG: When zoomed in, jumping by a whole (unzoomed) pixel it too coarse, because we see the text move by more than one screen pixel.  But we cannot control that: we give the browser a float for scrolling but it rounds it to an int!
 // A possible workaround would be to perform some scrolling (perhaps just the remainder part before rounding) as a transform on the page.  This might not work in all browsers.
 
-// 2012/10/09  Now runs at 60fps or whatever machine can handle
+// 2012/10/09  Now runs at 60fps or whatever the machine can handle
 
 // Constants:
 
@@ -45,7 +49,7 @@ var realx, realy;   // We store scroll position as floats; basing scrolling on a
 
 window.addEventListener('keydown', u44573_handler, true);
 
-var transformBeforeScrolling = document.body.style.transform;
+var transformBeforeScrolling;
 
 function u44573_handler(e) {
 	var change = 0.60;   // Probably could be lowered a bit if we make scrollSpeed truly analogue.
@@ -111,6 +115,16 @@ function startScroller() {
 	realx = s[0];
 	realy = s[1];
 	lastTime = new Date().getTime();
+	transformBeforeScrolling = document.body.style.transform;
+
+	if (attemptSubPixelScrollingOnlyIfZoomedIn) {
+		// This technique find the zoom level in Chrome
+		var screenCssPixelRatio = window.outerWidth / window.innerWidth;
+		console.log("Detected zoom: "+screenCssPixelRatio);
+		var isZoomedIn = (screenCssPixelRatio >= 1.05);
+		attemptSubPixelScrolling = isZoomedIn;
+	}
+
 	u44573_goScroll();
 }
 

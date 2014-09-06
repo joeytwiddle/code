@@ -13,10 +13,12 @@
 // @exclude        https://*.google.*/images*
 // @exclude        https://google.*/images*
 // @exclude        https://images.google.*/*
-// @version        2014.07.06
+// @version        2014.09.06
 // @grant          GM_addStyle
 // @grant          GM_log
 // ==/UserScript==
+
+// Modern browser security policies restrict loading http resources on an https page (even in an iframe).  But in Chrome you can workaround this issue (taking the risk on-board) by clicking the silver shield on the right of the location bar.
 
 // Notes on the patterns:
 //
