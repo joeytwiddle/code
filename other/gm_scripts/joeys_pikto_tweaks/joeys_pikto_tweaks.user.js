@@ -4,7 +4,7 @@
 // @description    Just some style improvements I like when using Piktochart.com
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
-// @version        1.1.6
+// @version        1.1.8
 // @grant          none
 // ==/UserScript==
 
@@ -57,10 +57,23 @@ for (var i = messageBoxes.length; i--;) {
 	container.appendChild(messageBox);
 }
 
-// Links to "Saved Piktocharts" (topbar on main site, menu in editor).
+// Use the noun "infographic" instead of "piktochart"
+// Repeating the word "piktochart" may help to make the brand name stick, but unfortunately it also indicates that a 'piktochart' is not an infographic.
+// By using the word "infographic", we hint this is *the* site to create infographics.
+// Links to "Saved/Featured Piktocharts" (topbar on main site, menu in editor).
 $("a").each(function(){
-	if ($(this).text() == "Saved Piktocharts" || $(this).text() == "My Saved Piktocharts") {
+	var currentText = $(this).text();
+	if (currentText == "Saved Piktocharts") {
 		$(this).text("My Infographics");
+	}
+	else if (currentText == "My Saved Piktocharts") {
+		$(this).text("My Saved Infographics");
+	}
+	else if (currentText == "Featured Piktocharts") {
+		$(this).text("Featured Infographics");
+	}
+	else if (currentText.indexOf("Create a new Piktochart") >= 0) {
+		$(this).html( $(this).html().replace(/Piktochart/g,"Infographic") );
 	}
 });
 
