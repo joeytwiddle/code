@@ -119,6 +119,7 @@ function startScroller() {
 
 	if (attemptSubPixelScrollingOnlyIfZoomedIn) {
 		// This technique find the zoom level in Chrome
+		// For other browser, see https://github.com/tombigel/detect-zoom or http://stackoverflow.com/questions/1713771
 		var screenCssPixelRatio = window.outerWidth / window.innerWidth;
 		console.log("Detected zoom: "+screenCssPixelRatio);
 		var isZoomedIn = (screenCssPixelRatio >= 1.05);
