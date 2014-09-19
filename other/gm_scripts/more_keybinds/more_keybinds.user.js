@@ -73,7 +73,7 @@ function keypressListener(evt) {
 		return;
 	}
 
-	if (!evt.ctrlKey || !evt.shiftKey && !evt.metaKey) {
+	if (!evt.ctrlKey && !evt.shiftKey && !evt.metaKey) {
 		if (document.location.host !== "9gag.com") {
 			if (code === 'K'.charCodeAt(0)) {
 				scrollBy(-SCROLL_AMOUNT);
@@ -88,7 +88,9 @@ function keypressListener(evt) {
 }
 
 function scrollBy(amount) {
-	// TODO: In Firefox we must use document.documentElement.scrollTop
+	// Chrome:
 	document.body.scrollTop += amount;
+	// Firefox:
+	document.documentElement.scrollTop += amount;
 }
 
