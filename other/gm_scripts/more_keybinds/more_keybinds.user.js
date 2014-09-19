@@ -2,7 +2,7 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.1.2
+// @version        1.1.3
 // @include        *
 // ==/UserScript==
 
@@ -76,11 +76,11 @@ function keypressListener(evt) {
 	if (!evt.ctrlKey && !evt.shiftKey && !evt.metaKey) {
 		if (document.location.host !== "9gag.com") {
 			if (code === 'K'.charCodeAt(0)) {
-				scrollBy(-SCROLL_AMOUNT);
+				scrollBy(-getScrollAmount());
 			}
 
 			if (code === 'J'.charCodeAt(0)) {
-				scrollBy(+SCROLL_AMOUNT);
+				scrollBy(+getScrollAmount());
 			}
 		}
 	}
@@ -88,9 +88,17 @@ function keypressListener(evt) {
 }
 
 function scrollBy(amount) {
-	// Chrome:
-	document.body.scrollTop += amount;
-	// Firefox:
-	document.documentElement.scrollTop += amount;
+	// If jQuery is present, use it to perform a smooth scroll
+	if (typeof $ != undefined) {
+		$("html,body").animate({scrollTop: $(document).scrollTop() + amount}, 200);
+	} else {
+		// Chrome:
+		document.body.scrollTop += amount;
+		// Firefox:
+		document.documentElement.scrollTop += amount;
+	}
 }
 
+function getScrollAmount() {
+	return window.innerHeight / 6;
+}
