@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.6
+// @version       1.2.7
 // @include       http://wikipedia.tld/*
 // @include       http://*.wikipedia.tld/*
 //// Since TLD doesn't work in Chrome:
@@ -48,6 +48,8 @@
 // BUG: Works fine under in Chrome, but not in Firefox!
 
 var allowPreviewsInPreviews = true;   // If false, feature is not available for links inside previewed articles.
+
+var removeTOC = true;
 
 var inlineWindowCount = 0;
 
@@ -351,7 +353,14 @@ function populateInnerWindow(href,windowID) {
 			content = findElementById(xmlDoc,'mw-content-text'); // Cuts out some of the unwanted stuff
 			content = content || findElementById(xmlDoc,'bodyContent');
 			content = content || findElementById(xmlDoc,'content'); // What we used previously
-			
+
+			if (removeTOC) {
+				var toc = findElementById(xmlDoc,'toc');
+				if (toc) {
+					toc.parentNode.removeChild(toc);
+				}
+			}
+
 			if (innerWindowContentBox) {
 				if (content && content.hasChildNodes()) {
 					while(innerWindowContentBox.hasChildNodes()) innerWindowContentBox.removeChild(innerWindowContentBox.childNodes[0]);
