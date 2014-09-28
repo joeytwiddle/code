@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.5
+// @version       1.2.6
 // @include       http://wikipedia.tld/*
 // @include       http://*.wikipedia.tld/*
 //// Since TLD doesn't work in Chrome:
@@ -199,10 +199,10 @@ function newInlineWindow(event, href, link, windowID){
 	var xpos, ypos;
 	
 	// get the position of the element that was clicked on...
-	//var elementTop = getElementOffset(link,'Top');
-	//var elementLeft = getElementOffset(link,'Left');
-	var elementTop = $(link).offset().top;
-	var elementLeft = $(link).offset().left;
+	var elementTop = getElementOffset(link,'Top');
+	var elementLeft = getElementOffset(link,'Left');
+	//var elementTop = $(link).offset().top;
+	//var elementLeft = $(link).offset().left;
 	var elementHeight = parseInt(window.getComputedStyle(link,"").getPropertyValue('line-height'));
 
 	
