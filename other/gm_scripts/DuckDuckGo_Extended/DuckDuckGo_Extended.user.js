@@ -13,7 +13,7 @@
 // @grant           GM_getValue
 // @grant           GM_setValue
 // @grant           GM_xmlhttpRequest
-// @version         2.0.3
+// @version         2.0.4
 // @author          tumpio
 // ==/UserScript==
 
@@ -75,6 +75,12 @@ body #header_wrapper #header #header_content_wrapper #header_content #header_but
             l += '<li draggable="true" value=' + (i + 1) + '"><a data-engine="' + e[i][1] + '"href="#' + e[i][1] + '">' + e[i][0] + "</a></li>";
         this.list.innerHTML = l;
         this.engines = this.list.getElementsByTagName("li");
+        // Joey added this so that clicks work again.
+        // I don't know how they worked before.
+        // Were they handled by DDG itself?
+        // Or is it somewhere in this script that broke in Greasemonkey?
+        for (var i = 0; i < this.engines.length; i++)
+            this.engines[i].firstChild.onclick = onHashChange;
     },
 
     append: function(h) {
