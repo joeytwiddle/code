@@ -2,7 +2,7 @@
 // @name           Hibernate Idle Tabs
 // @namespace      HIT
 // @description    If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions.
-// @version        1.1.1
+// @version        1.1.2
 // @downstreamURL  http://userscripts.org/scripts/source/123252.user.js
 // @include        *
 // ==/UserScript==
@@ -11,7 +11,7 @@
 /* +++ Config +++ */
 
 var hibernateIfIdleForMoreThan = 4*60*60; // 4 hours
-var restoreTime = 0.2; // in seconds
+var restoreTime = 0.5; // in seconds
 
 // We need an always-available basically blank HTML page we can navigate to for
 // hibernation.  The userscript will run there and await re-activation.
@@ -212,7 +212,7 @@ function handleHoldingPage() {
 		listen(window,'mousemove',startCountdown); // Likewise for click below!
 		// listen(document.body,'blur',clearCountdown); // Does not fire in Chrome?
 		listen(window,'blur',clearCountdown); // For Chrome
-		listen(window,'mouseout',clearCountdown);
+		//listen(window,'mouseout',clearCountdown); // Firefox appears to be firing this when my mouse is still over the window, preventing navigation!  Let's just rely on 'blur' instead.
 		// listen(document.body,'click',clearCountdown);
 		listen(window,'click',clearCountdown);
 		listen(window,'dblclick',restoreTab);
@@ -225,7 +225,7 @@ function handleHoldingPage() {
 			var togo = restoreTime*1000;
 			function countDown() {
 				setHibernateStatus(mainReport +
-						'\n' + "Tab will restore in "+((togo/1000)|0)+" seconds." +
+						'\n' + "Tab will restore in "+(togo/1000).toFixed(1)+" seconds." +
 						'  ' + "Click or defocus to pause." +
 						'  ' + "Or double click to restore now!"
 						);
