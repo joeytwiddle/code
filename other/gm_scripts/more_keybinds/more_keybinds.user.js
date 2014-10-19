@@ -2,7 +2,7 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.1.3
+// @version        1.1.4
 // @include        *
 // ==/UserScript==
 
@@ -89,7 +89,7 @@ function keypressListener(evt) {
 
 function scrollBy(amount) {
 	// If jQuery is present, use it to perform a smooth scroll
-	if (typeof $ != undefined) {
+	if (typeof $ !== "undefined") {
 		$("html,body").animate({scrollTop: $(document).scrollTop() + amount}, 200);
 	} else {
 		// Chrome:
