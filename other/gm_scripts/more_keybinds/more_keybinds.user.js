@@ -69,7 +69,7 @@ function keypressListener(evt) {
 	}
 	*/
 	// From next_imageprevious_image.user.js:
-	if (evt.target.tagName && evt.target.tagName.match(/input|select|textarea/i)) {
+	if (evt.target.tagName && evt.target.tagName.match(/input|select|textarea/i) || event.target.getAttribute('contenteditable')==="true") {
 		return;
 	}
 

@@ -22,7 +22,7 @@
     if (event.ctrlKey || event.shiftKey || event.altKey) return;
     var code = event.keyCode || event.which;
     if (code != backwardButton && code != forwardButton) return;
-    if (event.target.tagName && event.target.tagName.match(/input|select|textarea/i)) return;
+    if (event.target.tagName && event.target.tagName.match(/input|select|textarea/i) || event.target.getAttribute('contenteditable')==="true") return;
 
     // We force a rescan of the page's images every time, for dynamic pages.
     positions = [];
