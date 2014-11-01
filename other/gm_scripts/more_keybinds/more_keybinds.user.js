@@ -2,7 +2,7 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.1.4
+// @version        1.1.5
 // @include        *
 // ==/UserScript==
 
@@ -69,7 +69,7 @@ function keypressListener(evt) {
 	}
 	*/
 	// From next_imageprevious_image.user.js:
-	if (evt.target.tagName && evt.target.tagName.match(/input|select|textarea/i) || event.target.getAttribute('contenteditable')==="true") {
+	if (evt.target.tagName && evt.target.tagName.match(/input|select|textarea/i) || evt.target.getAttribute('contenteditable')==="true") {
 		return;
 	}
 

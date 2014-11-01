@@ -2,7 +2,7 @@
 // @name Next Image/Previous Image
 // @author arty <me@arty.name>
 // @namespace http://arty.name/
-// @version 1.0
+// @version 2.0.0
 // @description  Quick scroll to next/previous image on a page with n/p buttons
 // @include *
 // ==/UserScript==
