@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.8.1
+// @version        0.8.2
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @grant          none
@@ -198,7 +198,8 @@ function makeNotificationBlocksCollapsable(parentElement){
 }
 
 function makeFileAndDiffBlocksCollapsable(parentElement){
-	makeBlocksCollapsable(parentElement, ".file.js-details-container > .meta", ".data.highlight");
+	// .render-wrapper is a container for github's image diff viewers (2-up, swipe, onion skin)
+	makeBlocksCollapsable(parentElement, ".file.js-details-container > .meta", ".data.highlight , .render-wrapper");
 }
 
 // When an element matching headerSelector is clicked, the next sibling bodySelector will be collapsed or expanded (toggled).
