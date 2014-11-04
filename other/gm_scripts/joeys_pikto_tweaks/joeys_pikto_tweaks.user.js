@@ -4,7 +4,7 @@
 // @description    Just some style improvements I like when using Piktochart.com
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
-// @version        1.1.9
+// @version        1.1.10
 // @grant          none
 // ==/UserScript==
 
@@ -45,7 +45,8 @@ if ( document.location.pathname.match("/$|/themes|/templates|/infographics|/gall
 // === On the theme selector page ===
 
 // Centralise the theme search box (don't let it fill the whole width).
-GM_addStyle(" .themes-container #themes-wrapper .filter-container { /*background: #f1f4f5;*/ } .themes-container #themes-wrapper .search-container { text-align: center; } .themes-container #themes-wrapper .search-container input[type='text'] { width: 600px; } .themes-container #themes-wrapper .search-icon { position: initial; transform: translate(-35px, 0px); } ");
+//GM_addStyle(" .themes-container #themes-wrapper .filter-container { /*background: #f1f4f5;*/ } .themes-container #themes-wrapper .search-container { text-align: center; } .themes-container #themes-wrapper .search-container input[type='text'] { width: 600px; } .themes-container #themes-wrapper .search-icon { position: initial; transform: translate(-35px, 0px); } ");
+// Now fixed on production!  (y)
 
 
 // ==== Everywhere ====
@@ -72,8 +73,8 @@ $("a").each(function(){
 	if (currentText == "Saved Piktocharts") {
 		$(this).text("My Infographics");
 	}
-	else if (currentText == "My Saved Piktocharts") {
-		$(this).text("My Saved Infographics");
+	else if (currentText == "My Piktocharts") {
+		$(this).text("My Infographics");
 	}
 	else if (currentText == "Featured Piktocharts") {
 		$(this).text("Featured Infographics");
