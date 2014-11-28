@@ -4,7 +4,8 @@
 // @description    Just some style improvements I like when using Piktochart.com
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
-// @version        1.1.9
+// @include        https://*.piktochart.info/*
+// @version        1.1.11
 // @grant          none
 // ==/UserScript==
 
@@ -45,7 +46,8 @@ if ( document.location.pathname.match("/$|/themes|/templates|/infographics|/gall
 // === On the theme selector page ===
 
 // Centralise the theme search box (don't let it fill the whole width).
-GM_addStyle(" .themes-container #themes-wrapper .filter-container { /*background: #f1f4f5;*/ } .themes-container #themes-wrapper .search-container { text-align: center; } .themes-container #themes-wrapper .search-container input[type='text'] { width: 600px; } .themes-container #themes-wrapper .search-icon { position: initial; transform: translate(-35px, 0px); } ");
+//GM_addStyle(" .themes-container #themes-wrapper .filter-container { /*background: #f1f4f5;*/ } .themes-container #themes-wrapper .search-container { text-align: center; } .themes-container #themes-wrapper .search-container input[type='text'] { width: 600px; } .themes-container #themes-wrapper .search-icon { position: initial; transform: translate(-35px, 0px); } ");
+// Now fixed on production!  (y)
 
 
 // ==== Everywhere ====
@@ -72,8 +74,8 @@ $("a").each(function(){
 	if (currentText == "Saved Piktocharts") {
 		$(this).text("My Infographics");
 	}
-	else if (currentText == "My Saved Piktocharts") {
-		$(this).text("My Saved Infographics");
+	else if (currentText == "My Piktocharts") {
+		$(this).text("My Infographics");
 	}
 	else if (currentText == "Featured Piktocharts") {
 		$(this).text("Featured Infographics");
@@ -115,3 +117,13 @@ if ( document.location.pathname.match("/editor/|/editorv4/") ) {
 // Make the line touch the tabs above it, also make it a bit thicker and teal.
 GM_addStyle("#v-nav hr { marginTop: -1px; height: 3px; background-color: #23b0a3; }");
 
+
+
+
+// ==== On Rahsia ====
+
+if (document.location.hostname.indexOf('rahsia') === 0) {
+	// Make headers (which separate items) stand out from other text:
+	GM_addStyle('.journal > div > h4 , #sidebar > h3 , .subject > div > h3, #activity > h3 { background-color: #aaddff; border-bottom: 3px solid rgba(0,0,0,0.2); }');
+	// I almost want to do this to all headers.  But I didn't really want it to apply to any `h3` put *inside* a comment by a user.
+}
