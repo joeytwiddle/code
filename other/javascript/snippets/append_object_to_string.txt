@@ -1,0 +1,41 @@
+http://jsfiddle.net/uaf9ovx7/
+
+var o = {
+    a: 3,
+    valueOf: function(){ return "cat"; },
+    toString: function(){ return "dog"; }
+};
+
+console.log("o=",o);
+console.log("''+o="+o); // "cat"
+console.log("o.valueOf()="+o.valueOf()); // "cat"
+console.log("o.toString()="+o.toString()); // "dog"
+console.log("String(o)="+String(o)); // "dog"
+
+
+
+
+
+
+
+
+
+
+
+
+<joeytwiddle> Is there a non-explosive equivalent for .valueOf() ?
+<ljharb> joeytwiddle: well, Number(x) is good if you want a number. it really depends what you're using valueOf for - but since it's supposed to return a primitive, unary "+" is probably the best generic one
+
+
+
+var o = {
+    a: 3,
+    valueOf: function(){ return 3; },
+    toString: function(){ return 4; }
+};
+
+console.log("o=",o);
+console.log("''+o="+JSON.stringify(o+'')); // "3"
+console.log("o.toString()="+JSON.stringify(o.toString())); // 4
+
+http://jsfiddle.net/uaf9ovx7/1/

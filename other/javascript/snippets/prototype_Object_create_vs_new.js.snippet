@@ -1,0 +1,30 @@
+
+function ClassA() {
+	console.log("Making an A!");
+}
+ClassA.prototype.aMethod = function(){ return "aResult"; };
+
+function ClassB() {
+	console.log("Making a B!");
+}
+//ClassB.prototype = new ClassA;
+ClassB.prototype = Object.create(ClassA.prototype);
+ClassB.prototype.bMethod = function(){ return "bResult"; };
+
+function ClassC() {
+	console.log("Making a C!");
+}
+//ClassC.prototype = new ClassB;
+ClassC.prototype = Object.create(ClassB.prototype);
+
+var bInstance = new ClassB();
+console.log(bInstance.aMethod);
+
+var cInstance = new ClassC();
+console.log(cInstance.aMethod);
+
+// Using new, or using Object.create(), are almost identical, except:
+// - We must remember to pass the prototype to Object.create()!
+// Both call the constructor.
+// The constructor should therefore be aware that occasionally we are constructing objects that we aren't going to use as runtime instances, but we are going to use as a prototype.
+

@@ -1,0 +1,2 @@
+<Gilgameshkun> value | 0 // always casts to a signed 32-bit integer
+<Gilgameshkun> value >>> 0 // always casts to an unsigned 32-bit integer

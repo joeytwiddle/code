@@ -30,10 +30,10 @@ a.prototype = {
     propA = 500
 };
 
-var b = Object.create(new a());
+var b = Object.create(a.prototype);
 b.fnB = function () {};
 b.propB = 300;
 
-var c = Object.create(b);
+var c = Object.create(b.prototype);
 c.fnC = function () {};
 c.propC = 200;
