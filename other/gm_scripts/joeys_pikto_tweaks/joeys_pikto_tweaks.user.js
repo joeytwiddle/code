@@ -5,7 +5,7 @@
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
 // @include        https://*.piktochart.info/*
-// @version        1.1.11
+// @version        1.1.12
 // @grant          none
 // ==/UserScript==
 
@@ -126,4 +126,7 @@ if (document.location.hostname.indexOf('rahsia') === 0) {
 	// Make headers (which separate items) stand out from other text:
 	GM_addStyle('.journal > div > h4 , #sidebar > h3 , .subject > div > h3, #activity > h3 { background-color: #aaddff; border-bottom: 3px solid rgba(0,0,0,0.2); }');
 	// I almost want to do this to all headers.  But I didn't really want it to apply to any `h3` put *inside* a comment by a user.
+	
+	// This button claims to to 'Edit' but more often than not it is also the only way to reply to (comment on) an issue.
+	$('#content > .contextual > a.icon-edit').text('Comment/Update');
 }
