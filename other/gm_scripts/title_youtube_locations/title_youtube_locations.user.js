@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
-// @version        1.1.4
+// @version        1.1.5
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -45,7 +45,7 @@ if (addTitleToLocation) {
 	setTimeout(function(){
 		if (document.location.pathname == "/watch") {
 
-			var title = document.title.replace(/^YouTube - /,'')
+			var title = document.title.replace(/ - YouTube$/,'')
 				|| null;
 
 			if (title)

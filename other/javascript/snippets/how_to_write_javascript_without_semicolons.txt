@@ -1,0 +1,48 @@
+
+What rules must I follow to write valid Javascript without semicolons?
+
+If someone has, like [izs](http://izs.me/) or the Bootstrap devs, chosen to write Javascript without semicolons, under what conditions *must* he add a semicolon, and what else should he do to ensure his code will not fail?
+
+Assuming you intend to use a newline in place of semicolons, the only real danger is that you may combine two lines into a single expression.
+
+The advice is:
+
+> **When a line starts with parenthesis `(` or `[`**
+> 
+> **or with an arithmetic operator `+` `-` or `/`**
+>
+> **then put a semicolon `;` in front of it.**
+
+Following that rule will prevent:
+
+      // BAD
+      a = b + c
+      (d + e).print()
+
+from being parsed as:
+
+      a = b + c(d + e).print()
+
+The solution:
+
+      // SAFE
+      a = b + c
+      ;(d + e).print()
+
+Note that `++` `--` and `//` are all safe without a semicolon, but a regexp literal `/.../` is not.
+
+Sources:
+
+- [Semicolons in Javascript are optional](http://mislav.uniqpath.com/2010/05/semicolons/)
+- Inimino's article [JavaScript Semicolon Insertion](http://inimino.org/~inimino/blog/javascript_semicolons)
+
+----
+
+The only other time semicolons are required is **when you want to place multiple statements on one line** (although this is not usually recommended anyway):
+
+    x = obj[k]; delete obj[k]; return asChar(x)
+
+Although if your line is comprised of expressions only, then you could use commas instead:
+
+    saveToRegister(arr[i],'X'), arr.splice(i,1), callback(asChar('X'))
+

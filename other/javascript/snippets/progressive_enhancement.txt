@@ -1,0 +1,3 @@
+<ljharb> i like to add a "js" class to the body with JS, and then hide things with CSS.
+<joeytwiddle> i like the "js" class idea.  i suppose it could also be done the other way, with a "no-js" class that JS removes
+<ljharb> joeytwiddle: yes, exactly - you can actually do both, and then choose whichever approach makes your CSS simplest.

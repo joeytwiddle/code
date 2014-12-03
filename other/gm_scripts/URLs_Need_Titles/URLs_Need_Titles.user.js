@@ -2,7 +2,7 @@
 // @name           URLs Need Titles
 // @namespace      UNT
 // @description    When you paste a URL to a friend, it is useful if it contains the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs!
-// @version        1.2.4
+// @version        1.2.5
 // @include        http://*/*
 // @include        https://github.com/*/*
 // ==/UserScript==
@@ -91,6 +91,12 @@ var rules = [
         hostMatch: "9gag.com",
         pathMatch: "/gag/.*",
         getTitle: function(){ return document.title.replace(/ - 9GAG$/,''); }
+    },
+
+    {
+        hostMatch: "codepen.io",
+        pathMatch: "/..*", /* Not the front page */
+        getTitle: function(){ return document.title.replace(/ - CodePen$/,''); }
     },
 
     {

@@ -19,24 +19,21 @@ Animal.prototype = {
 
 
 
-/* Method 1
-// This is WRONG!
-// We end up with all our animals using exactly the same prototype object.
+/* Method 1 */
 function Mammal()   {
 	this.topSpeed = 20;
 	this.layEgg = function() { };
 	// So immediately we are writing the members of the subclass differently from the parent!
 }
-// This is NOT how we inherit using prototype!
-Mammal.prototype = Animal.prototype;
-// We cannot edit the prototype now, or we will be editing Animal's prototype!
+Mammal.prototype = Object.create(Animal.prototype);
 
 function Cougar() { }
-Cougar.prototype = Mammal.prototype;
+Cougar.prototype = Object.create(Mammal.prototype);
+// TODO: Test this; is it true?
+Cougar.prototype.constructor = Cougar;   // Otherwise instances of Cat would have a constructor of Mammal
 
 function Sloth() { }
-Sloth.prototype = Mammal.prototype;
-*/
+Sloth.prototype = Object.create(Mammal.prototype);
 
 
 
