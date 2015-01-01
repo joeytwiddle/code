@@ -488,6 +488,7 @@ function searchForTOC() {
 		tocFound = tocFound || document.getElementById("page-toc");      // developer.mozilla.org
 		tocFound = tocFound || (document.getElementsByClassName && document.getElementsByClassName("twikiToc")[0]);      // TWiki
 		tocFound = tocFound || document.getElementById("TOC");           // meteorpedia.com
+		tocFound = tocFound || document.location.host==="developer.android.com" && document.getElementById("qv");
 		if (document.location.host.indexOf("dartlang.org")>=0) {
 			tocFound = null;   // The toc they gives us contains top-level only.  It's preferable to generate our own full tree.
 		}
