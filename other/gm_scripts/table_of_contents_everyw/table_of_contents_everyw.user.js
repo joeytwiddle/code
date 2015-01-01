@@ -2,7 +2,7 @@
 // @name           Table of Contents Everywhere
 // @description    On pages which do not have a Table of Contents, but should do, create one!  (I actually use this as a bookmarklet, so I can load it onto the current page only when I want it.)
 // @downstreamURL  http://userscripts.org/scripts/source/123255.user.js
-// @version        1.0.0
+// @version        1.0.1
 // @include        http://*/*
 // @include        https://*/*
 // @grant          none
@@ -168,7 +168,7 @@ function clearStyle(elem) {
 	elem.style.bottom = 'auto';
 	elem.style.left = 'auto';
 	elem.style.color = 'black';
-	elem.style.backgroundColor = 'white';
+	elem.style.backgroundColor = '#f4f4f4';
 	elem.style.border = '0px solid magenta';
 	elem.style.padding = '0px';
 	elem.style.margin = '1px';
@@ -458,9 +458,15 @@ function postTOC(toc) {
 			toc.id = "toc";
 		}
 		var tocID = toc.id;
-		GM_addStyle("#"+tocID+" { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; "+resetProps+" }" // max-height: 80%; max-width: 32%; overflow: auto; 
-			+ "#"+tocID+"       { opacity: 0.2; }"
-			+ "#"+tocID+":hover { opacity: 1.0; }"
+		GM_addStyle("#"+tocID+" { position: fixed; top: 10%; right: 4%; background-color: #f4f4f4; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; "+resetProps+" }" // max-height: 80%; max-width: 32%; overflow: auto; 
+			+ "#"+tocID+"               { opacity: 0.4; }"
+			+ "#"+tocID+"               { box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.4); }"
+			+ "#"+tocID+"               { -webkit-box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.4); }"
+			+ "#"+tocID+":hover         { opacity: 1.0; }"
+			+ "#"+tocID+"       > * > * { opacity: 0.0; }"
+			+ "#"+tocID+":hover > * > * { opacity: 1.0; }"
+			+ "#"+tocID+" , #"+tocID+" > * > * { transition: opacity; transition-duration: 400ms; }"
+			+ "#"+tocID+" , #"+tocID+" > * > * { -webkit-transition: opacity; -webkit-transition-duration: 400ms; }"
 		);
 		GM_addStyle("#"+tocID+" > * { "+resetProps+" }");
 
