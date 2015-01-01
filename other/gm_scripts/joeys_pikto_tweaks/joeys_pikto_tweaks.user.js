@@ -4,8 +4,7 @@
 // @description    Just some style improvements I like when using Piktochart.com
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
-// @include        https://*.piktochart.info/*
-// @version        1.1.12
+// @version        1.1.11
 // @grant          none
 // ==/UserScript==
 
@@ -71,16 +70,14 @@ for (var i = messageBoxes.length; i--;) {
 // Links to "Saved/Featured Piktocharts" (topbar on main site, menu in editor).
 $("a").each(function(){
 	var currentText = $(this).text();
-	if (currentText == "Saved Piktocharts") {
-		$(this).text("My Infographics");
-	}
-	else if (currentText == "My Piktocharts") {
-		$(this).text("My Infographics");
-	}
-	else if (currentText == "Featured Piktocharts") {
-		$(this).text("Featured Infographics");
-	}
-	else if (currentText.indexOf("Create a new Piktochart") >= 0) {
+	var toReplace = [
+	    "Saved Piktocharts"
+	,   "My Piktocharts"
+	,   "My Saved Piktocharts"
+	,   "Featured Piktocharts"
+	,   "Create a new Piktochart"
+	];
+	if (toReplace.indexOf(currentText) >= 0) {
 		$(this).html( $(this).html().replace(/Piktochart/g,"Infographic") );
 	}
 });
