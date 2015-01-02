@@ -652,6 +652,10 @@ var links = document.getElementsByTagName("A");
 for (var i=0;i<links.length;i++) {
 	var link = links[i];
 
+	if (link.getAttribute('data-make-bookmarklet') === 'false') {
+		continue;
+	}
+
 	// If we see a direct link to a user script, create buttons for it.
 	if (link.href.match(/\.js$/)) { // \.user\.js
 		var where = link;
