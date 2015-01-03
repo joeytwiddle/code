@@ -16,11 +16,17 @@ if (typeof GM_getValue === 'function') {
 }
 
 var pre_elements = document.body.getElementsByTagName('pre');
+replaceTabsInside(pre_elements);
 
-for (var i=0; i<pre_elements.length; i++) {
-	var no_tabs = pre_elements[i].innerHTML.replace(/\t/g, REPLACEMENT);
-	if (pre_elements[i].innerHTML != no_tabs) {
-		pre_elements[i].innerHTML = no_tabs;
+var github_compare_code_lines = document.querySelectorAll('td.blob-code');
+replaceTabsInside(github_compare_code_lines);
+
+function replaceTabsInside(elements) {
+	for (var i=0; i<elements.length; i++) {
+		var no_tabs = elements[i].innerHTML.replace(/\t/g, REPLACEMENT);
+		if (elements[i].innerHTML != no_tabs) {
+			elements[i].innerHTML = no_tabs;
+		}
 	}
 }
 
