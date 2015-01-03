@@ -6,6 +6,7 @@
 // @include        http://hwi.ath.cx/*/userscripts/*
 // @include        http://*userscripts.org/*
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
+// @grant          none
 // ==/UserScript==
 
 // BUG: We had (i%32) in a userscript (DLT) but when this was turned into a bookmarklet and dragged into Chrome, the debugger showed it had become (i2), causing the script to error with "i2 is not defined".  Changing the code to (i % 32) worked around the problem.
@@ -233,28 +234,7 @@ function getSourceFor(url) {
 	};
 }
 
-// DONE: Instead of making 175+ requests for userscript files, add a button "Generate Static Bookmarklet" for any but the top few.  :)
-
-/*
-var maxStaticsToRequest = 12;
-var staticsRequested = 0;
-
-// TODO: Really we should queue/chain all the requests, running the next one only when the last one has finished.
-
-// Wrapper which crops and delays, then may call addStaticBookmarkletNow().
-function buildStaticBookmarklet(link) {
-
-	if (staticsRequested >= maxStaticsToRequest) {
-		return;
-	}
-	staticsRequested++;
-
-	addStaticBookmarkletNow(link);
-
-}
-*/
-
-// Was addStaticBookmarkletNow
+/* To avoid a multitude of premature network requests, the bookmarklet is not actually "compiled" until mouseover. */
 function buildStaticBookmarklet(link) {
 
 	var newLink = document.createElement("a");
@@ -309,7 +289,8 @@ function buildStaticBookmarklet(link) {
 
 		if (addDateToStaticBookmarklets) {
 			var d = new Date();
-			var dateStr = d.getFullYear()+"."+(d.getMonth()+1)+"."+d.getDate();
+			//var dateStr = d.getFullYear()+"."+(d.getMonth()+1)+"."+d.getDate();
+			var dateStr = d.toISOString().substring(0,10);
 			newLink.textContent = newLink.textContent + " ("+dateStr+")";
 		}
 
@@ -647,9 +628,10 @@ function getNameFromFilename(href) {
 
 var links = document.getElementsByTagName("A");
 //// We used to process backwards (for less height recalculation).
-//// But this messes up maxStaticsToRequest.
-// for (var i=links.length-1;i>=0;i--) {
-for (var i=0;i<links.length;i++) {
+//// But this was messing up maxStaticsToRequest.
+//// But now backwards processing is restored, to avoid producing multiple bookmarks!
+for (var i=links.length;i--;) {
+//for (var i=0;i<links.length;i++) {
 	var link = links[i];
 
 	if (link.getAttribute('data-make-bookmarklet') === 'false') {
