@@ -2,7 +2,7 @@
 // @name           Table of Contents Everywhere
 // @description    On pages which do not have a Table of Contents, but should do, create one!  (I actually use this as a bookmarklet, so I can load it onto the current page only when I want it.)
 // @downstreamURL  http://userscripts.org/scripts/source/123255.user.js
-// @version        1.0.1
+// @version        1.0.2
 // @include        http://*/*
 // @include        https://*/*
 // @grant          none
@@ -460,8 +460,8 @@ function postTOC(toc) {
 		var tocID = toc.id;
 		GM_addStyle("#"+tocID+" { position: fixed; top: 10%; right: 4%; background-color: #f4f4f4; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; "+resetProps+" }" // max-height: 80%; max-width: 32%; overflow: auto; 
 			+ "#"+tocID+"               { opacity: 0.4; }"
-			+ "#"+tocID+"               { box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.4); }"
-			+ "#"+tocID+"               { -webkit-box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.4); }"
+			+ "#"+tocID+":hover         { box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.4); }"
+			+ "#"+tocID+":hover         { -webkit-box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.4); }"
 			+ "#"+tocID+":hover         { opacity: 1.0; }"
 			+ "#"+tocID+"       > * > * { opacity: 0.0; }"
 			+ "#"+tocID+":hover > * > * { opacity: 1.0; }"
