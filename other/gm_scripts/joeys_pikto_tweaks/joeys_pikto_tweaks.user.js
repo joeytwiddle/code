@@ -4,7 +4,8 @@
 // @description    Just some style improvements I like when using Piktochart.com
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
-// @version        1.1.11
+// @include        https://*.piktochart.info/*
+// @version        1.1.13
 // @grant          none
 // ==/UserScript==
 
@@ -65,9 +66,9 @@ for (var i = messageBoxes.length; i--;) {
 }
 
 // Use the noun "infographic" instead of "piktochart"
-// Repeating the word "piktochart" may help to make the brand name stick, but unfortunately it also indicates that a 'piktochart' is not an infographic.
-// By using the word "infographic", we hint this is *the* site to create infographics.
-// Links to "Saved/Featured Piktocharts" (topbar on main site, menu in editor).
+// E.g. in the links to "Saved/Featured Piktocharts" (topbar on main site, menu in editor).
+// Repeating the word "piktochart" may help to make the brand name stick, but I fear it suggests that a "piktochart" is not an infographic.
+// By using the word "infographic", we indicate that this is a site where you can create infographics (rather than a site where you can only create "piktocharts").
 $("a").each(function(){
 	var currentText = $(this).text();
 	var toReplace = [
@@ -105,6 +106,14 @@ if ( document.location.pathname.match("/editor/|/editorv4/") ) {
 	var $saveAsItem = $('#menu-save-as').parent('li');
 	$('<li><a href="#" id="menu-save" class="ttips" data-placement="right" title="Save this infographic">Save</a></li>').insertBefore($saveAsItem);
 
+	// Make the layout and naming of tabs in the charts editor more helpful
+	var $settingsTab = $('#modal-charts .tab-advsettings');
+	var $googleDriveTab = $settingsTab.prev();
+	$settingsTab.find('a')[0].lastChild.textContent = "Appearance";
+	$googleDriveTab.find('a')[0].lastChild.textContent = "Import";   // "Google Drive Import";
+	$settingsTab.removeClass('tab-advsettings');
+	$settingsTab.insertBefore($googleDriveTab);
+
 }
 
 
@@ -116,7 +125,6 @@ GM_addStyle("#v-nav hr { marginTop: -1px; height: 3px; background-color: #23b0a3
 
 
 
-
 // ==== On Rahsia ====
 
 if (document.location.hostname.indexOf('rahsia') === 0) {
@@ -124,6 +132,6 @@ if (document.location.hostname.indexOf('rahsia') === 0) {
 	GM_addStyle('.journal > div > h4 , #sidebar > h3 , .subject > div > h3, #activity > h3 { background-color: #aaddff; border-bottom: 3px solid rgba(0,0,0,0.2); }');
 	// I almost want to do this to all headers.  But I didn't really want it to apply to any `h3` put *inside* a comment by a user.
 	
-	// This button claims to to 'Edit' but more often than not it is also the only way to reply to (comment on) an issue.
+	// This button claims to 'Edit' but it is also the only way to reply or comment on an issue.
 	$('#content > .contextual > a.icon-edit').text('Comment/Update');
 }
