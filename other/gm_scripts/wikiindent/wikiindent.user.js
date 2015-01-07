@@ -600,9 +600,14 @@ function doIt() {
 
 	if (fixUnderlinesToOverlines) {
 
-		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-bottom: 0px solid #AAAAAA; }");
+		// Hide any existing underlines
+		// I made this !important to defeat the more specific `.markdown-body h*` rules on GitHub wikis.
+		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-bottom: 0 !important; }");
+
+		// Add our own overlines instead
 		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-top: 1px solid #AAAAAA; }");
-		// Do not use "text-decoration: underline;" - it makes text look like links.
+
+		// Do not use `text-decoration: underline;`.  It will only appear as wide as the text (not filling the page width) and will make the text look like a hyperlink!
 
 	}
 
