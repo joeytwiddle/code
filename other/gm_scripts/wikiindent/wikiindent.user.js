@@ -3,7 +3,7 @@
 // @namespace      joeytwiddle
 // @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // @downstreamURL  http://userscripts.org/scripts/source/60832.user.js
-// @version        1.2.5
+// @version        1.2.6
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
@@ -20,11 +20,23 @@
 
 (function(){
 
-//// Features:
+// Feature #1 : Make the sidebar collapsible so the page content can fill the whole width.
+
 var toggleSidebar = true;
+
+// Feature #2 : Float the TOC on the top-right of the screen, so it can still be used after scrolling down the page.
+
 var makeTableOfContentsFloat = true;
+
+// Feature #3 : Indent the blocks so their tree-like structure is visible.
+
 var indentSubBlocks = true;
+
+// Feature #4 : Change underlined headings to overlined headings.  (So the lines separate the heading from the previous section, rather than separating the heading from its content.)
+
 var fixUnderlinesToOverlines = true;
+
+
 
 // var minimisedSidebarSize = 6;   // Small
 var minimisedSidebarSize = 16;
@@ -34,7 +46,8 @@ var minimisedSidebarSize = 16;
 var delayHide = 0;
 var delayUnhide = ( document.getElementById("mw-panel") ? 250 : 0 );
 
-var debug = true;
+var debug = false;
+
 
 
 /* CONSIDER: As we scroll the page, light up the "current" section in the TOC.
