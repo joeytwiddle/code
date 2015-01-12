@@ -5,7 +5,7 @@
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
 // @include        https://*.piktochart.info/*
-// @version        1.1.13
+// @version        1.1.15
 // @grant          none
 // ==/UserScript==
 
@@ -37,7 +37,13 @@ if ( document.location.pathname.match("/$|/themes|/templates|/infographics|/gall
 	// Darker modal (like in the editor)
 	GM_addStyle(" .modal-backdrop { background: #000000; } ");
 	// My Infographics page ( /infographics )
-	$(".pikto-publish-hover-link *").filter(function(){ return $(this).text()=="open on web"; }).text("View");
+	var viewInfographicLink = document.querySelectorAll(".pikto-publish-hover-link a");
+	if (viewInfographicLink.length > 0) {
+		var viewInfographicLinkText = viewInfographicLink[0].lastChild;
+		if (viewInfographicLinkText.textContent.trim().toLowerCase() === "open on web") {
+			viewInfographicLinkText.textContent = "View";
+		}
+	}
 	$("#pikto-hover-unpublish a").filter(function(){ return $(this).text()=="Unpublish It"; }).text("Unpublish");
 }
 
