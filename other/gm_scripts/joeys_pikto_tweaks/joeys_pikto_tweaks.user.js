@@ -5,7 +5,7 @@
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
 // @include        https://*.piktochart.info/*
-// @version        1.1.15
+// @version        1.1.16
 // @grant          none
 // ==/UserScript==
 
@@ -119,6 +119,14 @@ if ( document.location.pathname.match("/editor/|/editorv4/") ) {
 	$googleDriveTab.find('a')[0].lastChild.textContent = "Import";   // "Google Drive Import";
 	$settingsTab.removeClass('tab-advsettings');
 	$settingsTab.insertBefore($googleDriveTab);
+
+	// Remove transparency from popups
+	if ( $('.pikto-pbar-dongle-popout').css('background-color').match(/^rgba\(255, 255, 255, 0.9/) ) {   // Chrome yields '0.901961', Firefox '0.9'
+		$('.pikto-pbar-dongle-popout').css('background-color', 'rgba(255, 255, 255, 1.0)');
+	}
+	if ( $('.pikto-pbar-color-picker-wrapper').css('background-color').match(/^rgba\(255, 255, 255, 0.9/) ) {
+		$('.pikto-pbar-color-picker-wrapper').css('background-color', 'rgba(255, 255, 255, 1.0)');
+	}
 
 }
 
