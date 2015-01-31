@@ -3,7 +3,7 @@
 // @namespace     http://nv.github.com/tab-size.js/
 // @include       *
 // @description   Replace all tab characters with two spaces (or something else)
-// @version       1.0.2
+// @version       1.0.3
 // @icon          http://userscripts.ru/js/tab-character-size/chrome/icon_48.png
 // @grant         GM_addStyle
 // @grant         GM_getValue
@@ -16,12 +16,12 @@
 //var REPLACEMENT = '  ';
 //var REPLACEMENT = '->';
 //var REPLACEMENT = '| ';
-var REPLACEMENT = '⤚';
+//var REPLACEMENT = '⤚';
 //var REPLACEMENT = '→';
 //var REPLACEMENT = '⇒';
 //var REPLACEMENT = '⇨';
 //var REPLACEMENT = '➡';
-//var REPLACEMENT = '⟼';     // Wider than 1 char even in monospaced fonts
+var REPLACEMENT = '⟼';     // Wider than 1 char even in monospaced fonts
 //var REPLACEMENT = '↦';
 //var REPLACEMENT = '↠';
 //var REPLACEMENT = '⤇';
@@ -42,6 +42,7 @@ if (style_tabs && typeof GM_addStyle === 'function') {
 var pre_elements = document.body.getElementsByTagName('pre');
 replaceTabsInside(pre_elements);
 
+// Note that on Github, we can also append ?ts=4 to any URL to change the tab spacing.
 var github_compare_code_lines = document.querySelectorAll('td.blob-code');
 replaceTabsInside(github_compare_code_lines);
 
