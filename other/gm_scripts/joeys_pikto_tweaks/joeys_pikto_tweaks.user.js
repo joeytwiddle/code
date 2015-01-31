@@ -5,7 +5,7 @@
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
 // @include        https://*.piktochart.info/*
-// @version        1.1.16
+// @version        1.1.17
 // @grant          none
 // ==/UserScript==
 
@@ -127,6 +127,9 @@ if ( document.location.pathname.match("/editor/|/editorv4/") ) {
 	if ( $('.pikto-pbar-color-picker-wrapper').css('background-color').match(/^rgba\(255, 255, 255, 0.9/) ) {
 		$('.pikto-pbar-color-picker-wrapper').css('background-color', 'rgba(255, 255, 255, 1.0)');
 	}
+
+	// Advertise the transpose button
+	GM_addStyle(".handsontable thead tr:first-child th:first-child { background-color: #23b0a3; }");
 
 }
 
