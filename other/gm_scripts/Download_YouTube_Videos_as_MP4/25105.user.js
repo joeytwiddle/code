@@ -3,8 +3,8 @@
 // @description Adds a button that lets you download YouTube videos.
 // @homepageURL https://github.com/gantt/downloadyoutube
 // @author Gantt
-// @version 1.7.26
-// @date 2014-09-03
+// @version 1.7.31
+// @date 2015-01-30
 // @namespace http://googlesystem.blogspot.com
 // @include http://www.youtube.com/*
 // @include https://www.youtube.com/*
@@ -14,6 +14,8 @@
 // @match https://www.youtube.com/*
 // @match http://s.ytimg.com/yts/jsbin/html5player*
 // @match https://s.ytimg.com/yts/jsbin/html5player*
+// @match http://manifest.googlevideo.com/*
+// @match https://manifest.googlevideo.com/*
 // @match http://*.googlevideo.com/videoplayback*
 // @match https://*.googlevideo.com/videoplayback*
 // @match http://*.youtube.com/videoplayback*
@@ -27,16 +29,16 @@
 // ==/UserScript==
 
 (function () {
-  var FORMAT_LABEL={'5':'FLV 240p','17':'3GP 176p','18':'MP4 360p','22':'MP4 720p','34':'FLV 360p','35':'FLV 480p','36':'3GP 320p','37':'MP4 1080p','38':'MP4 2160p','43':'WebM 360p','44':'WebM 480p','45':'WebM 720p','46':'WebM 1080p','135':'MP4 480p - no audio','137':'MP4 1080p - no audio','138':'MP4 2160p - no audio','139':'M4A 48kbps - audio','140':'M4A 128kbps - audio','141':'M4A 256kbps - audio','264':'MP4 1440p - no audio'};
-  var FORMAT_TYPE={'5':'flv','17':'3gp','18':'mp4','22':'mp4','34':'flv','35':'flv','36':'3gp','37':'mp4','38':'mp4','43':'webm','44':'webm','45':'webm','46':'webm','135':'mp4','137':'mp4','138':'mp4','139':'m4a','140':'m4a','141':'m4a','264':'mp4'};
-  var FORMAT_ORDER=['17','36','5','18','34','43','35','135','44','22','45','37','46','264','38','139','140','141'];
-  var FORMAT_RULE={'flv':'max','mp4':'all','webm':'none','m4a':'max','3gp':'all'};
+  var FORMAT_LABEL={'5':'FLV 240p','17':'3GP 176p','18':'MP4 360p','22':'MP4 720p','34':'FLV 360p','35':'FLV 480p','36':'3GP 320p','37':'MP4 1080p','38':'MP4 2160p','43':'WebM 360p','44':'WebM 480p','45':'WebM 720p','46':'WebM 1080p','135':'MP4 480p - no audio','137':'MP4 1080p - no audio','138':'MP4 2160p - no audio','139':'M4A 48kbps - audio','140':'M4A 128kbps - audio','141':'M4A 256kbps - audio','264':'MP4 1440p - no audio','298':'MP4 720p60 - no audio','299':'MP4 1080p60 - no audio'};
+  var FORMAT_TYPE={'5':'flv','17':'3gp','18':'mp4','22':'mp4','34':'flv','35':'flv','36':'3gp','37':'mp4','38':'mp4','43':'webm','44':'webm','45':'webm','46':'webm','135':'mp4','137':'mp4','138':'mp4','139':'m4a','140':'m4a','141':'m4a','264':'mp4','298':'mp4','299':'mp4'};
+  var FORMAT_ORDER=['17','36','5','18','34','43','35','135','44','22','298','45','37','299','46','264','38','139','140','141'];
+  var FORMAT_RULE={'flv':'max','mp4':'all','webm':'all','m4a':'max','3gp':'all'};
   // all=display all versions, max=only highest quality version, none=no version  
   // the default settings show all MP4 videos, the highest quality FLV and no WebM
   var SHOW_DASH_FORMATS=true;
-  var BUTTON_TEXT={'ar':'تنزيل','cs':'Stáhnout','de':'Herunterladen','en':'Download','es':'Descargar','fr':'Télécharger','hi':'डाउनलोड','id':'Unduh','it':'Scarica','ja':'ダウンロード','ko':'내려받기','pl':'Pobierz','pt':'Baixar','ro':'Descărcați','ru':'Скачать','tr':'İndir','zh':'下载'};
-  var BUTTON_TOOLTIP={'ar':'تنزيل هذا الفيديو','cs':'Stáhnout toto video','de':'Dieses Video herunterladen','en':'Download this video','es':'Descargar este vídeo','fr':'Télécharger cette vidéo','hi':'वीडियो डाउनलोड करें','id':'Unduh video ini','it':'Scarica questo video','ja':'このビデオをダウンロードする','ko':'이 비디오를 내려받기','pl':'Pobierz plik wideo','pt':'Baixar este vídeo','ro':'Descărcați acest videoclip','ru':'Скачать это видео','tr': 'Bu videoyu indir','zh':'下载此视频'};
-  var DECODE_RULE={};
+  var BUTTON_TEXT={'ar':'تنزيل','cs':'Stáhnout','de':'Herunterladen','en':'Download','es':'Descargar','fr':'Télécharger','hi':'डाउनलोड','hu':'Letöltés','id':'Unduh','it':'Scarica','ja':'ダウンロード','ko':'내려받기','pl':'Pobierz','pt':'Baixar','ro':'Descărcați','ru':'Скачать','tr':'İndir','zh':'下载'};
+  var BUTTON_TOOLTIP={'ar':'تنزيل هذا الفيديو','cs':'Stáhnout toto video','de':'Dieses Video herunterladen','en':'Download this video','es':'Descargar este vídeo','fr':'Télécharger cette vidéo','hi':'वीडियो डाउनलोड करें','hu':'Videó letöltése','id':'Unduh video ini','it':'Scarica questo video','ja':'このビデオをダウンロードする','ko':'이 비디오를 내려받기','pl':'Pobierz plik wideo','pt':'Baixar este vídeo','ro':'Descărcați acest videoclip','ru':'Скачать это видео','tr': 'Bu videoyu indir','zh':'下载此视频'};
+  var DECODE_RULE=[];
   var RANDOM=7489235179; // Math.floor(Math.random()*1234567890);
   var CONTAINER_ID='download-youtube-video'+RANDOM;
   var LISTITEM_ID='download-youtube-video-fmt'+RANDOM;
@@ -91,6 +93,13 @@ function run() {
   var isSignatureUpdatingStarted=false;
   var operaTable=new Array();
   var language=document.documentElement.getAttribute('lang');
+  var textDirection='left';
+  if (document.body.getAttribute('dir')=='rtl') {
+    textDirection='right';
+  }
+  if (document.getElementById('watch7-action-buttons')) {  // old UI
+    fixTranslations(language, textDirection);
+  }
         
   // obtain video ID, formats map   
   
@@ -282,10 +291,16 @@ function run() {
   } 
     
   // find parent container
-  var parentElement=document.getElementById('watch8-secondary-actions');
+  var newWatchPage=false;
+  var parentElement=document.getElementById('watch7-action-buttons');
   if (parentElement==null) {
-    debug('DYVAM - No container for adding the download button. YouTube must have changed the code.');
-    return;
+    parentElement=document.getElementById('watch8-secondary-actions');
+    if (parentElement==null) {
+      debug('DYVAM Error - No container for adding the download button. YouTube must have changed the code.');
+      return;
+    } else {
+      newWatchPage=true;
+    }
   }
   
   // get button labels
@@ -295,19 +310,28 @@ function run() {
   // generate download code for regular interface
   var mainSpan=document.createElement('span');
 
-  var spanIcon=document.createElement('span');
-  spanIcon.setAttribute('class', 'yt-uix-button-icon-wrapper');
-  var imageIcon=document.createElement('img');
-  imageIcon.setAttribute('src', 'https://s.ytimg.com/yts/img/pixel-vfl3z5WfW.gif');
-  imageIcon.setAttribute('class', 'yt-uix-button-icon');
-  imageIcon.setAttribute('style', 'width:20px;height:20px;background-size:20px 20px;background-repeat:no-repeat;background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABG0lEQVRYR+2W0Q3CMAxE2wkYAdiEEWADmIxuACMwCmzABpCTEmRSO7YTQX+ChECV43t2nF7GYeHPuLD+0AKwC/DnWMAp/N5qimkBuAfBdRTF/+2/AV6ZYFUxVYuicAfoHegd6B3oHfhZB+ByF+JyV8FkrAB74pqH3DU5L3iGoBURhdVODIQF4EjEkWLmmhYALOQgNIBcHHke4buhxXAAaFnaAhqbQ5QAOHHkwhZ8balkx1ICCiEBWNZ+CivdB7REHIC2ZjZK2oWklDDdB1NSdCd/Js2PqQMpSIKYVcM8kE6QCwDBNRCqOBJrW0CL8kCYxL0A1k6YxWsANAiXeC2ABOEWbwHAWrwxpzgkmA/JtIqnxTOElmPnjlkc4A3FykAhA42AxwAAAABJRU5ErkJggg==);');
-  spanIcon.appendChild(imageIcon);
-  mainSpan.appendChild(spanIcon);
+  if (newWatchPage) {
+    var spanIcon=document.createElement('span');
+    spanIcon.setAttribute('class', 'yt-uix-button-icon-wrapper');
+    var imageIcon=document.createElement('img');
+    imageIcon.setAttribute('src', '//s.ytimg.com/yt/img/pixel-vfl3z5WfW.gif');
+    imageIcon.setAttribute('class', 'yt-uix-button-icon');
+    imageIcon.setAttribute('style', 'width:20px;height:20px;background-size:20px 20px;background-repeat:no-repeat;background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABG0lEQVRYR+2W0Q3CMAxE2wkYAdiEEWADmIxuACMwCmzABpCTEmRSO7YTQX+ChECV43t2nF7GYeHPuLD+0AKwC/DnWMAp/N5qimkBuAfBdRTF/+2/AV6ZYFUxVYuicAfoHegd6B3oHfhZB+ByF+JyV8FkrAB74pqH3DU5L3iGoBURhdVODIQF4EjEkWLmmhYALOQgNIBcHHke4buhxXAAaFnaAhqbQ5QAOHHkwhZ8balkx1ICCiEBWNZ+CivdB7REHIC2ZjZK2oWklDDdB1NSdCd/Js2PqQMpSIKYVcM8kE6QCwDBNRCqOBJrW0CL8kCYxL0A1k6YxWsANAiXeC2ABOEWbwHAWrwxpzgkmA/JtIqnxTOElmPnjlkc4A3FykAhA42AxwAAAABJRU5ErkJggg==);');
+    spanIcon.appendChild(imageIcon);
+    mainSpan.appendChild(spanIcon);
+  }
 
   var spanButton=document.createElement('span');
   spanButton.setAttribute('class', 'yt-uix-button-content');
   spanButton.appendChild(document.createTextNode(buttonText+' '));
   mainSpan.appendChild(spanButton);
+  
+  if (!newWatchPage) { // old UI
+    var imgButton=document.createElement('img');
+    imgButton.setAttribute('class', 'yt-uix-button-arrow');
+    imgButton.setAttribute('src', '//s.ytimg.com/yt/img/pixel-vfl3z5WfW.gif');
+    mainSpan.appendChild(imgButton);
+  }
 
   var listItems=document.createElement('ol');
   listItems.setAttribute('style', 'display:none;');
@@ -330,7 +354,13 @@ function run() {
   mainSpan.appendChild(listItems);
   var buttonElement=document.createElement('button');
   buttonElement.setAttribute('id', BUTTON_ID);
-  buttonElement.setAttribute('class', 'yt-uix-button  yt-uix-button-size-default yt-uix-button-opacity yt-uix-tooltip');
+  if (newWatchPage) {
+    buttonElement.setAttribute('class', 'yt-uix-button  yt-uix-button-size-default yt-uix-button-opacity yt-uix-tooltip');
+  } else { // old UI
+    buttonElement.setAttribute('class', 'yt-uix-button yt-uix-tooltip yt-uix-button-empty yt-uix-button-text');
+    buttonElement.setAttribute('style', 'margin-top:4px; margin-left:'+((textDirection=='left')?5:10)+'px;');
+    buttonElement.setAttribute('data-tooltip-text', buttonLabel);
+  }
   buttonElement.setAttribute('type', 'button');
   buttonElement.setAttribute('role', 'button');
   buttonElement.addEventListener('click', function(){return false;}, false);
@@ -341,8 +371,12 @@ function run() {
   containerSpan.appendChild(buttonElement);
                                             
   // add the button
-  parentElement.insertBefore(containerSpan, parentElement.firstChild);
-  
+  if (!newWatchPage) { // watch7
+    parentElement.appendChild(containerSpan);
+  } else { // watch8
+    parentElement.insertBefore(containerSpan, parentElement.firstChild);
+  }
+    
   if (!isSignatureUpdatingStarted) {
     for (var i=0;i<downloadCodeList.length;i++) {    
       addFileSize(downloadCodeList[i].url, downloadCodeList[i].format);
@@ -388,6 +422,7 @@ function run() {
         var protocol=(document.location.protocol=='http:')?'http:':'https:';
         videoManifestURL=protocol+videoManifestURL;
       }
+      debug('DYVAM - Info: manifestURL '+videoManifestURL);
       crossXmlHttpRequest({
           method:'GET',
           url:videoManifestURL, // check if URL exists
@@ -395,6 +430,7 @@ function run() {
             if (response.readyState === 4 && response.status === 200 && response.responseText) {
               var regexp = new RegExp('<BaseURL.+>(http[^<]+itag='+newFormat+'[^<]+)<\\/BaseURL>','i');
               var matchURL=findMatch(response.responseText, regexp);
+              debug('DYVAM - Info: matchURL '+matchURL);
               if (!matchURL) return;
               matchURL=matchURL.replace(/&amp\;/g,'&');
               for (var i=0;i<downloadCodeList.length;i++) {
@@ -412,6 +448,13 @@ function run() {
           } 
         });
     }  
+  }
+  
+  function injectStyle(code) {
+    var style=document.createElement('style');
+    style.type='text/css';
+    style.appendChild(document.createTextNode(code));
+    document.getElementsByTagName('head')[0].appendChild(style);
   }
   
   function injectScript(code) {
@@ -438,6 +481,23 @@ function run() {
     return elem;
   }
   
+  function fixTranslations(language, textDirection) {  
+    if (/^af|bg|bn|ca|cs|de|el|es|et|eu|fa|fi|fil|fr|gl|hi|hr|hu|id|it|iw|kn|lv|lt|ml|mr|ms|nl|pl|ro|ru|sl|sk|sr|sw|ta|te|th|uk|ur|vi|zu$/.test(language)) { // fix international UI
+      var likeButton=document.getElementById('watch-like');
+      if (likeButton) {
+        var spanElements=likeButton.getElementsByClassName('yt-uix-button-content');
+        if (spanElements) {
+          spanElements[0].style.display='none'; // hide like text
+        }
+      }
+      var marginPixels=10;
+      if (/^bg|ca|cs|el|eu|hr|it|ml|ms|pl|sl|sw|te$/.test(language)) {
+        marginPixels=1;
+      }
+      injectStyle('#watch7-secondary-actions .yt-uix-button{margin-'+textDirection+':'+marginPixels+'px!important}');
+    }
+  }
+  
   function findMatch(text, regexp) {
     var matches=text.match(regexp);
     return (matches)?matches[1]:null;
@@ -452,8 +512,10 @@ function run() {
   }
   
   function getPref(name) { // cross-browser GM_getValue
+    var a='', b='';
+    try {a=typeof GM_getValue.toString; b=GM_getValue.toString()} catch(e){}    
     if (typeof GM_getValue === 'function' && 
-    (typeof GM_getValue.toString === 'undefined' || GM_getValue.toString().indexOf('not supported') === -1)) {
+    (a === 'undefined' || b.indexOf('not supported') === -1)) {
       return GM_getValue(name, null); // Greasemonkey, Tampermonkey, Firefox extension
     } else {
         var ls=null;
@@ -466,8 +528,10 @@ function run() {
   }
   
   function setPref(name, value) { //  cross-browser GM_setValue
+    var a='', b='';
+    try {a=typeof GM_setValue.toString; b=GM_setValue.toString()} catch(e){}    
     if (typeof GM_setValue === 'function' && 
-    (typeof GM_setValue.toString === 'undefined' || GM_setValue.toString().indexOf('not supported') === -1)) {
+    (a === 'undefined' || b.indexOf('not supported') === -1)) {
       GM_setValue(name, value); // Greasemonkey, Tampermonkey, Firefox extension
     } else {
         var ls=null;
@@ -552,8 +616,14 @@ function run() {
   }
   
   function findSignatureCode(sourceCode) {
-    var signatureFunctionName = findMatch(sourceCode, 
-    /\.signature\s*=\s*([a-zA-Z_$][\w$]*)\([a-zA-Z_$][\w$]*\)/);
+    debug('DYVAM - Info: signature start '+getPref(STORAGE_CODE));
+    var signatureFunctionName = 
+    findMatch(sourceCode, 
+    /\.set\s*\("signature"\s*,\s*([a-zA-Z0-9_$][\w$]*)\(/)
+    || findMatch(sourceCode, 
+    /\.sig\s*\|\|\s*([a-zA-Z0-9_$][\w$]*)\(/)
+    || findMatch(sourceCode, 
+    /\.signature\s*=\s*([a-zA-Z_$][\w$]*)\([a-zA-Z_$][\w$]*\)/); //old
     if (signatureFunctionName == null) return setPref(STORAGE_CODE, 'error');
     signatureFunctionName=signatureFunctionName.replace('$','\\$');    
     var regCode = new RegExp('function \\s*' + signatureFunctionName +
@@ -578,7 +648,7 @@ function run() {
     var regSwap = new RegExp('[\\w$]+\\s*\\(\\s*[\\w$]+\\s*,\\s*([0-9]+)\\s*\\)');
     var regInline = new RegExp('[\\w$]+\\[0\\]\\s*=\\s*[\\w$]+\\[([0-9]+)\\s*%\\s*[\\w$]+\\.length\\]');
     var functionCodePieces=functionCode.split(';');
-    var decodeArray=[], signatureLength=81;
+    var decodeArray=[];
     for (var i=0; i<functionCodePieces.length; i++) {
       functionCodePieces[i]=functionCodePieces[i].trim();
       var codeLine=functionCodePieces[i];
@@ -590,7 +660,6 @@ function run() {
         var slice=parseInt(arrSlice[1], 10);
         if (isInteger(slice)){ 
           decodeArray.push(-slice);
-          signatureLength+=slice;
         } else return setPref(STORAGE_CODE, 'error');
       } else if (arrReverse && arrReverse.length >= 1) { // reverse
         decodeArray.push(0);
@@ -616,7 +685,7 @@ function run() {
     if (decodeArray) {
       setPref(STORAGE_URL, scriptURL);
       setPref(STORAGE_CODE, decodeArray.toString());
-      DECODE_RULE[signatureLength]=decodeArray;
+      DECODE_RULE=decodeArray;
       debug('DYVAM - Info: signature '+decodeArray.toString()+' '+scriptURL);
       // update download links and add file sizes
       for (var i=0;i<downloadCodeList.length;i++) {        
@@ -668,12 +737,10 @@ function run() {
     var storageCode=getPref(STORAGE_CODE);    
     if (storageCode && storageCode!='error' && isValidSignatureCode(storageCode)) {
       var arr=storageCode.split(',');
-      var signatureLength=81;
       for (var i=0; i<arr.length; i++) {
         arr[i]=parseInt(arr[i], 10);
-        if (arr[i]<0) signatureLength-=arr[i];
       }
-      rules[signatureLength]=arr;
+      rules=arr;
       debug('DYVAM - Info: signature '+arr.toString()+' '+scriptURL);
     }
     return rules;
@@ -690,14 +757,14 @@ function run() {
         sigA=(act>0)?swap(sigA, act):((act==0)?sigA.reverse():sigA.slice(-act));
       }
       var result=sigA.join('');
-      return (result.length==81)?result:sig;
+      return result;
     }
     
     if (sig==null) return '';    
-    var arr=DECODE_RULE[sig.length];
+    var arr=DECODE_RULE;
     if (arr) {
       var sig2=decode(sig, arr);
-      if (sig2 && sig2.length==81) return sig2;
+      if (sig2) return sig2;
     } else {
       setPref(STORAGE_URL, '');
       setPref(STORAGE_CODE, '');
