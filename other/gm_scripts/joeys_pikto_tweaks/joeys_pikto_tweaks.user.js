@@ -5,7 +5,7 @@
 // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
 // @include        https://*.piktochart.info/*
-// @version        1.1.17
+// @version        1.1.18
 // @grant          none
 // ==/UserScript==
 
@@ -100,7 +100,9 @@ if ( document.location.pathname.match("/editor/|/editorv4/") ) {
 
 	// Some menu items are missing their '...'s
 	$("#menu-rename").text("Rename...");
-	$("#menu-save-as").text("Save As...");
+	//$("#menu-save-as").text("Save As...");
+	// But anyway I want to re-word this one
+	$("#menu-save-as").text("Create a Copy...");
 
 	// The 'Saving...' dialog should have a background
 	GM_addStyle("#modal-generic .modal-dialog .modal-content { background: whitesmoke; padding: 20px 10px; } "
