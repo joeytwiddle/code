@@ -2,7 +2,7 @@
 // @name           Table of Contents Everywhere
 // @description    On pages which do not have a Table of Contents, but should do, create one!  (I actually use this as a bookmarklet, so I can load it onto the current page only when I want it.)
 // @downstreamURL  http://userscripts.org/scripts/source/123255.user.js
-// @version        1.0.2
+// @version        1.0.3
 // @include        http://*/*
 // @include        https://*/*
 // @grant          none
@@ -14,6 +14,8 @@ var delayBeforeRunning = 1600;
 var showAnchors = true;
 var pushAnchorsToBottom = true;   // They can look messy interspersed amongst TOC tree
 
+// 2015-05-12  Improved shadow styling
+// 2015-01-02  Improved styling
 // 2012-02-19  Removed verbose log.  Added showAnchors.  Added https since everyone is forcing that now (e.g. github).
 // 2012-02-18  Fixed sorting of TOC elements.  Added anchor unicode.
 // 2012-01-30  Implemented GM_log and GM_addStyle so this script can be included on any web page.
@@ -460,7 +462,7 @@ function postTOC(toc) {
 		var tocID = toc.id;
 		GM_addStyle("#"+tocID+" { position: fixed; top: 10%; right: 4%; background-color: #f4f4f4; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; "+resetProps+" }" // max-height: 80%; max-width: 32%; overflow: auto; 
 			+ "#"+tocID+"               { opacity: 0.4; }"
-			+ "#"+tocID+":hover         { box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.4); }"
+			+ "#"+tocID+":hover         { box-shadow: 0px 2px 10px 1px rgba(0,0,0,0.4); }"
 			+ "#"+tocID+":hover         { -webkit-box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.4); }"
 			+ "#"+tocID+":hover         { opacity: 1.0; }"
 			+ "#"+tocID+"       > * > * { opacity: 0.0; }"
