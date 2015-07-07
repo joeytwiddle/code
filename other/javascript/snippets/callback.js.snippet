@@ -1,1 +1,6 @@
+My definition:
+
 Callbacks: If a process will take time to complete (it is asynchronous), then your code should NOT "wait" for the response.  Instead it should construct a "callback function", and offer that to be called when the operation has completed.  Thanks to closure in JS scoping, when your function is called, it will still be able to see all the variables of the functions above/around it.
+
+!cps
+<ecmabot> Continuation-Passing style is the formal term for the "callback-based" approach to programming. CPS is a heavily used idiom in JavaScript to deal with asynchronous programming. See http://matt.might.net/articles/by-example-continuation-passing-style/
