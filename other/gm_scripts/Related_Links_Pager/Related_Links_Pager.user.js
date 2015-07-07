@@ -31,6 +31,8 @@
 
 // TODO: RLP does not fire for sites which use HTML5 History API to "change" page.  We could detect use of push/replaceState, and rebuild the pager after a timeout or event.
 
+// BUG: Breaks digitalocean community tutorials, when reached via google search.
+
 
 
 // == OPTIONS ==
@@ -54,7 +56,7 @@ var enableOnRightClick = false;
 var keepNavigationHistory = false;    // When off, sideways paging is not added to the browser history.  The back button will return you to the page before you started paging, not the previous page you were on.
 var leaveHashUrlsAlone = true;        // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
 var forceTravel = false;              // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
-                                      // BUG: I think this overrides Google Preview Pane's handler if we click a link expecting it to be previewed.
+                                      // BUG: When attempting to open a link in a new tab with Ctrl-click, forceTravel will make the current tab navigate to that page.
 var clearDataFromLocation = true;     // Tidies up your location bar URL, but prevents the pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.  Disable this for debugging.
 
 var highlightLinkGroups = true;       // Change the background or border of links in the current group on hover.
