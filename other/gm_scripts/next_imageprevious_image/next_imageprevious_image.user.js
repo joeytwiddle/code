@@ -2,7 +2,7 @@
 // @name Next Image/Previous Image
 // @author arty <me@arty.name>
 // @namespace http://arty.name/
-// @version 2.0.0
+// @version 2.0.5
 // @description  Quick scroll to next/previous image on a page with n/p buttons
 // @include *
 // ==/UserScript==
@@ -16,6 +16,8 @@
   // var backwardButton = 114; // R
   var forwardButton  = 110; // N
   var backwardButton = 112; // P
+  var leeway = 2; // This is needed if you have zoomed out the page.  (We might try to set scrollTop to 100, but it will only move to 99.)
+
   var positions = [];
 
   document.addEventListener('keypress', function(event){
@@ -46,7 +48,7 @@
 
     if (code === forwardButton) {
       for (index = 0; index < positions.length; index++) {
-        if (positions[index][1] <= scroll) continue;
+        if (positions[index][1] <= scroll + leeway) continue;
         // Hard to detect which one our browser is using when we are at the top of the document.
         // Because Chrome presents documentElement.scrollTop = 0 all the time!
         // Likewise Firefox presents document.body.scrollTop = 0 all the time!
@@ -57,7 +59,7 @@
       }
     } else if (code === backwardButton) {
       for (index = positions.length - 1; index >= 0; index--) {
-        if (positions[index][1] >= scroll) continue;
+        if (positions[index][1] >= scroll - leeway) continue;
         document.body.scrollTop = positions[index][1];
         document.documentElement.scrollTop = positions[index][1];
         return;
