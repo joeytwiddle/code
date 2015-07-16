@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.9
+// @version       1.2.10
 // @include       http://wikipedia.tld/*
 // @include       http://*.wikipedia.tld/*
 //// Since TLD doesn't work in Chrome:
@@ -262,12 +262,13 @@ function newInlineWindow(event, href, link, windowID){
 
 	container.innerHTML = '<div style="' +
 		'position: absolute; '+
-		// We can position with top/left, but this breaks our primitive getElementOffset below.
-		//'top: ' + ypos + 'px;' +
-		//'left: ' + xpos + 'px; ' +
-		// So instead we position using margin.
+		// We can position with top/left.
+		'top: ' + ypos + 'px;' +
+		'left: ' + xpos + 'px; ' +
+		// Or using margin.
+		//'margin: ' + ypos + 'px 0 0 ' + xpos + 'px; ' +
+		// We only need the following if we aren't adding to the top of the page.
 		//'top: 0px; left: 0px; ' +
-		'margin: ' + ypos + 'px 0 0 ' + xpos + 'px; ' +
 		'padding: ' + Math.round((windowPadding-windowButtonHeight)/2) +'px ' + windowPadding + 'px ' + windowPadding + 'px; ' +
 		'width: ' + cssBoxWidth + '%; ' +
 		'height: '+ cssBoxHeight + 'px; ' +
@@ -311,9 +312,11 @@ function newInlineWindow(event, href, link, windowID){
 		'</div>';
 	// Always inserting at the top of the tree means that windows opened later would appear below windows opened earlier!
 	//document.body.insertBefore(container, document.body.firstChild);
-	// This required us to perform positioning with top,left rather than margin in styling above, and it threw off getElementOffset.
-	//document.body.appendChild(container);
+	// This requires us to perform positioning with top,left rather than margin in styling above.
+	// It is also used after a click event to display the window on the top (see below).
+	document.body.appendChild(container);
 	// New method:
+	/*
 	var existingWindows = document.getElementsByClassName("inline-window");
 	var insertTarget;
 	if (existingWindows.length > 0) {
@@ -323,6 +326,7 @@ function newInlineWindow(event, href, link, windowID){
 		insertTarget = document.body.firstChild;
 	}
 	document.body.insertBefore(container, insertTarget);
+	*/
 
 	// When clicking anywhere on an innerWindow, bring it to the top.
 	container.addEventListener("click", function(){
@@ -466,17 +470,15 @@ function closeInlineWindow(id){
 	
 }
 
-// BUG: I broke this when I started positioning divs with top,left instead of margin.
-// BUG: But actually it's still broken now!
 function getElementOffset(element,whichCoord) {
 	var count = 0
 	while (element!=null) {
 		//GM_log("Getting offset"+whichCoord+" from "+element.tagName+"#"+element.id+": "+element['offset'+whichCoord]);
 	 	count += element['offset' + whichCoord];
-		// Iterate upwards until we find offsetParent, removing any scrollTop encountered in ancestors.
+		// Iterate upwards until we find element.offsetParent, removing any scrollTop encountered on the way.
 		var scrollParent = element;
 		while (scrollParent !== null) {
-			// Ignore <body> scroll - we want to keep that.
+			// But ignore scrollTop of <body> element - we want to keep that!
 			if (scrollParent.offsetParent !== null) {
 				count -= scrollParent['scroll' + whichCoord];
 			}
