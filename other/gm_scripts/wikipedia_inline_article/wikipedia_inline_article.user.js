@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.7
+// @version       1.2.8
 // @include       http://wikipedia.tld/*
 // @include       http://*.wikipedia.tld/*
 //// Since TLD doesn't work in Chrome:
@@ -13,6 +13,7 @@
 // @include       https://*.wikipedia.org/*
 // @grant         GM_log
 // @grant         GM_xmlhttpRequest
+// @grant         GM_addStyle
 // ==/UserScript==
 
 // Wikipedia Inline Article Viewer
@@ -45,7 +46,11 @@
  * For FF I renamed document.width to document.body.clientWidth.
  */
 
+// FIXED: When opening a window for some articles, such as "The Wawona Tree" on page "Yosemite", "Coordinates" appeared placed in the inline window's header, obscuring the "close" button.
+
 // BUG: Works fine under in Chrome, but not in Firefox!
+
+// BUG: Now when an inline article is scrolled, and a link in it is hovered, the second new window sometimes appears in the wrong place.
 
 var allowPreviewsInPreviews = true;   // If false, feature is not available for links inside previewed articles.
 
@@ -206,6 +211,13 @@ function newInlineWindow(event, href, link, windowID){
 	//var elementTop = $(link).offset().top;
 	//var elementLeft = $(link).offset().left;
 	var elementHeight = parseInt(window.getComputedStyle(link,"").getPropertyValue('line-height'));
+	// Sometimes (I don't know why), getPropertyValue("line-height") produces NaN.
+	elementHeight = elementHeight || link.clientHeight;
+	// But then clientHeight produces 0.
+	// Fortunately we can use jQuery to find the height.
+	elementHeight = elementHeight || $(link).height();
+
+	GM_addStyle(".inline-window #coordinates { position: initial; }");
 
 	
 	// setup the x-position of the inline window...
@@ -242,6 +254,7 @@ function newInlineWindow(event, href, link, windowID){
 	
 	var container = document.createElement('div');
 	container.id = windowFullID;
+	container.className = "inline-window";
 	
 	var cssBoxWidth = Math.round((windowWidth - (windowPadding+windowBorderSize)*2)/document.body.clientWidth*100);
 	var cssBoxHeight = windowHeight - (windowPadding+windowBorderSize*2);
