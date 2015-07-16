@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.8
+// @version       1.2.9
 // @include       http://wikipedia.tld/*
 // @include       http://*.wikipedia.tld/*
 //// Since TLD doesn't work in Chrome:
@@ -46,11 +46,11 @@
  * For FF I renamed document.width to document.body.clientWidth.
  */
 
-// FIXED: When opening a window for some articles, such as "The Wawona Tree" on page "Yosemite", "Coordinates" appeared placed in the inline window's header, obscuring the "close" button.
-
 // BUG: Works fine under in Chrome, but not in Firefox!
 
-// BUG: Now when an inline article is scrolled, and a link in it is hovered, the second new window sometimes appears in the wrong place.
+// FIXED: When opening a window for some articles, such as "The Wawona Tree" on page "Yosemite", "Coordinates" appeared placed in the inline window's header, obscuring the "close" button.
+
+// FIXED: Now when an inline article is scrolled, and a link in it is hovered, the second new window sometimes appears in the wrong place.
 
 var allowPreviewsInPreviews = true;   // If false, feature is not available for links inside previewed articles.
 
@@ -216,6 +216,7 @@ function newInlineWindow(event, href, link, windowID){
 	// But then clientHeight produces 0.
 	// Fortunately we can use jQuery to find the height.
 	elementHeight = elementHeight || $(link).height();
+	GM_log("elementHeight="+elementHeight);
 
 	GM_addStyle(".inline-window #coordinates { position: initial; }");
 
@@ -261,9 +262,12 @@ function newInlineWindow(event, href, link, windowID){
 
 	container.innerHTML = '<div style="' +
 		'position: absolute; '+
-		//'margin: ' + ypos + 'px 0 0 ' + xpos + 'px; ' +
-		'top: ' + ypos + 'px;' +
-		'left: ' + xpos + 'px; ' +
+		// We can position with top/left, but this breaks our primitive getElementOffset below.
+		//'top: ' + ypos + 'px;' +
+		//'left: ' + xpos + 'px; ' +
+		// So instead we position using margin.
+		//'top: 0px; left: 0px; ' +
+		'margin: ' + ypos + 'px 0 0 ' + xpos + 'px; ' +
 		'padding: ' + Math.round((windowPadding-windowButtonHeight)/2) +'px ' + windowPadding + 'px ' + windowPadding + 'px; ' +
 		'width: ' + cssBoxWidth + '%; ' +
 		'height: '+ cssBoxHeight + 'px; ' +
@@ -305,10 +309,20 @@ function newInlineWindow(event, href, link, windowID){
 				'height: ' + (windowHeight - (windowTextPadding+windowPadding+windowBorderSize)*2) + 'px; ' +
 			'">loading<span style="text-decoration: blink">...</span></div>'+	
 		'</div>';
+	// Always inserting at the top of the tree means that windows opened later would appear below windows opened earlier!
 	//document.body.insertBefore(container, document.body.firstChild);
-	// appendChild is preferable so that windows opened later will appear on top of the others.
-	// It required us to we perform positioning with top,left rather than margin in styling above.
-	document.body.appendChild(container);
+	// This required us to perform positioning with top,left rather than margin in styling above, and it threw off getElementOffset.
+	//document.body.appendChild(container);
+	// New method:
+	var existingWindows = document.getElementsByClassName("inline-window");
+	var insertTarget;
+	if (existingWindows.length > 0) {
+		var lastWindow = existingWindows[existingWindows.length - 1];
+		insertTarget = lastWindow.nextSibling;
+	} else {
+		insertTarget = document.body.firstChild;
+	}
+	document.body.insertBefore(container, insertTarget);
 
 	// When clicking anywhere on an innerWindow, bring it to the top.
 	container.addEventListener("click", function(){
@@ -453,11 +467,24 @@ function closeInlineWindow(id){
 }
 
 // BUG: I broke this when I started positioning divs with top,left instead of margin.
+// BUG: But actually it's still broken now!
 function getElementOffset(element,whichCoord) {
 	var count = 0
 	while (element!=null) {
 		//GM_log("Getting offset"+whichCoord+" from "+element.tagName+"#"+element.id+": "+element['offset'+whichCoord]);
 	 	count += element['offset' + whichCoord];
+		// Iterate upwards until we find offsetParent, removing any scrollTop encountered in ancestors.
+		var scrollParent = element;
+		while (scrollParent !== null) {
+			// Ignore <body> scroll - we want to keep that.
+			if (scrollParent.offsetParent !== null) {
+				count -= scrollParent['scroll' + whichCoord];
+			}
+			scrollParent = scrollParent.parentElement;
+			if (scrollParent === element.offsetParent) {
+				break;
+			}
+		}
 		element = element.offsetParent;
 	}
 	return count;
