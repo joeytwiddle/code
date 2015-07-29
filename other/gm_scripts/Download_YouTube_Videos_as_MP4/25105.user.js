@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name Download YouTube Videos as MP4
-// @description Adds a button that lets you download YouTube videos.
+// @description Adds a button that lets you download YouTube videos. Modified to offer lower quality formats when the normal files are too large for low bandwidth users.
 // @homepageURL https://github.com/gantt/downloadyoutube
 // @author Gantt
-// @version 1.7.31
-// @date 2015-01-30
+// @version 1.8.3
+// @date 2015-05-17
 // @namespace http://googlesystem.blogspot.com
 // @include http://www.youtube.com/*
 // @include https://www.youtube.com/*
@@ -28,16 +28,17 @@
 // @icon data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAB3RJTUUH2wMOCgIoGUYEAQAAAAlwSFlzAAALEgAACxIB0t1+/AAAAARnQU1BAACxjwv8YQUAAAGSUExURfi/JO/v797e3sbGxq2traWlpZSUlJycnNbW1oyEhIRaWow5OZQhIZwYGKUQEKUICK0ICJQxMYxKSoxzc4x7e4RCQpQYGKUAAK0AALUAAL0AAK0QEIxra5QpKa0YGIxSUsYAAKUhIZR7e87Ozr0ICJRSUr29vYxjY6U5OaUpKa0hIb21tZwAALUICO/Ozu/GxqUxMZSEhLUYGO/W1r0YGKVCQpQQEL0pKffe3vfW1pxra5Q5OcZCQvfn585CQr2trZx7e8ZSUs5SUq05Oc5jY9ZjY84AAKWMjM5zc957e60pKdaMjOelpbWcnLWUlLVCQsYYGMYICNbOzpQICMYhIbV7e5xaWt6cnPfv79bGxt6lpe+9vc5KSs6lpb0xMc6EhM69vbUxMbUhIb1aWs61tcZaWuecnMYxMb1KSsZjY96UlNa1td7W1r17e9a9vZwQEN6trb1jY8YQENZra+fOzr1zc85aWufe3t6MjMY5OdZaWt61tdZ7e+/n5+e9vc6MjMZra+/e3ue1tdalpd7GxrUpKalL4aAAAAABdFJOUwBA5thmAAACxklEQVR42uXX/1/SQBgH8NuAoEQ2ijgbBivJLznBAiUUKiyJSgOVAk0tKZKw75mRRt/7v4MBY8ezjW39Vs8v8rqHz/u1jbvbidC/XL8KmcpOqVT6nSjXjooGw8WfFd+QWGfE4oLbtbr++PdMOy0BDYLjEj/0xevfWIyVAI7b/aIj/9WHsRrA8Yf9bqSexVgD4Lic9kWE/LgPwPGfNfJHDO4P8Iuq+S2M9QD8oUp+nxEAcFCtfgIA/14x/9ElAKDQbNQAwN9VAiYEABy0OgsAWAnB/AcBAtVWawkAfJ4CD0BQADZavYcQgI9h3CCQjpD5PcEgwG+SwLRhIL0vz78SjAPEU3hrHODfyX4I6rUJIP0G3oExoNwFXpoB+HwXmDEFpF9IwKA5YK+Tp9fMAdUOsC6YA553gKcmgdTfAhV1oMQqADndQDmJ0AZLAsFnCIV3VYDHJLAjDkZKciAaFz/lCeBJB1glgXBrNLndBWLJ9uZGAI+keTBLANL8SnWAzWRniAC2pG+6lQF0hfjTqCIBrEvjDwiggFSLuIUoLY0vEwAbUcsnc/LlnO02HGvEz+hXEeJ5Yj+4L2vNkxOJDSnlQzliIq2synr3embiUBjmw0FyU83KX04Ob+9aAK/Ppd5deZloz4HFlCHzt3sX0x2a6LcvQb4ab8r7i+DVdqvnCq/D5ZzqdhfAcr5B9wD0PNwPEu0ZnLwK9oPgNfCQJ2fhhhITJ3E8BjeUOXA+QNQlBh5xLjemVCgKjzgzNIJFjWF4yJoKhafgIWt6VHGmjgR0HvMuTipPdWQJ6AImbBRSE8aY/sC4er5xFx5vHyB4YRRpFWUf0AL4c+dHkHZRFo9TDeB9Aa3Llwjr8FlFwB+wO/rHm0VbPae9mPini/O5h/XGxatw2I6fGHAOuhiGZVxO98lTdgutP94yaIvVdqxZdpvFYTT9X9UfqQQlTXlm8wkAAAAASUVORK5CYII=
 // ==/UserScript==
 
+
 (function () {
-  var FORMAT_LABEL={'5':'FLV 240p','17':'3GP 176p','18':'MP4 360p','22':'MP4 720p','34':'FLV 360p','35':'FLV 480p','36':'3GP 320p','37':'MP4 1080p','38':'MP4 2160p','43':'WebM 360p','44':'WebM 480p','45':'WebM 720p','46':'WebM 1080p','135':'MP4 480p - no audio','137':'MP4 1080p - no audio','138':'MP4 2160p - no audio','139':'M4A 48kbps - audio','140':'M4A 128kbps - audio','141':'M4A 256kbps - audio','264':'MP4 1440p - no audio','298':'MP4 720p60 - no audio','299':'MP4 1080p60 - no audio'};
-  var FORMAT_TYPE={'5':'flv','17':'3gp','18':'mp4','22':'mp4','34':'flv','35':'flv','36':'3gp','37':'mp4','38':'mp4','43':'webm','44':'webm','45':'webm','46':'webm','135':'mp4','137':'mp4','138':'mp4','139':'m4a','140':'m4a','141':'m4a','264':'mp4','298':'mp4','299':'mp4'};
-  var FORMAT_ORDER=['17','36','5','18','34','43','35','135','44','22','298','45','37','299','46','264','38','139','140','141'];
-  var FORMAT_RULE={'flv':'max','mp4':'all','webm':'all','m4a':'max','3gp':'all'};
+  var FORMAT_LABEL={'5':'FLV 240p','18':'MP4 360p','22':'MP4 720p','34':'FLV 360p','35':'FLV 480p','37':'MP4 1080p','38':'MP4 2160p','43':'WebM 360p','44':'WebM 480p','45':'WebM 720p','46':'WebM 1080p','135':'MP4 480p - no audio','137':'MP4 1080p - no audio','138':'MP4 2160p - no audio','139':'M4A 48kbps - audio','140':'M4A 128kbps - audio','141':'M4A 256kbps - audio','264':'MP4 1440p - no audio','266':'MP4 2160p - no audio','298':'MP4 720p60 - no audio','299':'MP4 1080p60 - no audio'};
+  var FORMAT_TYPE={'5':'flv','18':'mp4','22':'mp4','34':'flv','35':'flv','37':'mp4','38':'mp4','43':'webm','44':'webm','45':'webm','46':'webm','135':'mp4','137':'mp4','138':'mp4','139':'m4a','140':'m4a','141':'m4a','264':'mp4','266':'mp4','298':'mp4','299':'mp4'};
+  var FORMAT_ORDER=['5','18','34','43','35','135','44','22','298','45','37','299','46','264','38','266','139','140','141'];
+  var FORMAT_RULE={'flv':'max','mp4':'all','webm':'none','m4a':'max'};
   // all=display all versions, max=only highest quality version, none=no version  
   // the default settings show all MP4 videos, the highest quality FLV and no WebM
-  var SHOW_DASH_FORMATS=true;
-  var BUTTON_TEXT={'ar':'تنزيل','cs':'Stáhnout','de':'Herunterladen','en':'Download','es':'Descargar','fr':'Télécharger','hi':'डाउनलोड','hu':'Letöltés','id':'Unduh','it':'Scarica','ja':'ダウンロード','ko':'내려받기','pl':'Pobierz','pt':'Baixar','ro':'Descărcați','ru':'Скачать','tr':'İndir','zh':'下载'};
-  var BUTTON_TOOLTIP={'ar':'تنزيل هذا الفيديو','cs':'Stáhnout toto video','de':'Dieses Video herunterladen','en':'Download this video','es':'Descargar este vídeo','fr':'Télécharger cette vidéo','hi':'वीडियो डाउनलोड करें','hu':'Videó letöltése','id':'Unduh video ini','it':'Scarica questo video','ja':'このビデオをダウンロードする','ko':'이 비디오를 내려받기','pl':'Pobierz plik wideo','pt':'Baixar este vídeo','ro':'Descărcați acest videoclip','ru':'Скачать это видео','tr': 'Bu videoyu indir','zh':'下载此视频'};
+  var SHOW_DASH_FORMATS=false;
+  var BUTTON_TEXT={'ar':'تنزيل','cs':'Stáhnout','de':'Herunterladen','en':'Download','es':'Descargar','fr':'Télécharger','hi':'डाउनलोड','hu':'Letöltés','id':'Unduh','it':'Scarica','ja':'ダウンロード','ko':'내려받기','pl':'Pobierz','pt':'Baixar','ro':'Descărcați','ru':'Скачать','tr':'İndir','zh':'下载','zh-TW':'下載'};
+  var BUTTON_TOOLTIP={'ar':'تنزيل هذا الفيديو','cs':'Stáhnout toto video','de':'Dieses Video herunterladen','en':'Download this video','es':'Descargar este vídeo','fr':'Télécharger cette vidéo','hi':'वीडियो डाउनलोड करें','hu':'Videó letöltése','id':'Unduh video ini','it':'Scarica questo video','ja':'このビデオをダウンロードする','ko':'이 비디오를 내려받기','pl':'Pobierz plik wideo','pt':'Baixar este vídeo','ro':'Descărcați acest videoclip','ru':'Скачать это видео','tr': 'Bu videoyu indir','zh':'下载此视频','zh-TW':'下載此影片'};
   var DECODE_RULE=[];
   var RANDOM=7489235179; // Math.floor(Math.random()*1234567890);
   var CONTAINER_ID='download-youtube-video'+RANDOM;
@@ -48,14 +49,32 @@
   var STORAGE_CODE='download-youtube-signature-code';
   var STORAGE_DASH='download-youtube-dash-enabled';
   var isDecodeRuleUpdated=false;  
-    
+  
+  // Joey added low-quality formats for users with low bandwidth
+  FORMAT_LABEL['17'] = '3GP 176p';
+  FORMAT_LABEL['36'] = '3GP 320p';
+  FORMAT_TYPE['17'] = '3gp';
+  FORMAT_TYPE['36'] = '3gp';
+  FORMAT_ORDER.unshift('36');
+  FORMAT_ORDER.unshift('17');
+  //FORMAT_RULE['3gp'] = 'min';
+  FORMAT_RULE['3gp'] = 'all';
+  //FORMAT_RULE['webm'] = 'all';
+  FORMAT_RULE['flv'] = 'none';
+  //FORMAT_RULE['mp4'] = 'max';
+  SHOW_DASH_FORMATS = true;
+  
   start();
           
 function start() {
   var pagecontainer=document.getElementById('page-container');
   if (!pagecontainer) return;
-  if (/^https?:\/\/www\.youtube.com\/watch\?/.test(window.location.href)) run();     
+  if (/^https?:\/\/www\.youtube.com\/watch\?/.test(window.location.href)) run();       
   var isAjax=/class[\w\s"'-=]+spf\-link/.test(pagecontainer.innerHTML);
+  var logocontainer=document.getElementById('logo-container');  
+  if (logocontainer && !isAjax) { // fix for blocked videos
+    isAjax=(' '+logocontainer.className+' ').indexOf(' spf-link ')>=0;
+  }
   var content=document.getElementById('content');
   if (isAjax && content) { // Ajax UI
       var mo=window.MutationObserver||window.WebKitMutationObserver;
@@ -64,7 +83,8 @@ function start() {
           mutations.forEach(function(mutation) {
               if(mutation.addedNodes!==null) {
                 for (var i=0; i<mutation.addedNodes.length; i++) {
-                    if (mutation.addedNodes[i].id=='watch7-container') { // old value: movie_player
+                    if (mutation.addedNodes[i].id=='watch7-container' ||
+                        mutation.addedNodes[i].id=='watch7-main-container') { // old value: movie_player
                       run();
                       break;
                     }
@@ -80,7 +100,8 @@ function start() {
 }
 
 function onNodeInserted(e) { 
-    if (e && e.target && e.target.id=='watch7-container') { // old value: movie_player
+    if (e && e.target && (e.target.id=='watch7-container' || 
+        e.target.id=='watch7-main-container')) { // old value: movie_player
       run();
   }
 }
@@ -120,7 +141,7 @@ function run() {
   }  
   
   if (videoID==null) { // unsafeWindow workaround (Chrome, Opera 15+)
-    var buffer=document.getElementById(DEBUG_ID+'2')
+    var buffer=document.getElementById(DEBUG_ID+'2');
     if (buffer) {
       while (buffer.firstChild) {
         buffer.removeChild(buffer.firstChild);
@@ -128,7 +149,7 @@ function run() {
     } else {
       buffer=createHiddenElem('pre', DEBUG_ID+'2');
     }    
-    injectScript ('document.getElementById("'+DEBUG_ID+'2").appendChild(document.createTextNode(\'"video_id":"\'+ytplayer.config.args.video_id+\'", "js":"\'+ytplayer.config.assets.js+\'", "dashmpd":"\'+ytplayer.config.args.dashmpd+\'", "url_encoded_fmt_stream_map":"\'+ytplayer.config.args.url_encoded_fmt_stream_map+\'", "adaptive_fmts":"\'+ytplayer.config.args.adaptive_fmts+\'"\'));');
+    injectScript ('if(ytplayer&&ytplayer.config&&ytplayer.config.args){document.getElementById("'+DEBUG_ID+'2").appendChild(document.createTextNode(\'"video_id":"\'+ytplayer.config.args.video_id+\'", "js":"\'+ytplayer.config.assets.js+\'", "dashmpd":"\'+ytplayer.config.args.dashmpd+\'", "url_encoded_fmt_stream_map":"\'+ytplayer.config.args.url_encoded_fmt_stream_map+\'", "adaptive_fmts":"\'+ytplayer.config.args.adaptive_fmts+\'"\'));}');
     var code=buffer.innerHTML;
     if (code) {
       videoID=findMatch(code, /\"video_id\":\s*\"([^\"]+)\"/);
@@ -151,7 +172,9 @@ function run() {
       videoManifestURL=findMatch(bodyContent, /\"dashmpd\":\s*\"([^\"]+)\"/);
       if (scriptURL==null) {
         scriptURL=findMatch(bodyContent, /\"js\":\s*\"([^\"]+)\"/);
-        scriptURL=scriptURL.replace(/\\/g,'');
+        if (scriptURL) {
+          scriptURL=scriptURL.replace(/\\/g,'');
+        }
       }      
     }
     debug('DYVAM - Info: Brute mode. videoID '+(videoID?videoID:'none')+'; ');
@@ -273,7 +296,7 @@ function run() {
       }
       showFormat[format]=showFormat['37'];
     } else if (format=='38' && videoURL[format]==undefined) { // hack for dash 4K
-      if (videoURL['138']) {
+      if (videoURL['138'] && !videoURL['266']) {
        format='138';
       }
       showFormat[format]=showFormat['38'];
@@ -359,8 +382,8 @@ function run() {
   } else { // old UI
     buttonElement.setAttribute('class', 'yt-uix-button yt-uix-tooltip yt-uix-button-empty yt-uix-button-text');
     buttonElement.setAttribute('style', 'margin-top:4px; margin-left:'+((textDirection=='left')?5:10)+'px;');
-    buttonElement.setAttribute('data-tooltip-text', buttonLabel);
   }
+  buttonElement.setAttribute('data-tooltip-text', buttonLabel);  
   buttonElement.setAttribute('type', 'button');
   buttonElement.setAttribute('role', 'button');
   buttonElement.addEventListener('click', function(){return false;}, false);
@@ -377,11 +400,11 @@ function run() {
     parentElement.insertBefore(containerSpan, parentElement.firstChild);
   }
     
-  if (!isSignatureUpdatingStarted) {
-    for (var i=0;i<downloadCodeList.length;i++) {    
+  // REPLACEWITH if (!isSignatureUpdatingStarted) {
+    for (var i=0;i<downloadCodeList.length;i++) { 
       addFileSize(downloadCodeList[i].url, downloadCodeList[i].format);
     }
-  } 
+  // } 
   
   if (typeof GM_download !== 'undefined') {
     for (var i=0;i<downloadCodeList.length;i++) {
