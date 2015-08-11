@@ -115,7 +115,16 @@ function loadCaptions (select) {
                                      getElementsByTagName('track');
                                 
       if (captions.length === 0) {
-        return select.options[0].textContent = 'No captions.';
+        if (select) {
+          select.options[0].textContent = 'No captions.';
+          select.disabled = true;
+        }
+        select = document.getElementById(FORMAT_SELECTOR_ID);
+        if (select) {
+          select.options[0].textContent = 'No captions.';
+          select.disabled = true;
+        }
+        return;
       }
 
       for (var i = 0, il = captions.length; i < il; i++) {
@@ -158,9 +167,9 @@ function loadFormats (select) {
   var div      = document.createElement('div'),
       select   = document.createElement('select'),
       option   = document.createElement('option'),
-      controls = document.getElementById('watch7-headline');
+      controls = document.getElementById('watch8-action-buttons') || document.getElementsByClassName("watch-action-buttons")[0] || document.getElementById('watch7-headline');
 
-  div.setAttribute( 'style', 'display: inline-block;' );
+  div.setAttribute( 'style', 'display: inline-block; margin: 6px;' );
 
   select.id       = 'captions_selector';
   select.disabled = true;
@@ -180,7 +189,7 @@ function loadFormats (select) {
       format_select    = document.createElement('select'),
       format_option    = document.createElement('option');
 
-  format_div.setAttribute('style', 'display: inline-block;');
+  format_div.setAttribute('style', 'display: inline-block; margin: 6px;');
 
   format_select.id         = FORMAT_SELECTOR_ID;
   format_select.disabled   = true;
