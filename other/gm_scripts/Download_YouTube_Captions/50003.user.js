@@ -1,12 +1,18 @@
 // ==UserScript==
 // @name           Download YouTube Captions
-// @namespace      http://userscripts.org/users/tim
+// @namespace      DYTC
+// @description    Lets you download the captions of a YouTube video in SRT or TXT format, if they exist.
 // @include        http://*youtube.com/watch*
 // @include        https://*youtube.com/watch*
-// @author         Tim Smart
-// @copyright      2009 Tim Smart; 2011 gw111zz
+// @author         Tim Smart, gw111zz, joeytwiddle
+// @copyright      2009 Tim Smart; 2011 gw111zz; 2015 joeytwiddle
 // @license        GNU GPL v3.0 or later. http://www.gnu.org/copyleft/gpl.html
+// @version        1.0.1
+// @grant          GM_xmlhttpRequest
+// @grant          GM_openInTab
 // ==/UserScript==
+
+// TODO: Auto-update when video changes.
 
 var PLAYER              = unsafeWindow.document.getElementById('movie_player'),
     VIDEO_ID            = unsafeWindow.yt.getConfig('VIDEO_ID'),
