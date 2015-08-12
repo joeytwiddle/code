@@ -383,6 +383,8 @@ function run() {
     buttonElement.setAttribute('class', 'yt-uix-button yt-uix-tooltip yt-uix-button-empty yt-uix-button-text');
     buttonElement.setAttribute('style', 'margin-top:4px; margin-left:'+((textDirection=='left')?5:10)+'px;');
   }
+  buttonElement.style.border = '1px solid grey';
+  buttonElement.style.borderColor = '#ddd #bbb #bbb #ddd';
   buttonElement.setAttribute('data-tooltip-text', buttonLabel);  
   buttonElement.setAttribute('type', 'button');
   buttonElement.setAttribute('role', 'button');
