@@ -2,9 +2,11 @@
 // @name           YouTube Popout Button
 // @description    Provides a button to pupout the current YouTube video in a new window.
 // @downstreamURL  http://userscripts.org/scripts/source/150631.user.js
-// @version        1.0.0
+// @version        1.0.1
 // @include        http://*.youtube.com/watch*
 // @include        http://youtube.com/watch*
+// @include        https://*.youtube.com/watch*
+// @include        https://youtube.com/watch*
 // ==/UserScript==
 
 // This is a combination of two scripts I found:
