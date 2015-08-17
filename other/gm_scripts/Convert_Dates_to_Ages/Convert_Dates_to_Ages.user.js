@@ -2,7 +2,9 @@
 // @name           Convert Dates to Ages
 // @namespace      CDTA
 // @description    Looks for dates displayed on the current page and converts them to ages of the form "3 days 6 hours ago".
+// @version        1.2.3
 // @include        http://*/
+// @grant          none
 // ==/UserScript==
 
 function getAgeFromDate(date,significantFigures) {
@@ -125,7 +127,7 @@ for (var i=elements.length-1; i-->0; ) {
 		text = elem.innerText;
 	if (text && text.length) {
 		// Firefox date parsing is a little strict:
-		text = text.trim().replace('-','/','g');
+		text = text.trim().replace(/-/g,'/');
 		// Firefox will also pick the 19th century if none is specified:
 		text = text.replace(/(\d+\/\d+)\/(\d\d)/,'$1/20$2');
 		// If it is just a number, then it is not a date!
