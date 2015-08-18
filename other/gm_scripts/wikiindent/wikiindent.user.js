@@ -3,7 +3,7 @@
 // @namespace      joeytwiddle
 // @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // @downstreamURL  http://userscripts.org/scripts/source/60832.user.js
-// @version        1.2.6
+// @version        1.2.8
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
@@ -41,8 +41,10 @@ var fixUnderlinesToOverlines = true;
 // var minimisedSidebarSize = 6;   // Small
 var minimisedSidebarSize = 16;
 
-// Wikipedia's new transition displays the sidebar text before there is space
-// for it, causing brief ugly overlap!  So we delay unhiding to look prettier.
+// When opening the sidebar again, the transition displays the sidebar contents
+// before there is space for it, causing brief ugly overlap!  So we delay
+// unhiding to look prettier.
+// CONSIDER: Perhaps this could look even smoother if the text appeared/disappeared using opacity.
 var delayHide = 0;
 var delayUnhide = ( document.getElementById("mw-panel") ? 250 : 0 );
 
@@ -55,10 +57,6 @@ var debug = false;
  * FIXED: One occasional problem with the TOC is when it is taller than the
  *      window!  (I usually work around this by zooming out (reducing font
  *      size), but perhaps we can use CSS overflow to solve it properly.)
- *
- * NOTE: The sidebar toggle now animates smoothly.  This is caused by animation
- * rules in Wikipedia's CSS.  I don't know why they are there, I haven't seen
- * anything that makes use of them, except by circumstance, this script!
  *
  * TODO: Indentation was not working well in edit preview on Hwiki(MW).
 */
@@ -319,6 +317,8 @@ function doIt() {
 				if (debug) { GM_log("evt=",evt); }
 				// if (evt) GM_log("evt.target.tagName="+evt.target.tagName);
 				/* We put the GM_setValue calls on timers, so they won't slow down the rendering. */
+				// Make the change animate smoothly:
+				content.style.transition = 'all 150ms ease-in-out';
 				if (sideBar) {
 					if (sideBar.style.display == '') {
 						// Wikipedia's column-one contains a lot of things we want to hide
