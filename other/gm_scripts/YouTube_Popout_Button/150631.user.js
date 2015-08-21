@@ -2,11 +2,12 @@
 // @name           YouTube Popout Button
 // @description    Provides a button to pupout the current YouTube video in a new window.
 // @downstreamURL  http://userscripts.org/scripts/source/150631.user.js
-// @version        1.0.1
+// @version        1.0.2
 // @include        http://*.youtube.com/watch*
 // @include        http://youtube.com/watch*
 // @include        https://*.youtube.com/watch*
 // @include        https://youtube.com/watch*
+// @grant          none
 // ==/UserScript==
 
 // This is a combination of two scripts I found:
@@ -19,6 +20,7 @@
     // Create Button
     var divWatchHeadline = document.evaluate("//div[@id='watch-actions']", document, null, XPathResult.ANY_UNORDERED_NODE_TYPE, null).singleNodeValue;
     divWatchHeadline = divWatchHeadline || document.getElementById("watch7-secondary-actions");
+    divWatchHeadline = divWatchHeadline || document.getElementById("watch8-secondary-actions");
     divWatchHeadline.appendChild(document.createTextNode("\n"));
     var buttonPopout = divWatchHeadline.appendChild(document.createElement("button"));
     divWatchHeadline.appendChild(document.createTextNode("\n"));
