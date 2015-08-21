@@ -2,8 +2,10 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.2.0
+// @version        1.2.1
 // @include        *
+// @run-at         document-start
+// @grant          none
 // ==/UserScript==
 
 var SCROLL_AMOUNT = 60;
