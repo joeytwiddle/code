@@ -15,7 +15,7 @@
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // @exclude        http://neuralyte.org/~joey/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // @grant          none
-// @version        1.2.4
+// @version        1.2.5
 // ==/UserScript==
 
 // BUG: We had (i%32) in a userscript (DLT) but when this was turned into a bookmarklet and dragged into Chrome, the debugger showed it had become (i2), causing the script to error with "i2 is not defined".  Changing the code to (i % 32) worked around the problem.
@@ -215,30 +215,24 @@ var sourcesLoaded = {};
 
 // My first "promise":
 function getSourceFor(url) {
-
-	var handler;
-
-	function handlerFn(res) {
-		var source = res.responseText;
-		if (handler) {
-			handler(source);
-		}
-	}
-
-	function onErrorFn(res) {
-		reportError("Failed to load "+url+": HTTP "+res.status);
-	}
-
-	// I found this was needed one time on Chrome!
-	// It probably doesn't need to be linked to preventCachingOfInstallScripts or preventBrowserFromCachingBookmarklets.
-	url += "?dummy="+Math.random();
-	console.log("Loading "+url);
-	getURLThen(url,handlerFn,onErrorFn);
-
 	return {
 		then: function(handleResponse){
-			handler = handleResponse;
-			// TODO: return next promise
+			// I found this was needed one time on Chrome!
+			// It probably doesn't need to be linked to preventCachingOfInstallScripts or preventBrowserFromCachingBookmarklets.
+			url += "?dummy="+Math.random();
+			console.log("Loading "+url);
+			getURLThen(url, handlerFn, onErrorFn);
+
+			function handlerFn(res) {
+				var source = res.responseText;
+				handleResponse(source);
+			}
+
+			function onErrorFn(res) {
+				reportError("Failed to load "+url+": HTTP "+res.status);
+			}
+
+			// CONSIDER: We should return the next promise?
 		}
 	};
 }
@@ -274,7 +268,9 @@ function buildStaticBookmarklet(link) {
 		newLink.onmouseover = null; // once
 	};
 
-	function whenGot(staticSrc) {
+	function whenGot(staticSrc, report) {
+
+		var extraText = "";
 
 		// Does it parse?
 		try {
@@ -303,57 +299,81 @@ function buildStaticBookmarklet(link) {
 			newLink.textContent = newLink.textContent + " ("+dateStr+")";
 		}
 
+		if (report.needsGMFallbacks) {
+			extraText += " uses GM";
+		} else {
+			extraText += " GM free";
+		}
+
+		if (extraText) {
+			newLink.parentNode.insertBefore( document.createTextNode(extraText), newLink.nextSibling);
+		}
+
 		// Just in case the browser is dumb, force it to re-analyse the link.
-		newLink.parentNode.insertBefore(newLink,newLink.nextSibling);
+		newLink.parentNode.insertBefore(newLink, newLink.nextSibling);
 	}
 
 	return newContainer;
 
 }
 
-function getStaticBookmarkletFromUserscript(href,callback) {
+function getStaticBookmarkletFromUserscript(href, callbackGotStatic) {
 
-	var scriptsToLoad = defaultScripts.slice(0);
-	scriptsToLoad.push(href);
+	getSourceFor(href).then(function (userscriptSource) {
+		var hasGrantNone = userscriptSource.match('\\n//\\s*@grant\\s+none\\s*\\n');
+		var needsGMFallbacks = ! hasGrantNone;
 
-	var scriptSources = [];
-	var numLoaded = 0;
+		var scriptsToLoad = needsGMFallbacks ? defaultScripts.slice(0) : [];
 
-	function loadSourceIntoArray(i) {
-		getSourceFor(scriptsToLoad[i]).
-		then(function(source){
-			if (!source) {
-				reportError("Failed to acquire source for: "+href);
+		loadScripts(scriptsToLoad, allSourcesLoaded);
+
+		function allSourcesLoaded(scriptSources) {
+			scriptSources.push(userscriptSource);
+
+			var toRun = "";
+			for (var i=0; i<scriptSources.length; i++) {
+				if (!scriptSources[i]) {
+					reportError("Expected contents of "+scriptsToLoad[i]+" but got: "+scriptSources[i]);
+				}
+				var cleaned = cleanupSource(scriptSources[i]);
+				toRun += "(function(){\n";
+				toRun += cleaned;
+				toRun += "})();\n";
 			}
-			scriptSources[i] = source;
-			numLoaded++;
-			if (numLoaded == scriptsToLoad.length) {
-				allSourcesLoaded();
-			}
-		});
-	}
+			toRun += "(void 0);";
 
-	for (var i=0;i<scriptsToLoad.length;i++) {
-		loadSourceIntoArray(i);
-	}
+			var report = {
+				needsGMFallbacks: needsGMFallbacks,
+			};
 
-	function allSourcesLoaded() {
-
-		var toRun = "";
-
-		for (var i=0;i<scriptSources.length;i++) {
-			if (!scriptSources[i]) {
-				reportError("Expected contents of "+scriptsToLoad[i]+" but got: "+scriptSources[i]);
-			}
-			var cleaned = cleanupSource(scriptSources[i]);
-			toRun += "(function(){\n";
-			toRun += cleaned;
-			toRun += "})();\n";
+			callbackGotStatic(toRun, report);
 		}
-		toRun += "(void 0);";
+	});
 
-		callback(toRun);
+	function loadScripts(scriptsToLoad, callbackScriptsLoaded) {
+		if (scriptsToLoad.length === 0) {
+			return callbackScriptsLoaded([]);
+		}
 
+		var scriptSources = [];
+		var numLoaded = 0;
+
+		for (var i=0; i<scriptsToLoad.length; i++) {
+			loadSourceIntoArray(i);
+		}
+
+		function loadSourceIntoArray(i) {
+			getSourceFor(scriptsToLoad[i]).then(function(source){
+				if (!source) {
+					reportError("Failed to acquire source for: "+href);
+				}
+				scriptSources[i] = source;
+				numLoaded++;
+				if (numLoaded == scriptsToLoad.length) {
+					callbackScriptsLoaded(scriptSources);
+				}
+			});
+		}
 	}
 
 }
