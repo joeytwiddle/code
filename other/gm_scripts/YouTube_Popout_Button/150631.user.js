@@ -2,7 +2,7 @@
 // @name           YouTube Popout Button
 // @description    Provides a button to pupout the current YouTube video in a new window.
 // @downstreamURL  http://userscripts.org/scripts/source/150631.user.js
-// @version        1.0.2
+// @version        1.0.4
 // @include        http://*.youtube.com/watch*
 // @include        http://youtube.com/watch*
 // @include        https://*.youtube.com/watch*
@@ -57,8 +57,11 @@
        var ytvidid = gup( 'v' );
 
        if (ytvidid != null) {
-          var link = "http://www.youtube.com/watch_popup?v=";
-          var flink = link+ytvidid;
+          //var link = "http://www.youtube.com/watch_popup?v=";
+          //var flink = link+ytvidid;
+          // The above URL gets redirected to https://www.youtube.com/embed/bNcWVUfwmS4&autoplay=1#at=6
+          // And the redirect causes autoplay to not work.  So let's go directly to the target URL.
+          var flink = "https://www.youtube.com/embed/" + ytvidid + "?autoplay=1";
           var lcheck = location.href;
           if(lcheck != flink){
 
