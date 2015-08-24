@@ -740,6 +740,9 @@
 
 		if (FJSL.interceptEvents) {
 
+			// This store helps us to remove the wrapped event listeners which we add
+			var wrapped_and_unwrapped = [];
+
 			var realAddEventListener = HTMLElement.prototype.addEventListener;
 			// HTMLElement.prototype.oldAddEventListener = realAddEventListener;
 			HTMLElement.prototype.addEventListener = function(type,handler,capture,other){
@@ -765,8 +768,8 @@
 							}
 						}
 					}
-					// handler.call(this,evt);
-					tryToDo(handler,this,[evt]);
+					// return handler.apply(this,arguments);
+					return tryToDo(handler,this,arguments);
 				};
 				// tryToDo(realAddEventListener,this,type,handler,capture,other);
 				/*
@@ -780,7 +783,28 @@
 				/*
 				tryToDo(realAddEventListener,this,[type,newHandler,capture,other]);
 				*/
-				realAddEventListener.call(this,type,newHandler,capture,other);
+				wrapped_and_unwrapped.push({
+					unwrapped: handler,
+					wrapped: newHandler,
+				});
+				return realAddEventListener.call(this,type,newHandler,capture,other);
+			};
+
+			// We cannot remove the original handler, because it was never added.  Instead we need to remove the wrapper that we did add.
+			var realRemoveEventListener = HTMLElement.prototype.removeEventListener;
+			// HTMLElement.prototype.oldRemoveEventListener = realAddEventListener;
+			HTMLElement.prototype.removeEventListener = function(type,handler,capture,other){
+				console.log("removeEventListener was called with:",type,handler);
+				try { throw new Error("dummy for stacktrace"); } catch (e) { console.log("At:",e); }
+				for (var i = wrapped_and_unwrapped.length; i--;) {
+					var both = wrapped_and_unwrapped[i];
+					if (handler === both.unwrapped) {
+						handler = both.wrapped;
+						wrapped_and_unwrapped.splice(i,1);
+						break;
+					}
+				}
+				return realRemoveEventListener.call(this,type,handler,capture,other);
 			};
 
 		}
