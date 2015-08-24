@@ -507,7 +507,8 @@
 				// throw e;
 				// Unfortunately even Chrome dev shows the throw as coming from here!
 				// So it is better if we leave it alone.
-				return false;
+				// No, it is better if we throw it.  That is what the function's caller expects.
+				throw e;
 			}
 
 		}
