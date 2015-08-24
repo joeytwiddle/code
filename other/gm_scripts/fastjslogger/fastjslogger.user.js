@@ -795,8 +795,8 @@
 			var realRemoveEventListener = HTMLElement.prototype.removeEventListener;
 			// HTMLElement.prototype.oldRemoveEventListener = realAddEventListener;
 			HTMLElement.prototype.removeEventListener = function(type,handler,capture,other){
-				console.log("removeEventListener was called with:",type,handler);
-				try { throw new Error("dummy for stacktrace"); } catch (e) { console.log("At:",e); }
+				//console.log("removeEventListener was called with:",type,handler);
+				//try { throw new Error("dummy for stacktrace"); } catch (e) { console.log("At:",e); }
 				for (var i = wrapped_and_unwrapped.length; i--;) {
 					var both = wrapped_and_unwrapped[i];
 					if (handler === both.unwrapped) {
