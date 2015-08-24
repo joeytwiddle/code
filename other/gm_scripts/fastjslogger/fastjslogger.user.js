@@ -17,6 +17,14 @@
 	}
 	var FJSL = window.FJSL;
 
+	// @concern Don't double-load
+	// I haven't actually had any problems from double loading, but it seems silly to have two loggers.
+	if (FJSL.loaded) {
+		console.log("FJSL refusing to load a second time.");
+		return;
+	}
+	FJSL.loaded = true;
+
 	FJSL.defaults = {
 		autoHide:    true,       // hides some time after displaying, even if you are focused on it!
 		startHidden: true,
