@@ -478,44 +478,42 @@
 
 		// Some more library functions:
 
-		function tryToDo(fn,target,args) {
-
+		function tryToDo(fn, target, args) {
 			try {
 
-				fn.apply(target,args);
-				return true;
+				return fn.apply(target, args);
 
 			} catch (e) {
 				// Actually hard to read!
-				// var prettyFn = fn; // (""+fn) .replace(/\n/g,'\\n');
+				// var prettyFn = fn; // ("" + fn) .replace(/\n/g,'\\n');
 				var fnName = fn && fn.name;
 				if (!fnName) {
 					fnName = "<anonymous>";
 				}
-				// console.log("[ERR]",e,prettyFn);
-				// console.log("[Exception]",e,"from "+fnName+"()");
+				// console.log("[ERR]", e, prettyFn);
+				// console.log("[Exception]", e, "from " + fnName + "()");
 				if (e.stack) {
-					console.error("!! "+e.stack);
+					console.error("!! " + e.stack);
 				} else if (e.lineNumber) {
-					console.error("!! "+e+" on "+e.lineNumber+")");
+					console.error("!! " + e + " on " + e.lineNumber + ")");
 				} else {
-					console.error("!!",e);
+					console.error("!!", e);
 				}
-				// var prettyFn = (""+fn).replace(/\n/,/ /,'g');
+				// var prettyFn = ("" + fn).replace(/\n/,/ /, 'g');
 				var prettyFn = shortenString(fn);
-				console.error("occurred when calling: "+prettyFn);
-				// throw e;
-				// Unfortunately even Chrome dev shows the throw as coming from here!
-				// So it is better if we leave it alone.
-				// No, it is better if we throw it.  That is what the function's caller expects.
+				console.error("occurred when calling: " + prettyFn);
+				// If we rethrow the error, browser devtools will show the throw as coming from here!
+				// But we should throw it anyway.  That is what the function's caller expects.
+				// At one point we tried to reproduce the error by calling fn again, but not catching it.
+				// However this is a dangerous tactic.  What if fn() creates a setTimeout before throwing its exception?  Then calling it again would produce a second setTimeout!
+				//return fn.apply(target, args);
 				throw e;
 			}
-
 		}
 
 		function showObject(obj) {
 			return "{ " + Object.keys(obj).map(function(prop) {
-				return prop+": "+shortenString(obj[prop]);
+				return prop + ": " + shortenString(obj[prop]);
 			}).join(", ") + " }";
 		}
 
@@ -750,21 +748,9 @@
 							}
 						}
 					}
-					// return handler.apply(this,arguments);
-					return tryToDo(handler,this,arguments);
+					return tryToDo(handler, this, arguments);
+					// return handler.apply(this, arguments);
 				};
-				// tryToDo(realAddEventListener,this,type,handler,capture,other);
-				/*
-				var that = this;
-				tryToDo(function(){
-					realAddEventListener.call(that,type,newHandler,capture,other);
-					//realAddEventListener.apply(that,[type,handler,capture,other]);
-					//that.oldAddEventListener(type,handler,capture,other);
-				});
-				*/
-				/*
-				tryToDo(realAddEventListener,this,[type,newHandler,capture,other]);
-				*/
 				wrapped_and_unwrapped.push({
 					unwrapped: handler,
 					wrapped: newHandler,
