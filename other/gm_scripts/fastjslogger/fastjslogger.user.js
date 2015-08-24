@@ -700,14 +700,21 @@
 
 					if (!passed) {
 
-						// tryToDo has caught and reported the Error, but it is nice to let
-						// it fall out to the browser, since browsers often have nifty features.
+						// tryToDo has caught and reported the Error, but it is nice
+						// to reproduce the Error for the browser, which might have
+						// devtools that can make use of it.
 
+						// DO NOT DO THIS!  It can cause an infinite loop sometimes.
+						// E.g. if the function creates a setTimeout before it fails
+						/*
 						console.log("Re-running to reproduce stack-trace (may fail)");
 						fn();
 						throw new Error("Re-run failed to produce any error!",fn);
+						*/
 
 					}
+
+					// We don't need to return here.  setTimeout won't do anything with the returned value.
 
 				};
 
