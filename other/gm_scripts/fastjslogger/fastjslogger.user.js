@@ -678,48 +678,29 @@
 
 		if (FJSL.interceptTimeouts) {
 
-			window.setTimeout = function(fn,ms) {
+			window.setTimeout = function(fn, ms) {
 				if (FJSL.logTimeouts) {
 					// TODO: We used to pass ,fn to log here.  That was nice in Chrome, because we can fold it open or closed, but too spammy for plain FJSL.  Recommendation: Refactor out prettyShow() fn which will determine browser and provide raw object for chrome or shortened string for noob browsers?
 					console.info("[EVENT] setTimeout() called: "+ms+", "+shortenString(fn));
 				}
 				var wrappedFn = function(){
-
-					// We can catch the error here, but if we do, even if we throw it again, the Chrome debugger shows this function as the source.
-					// It is preferable to let the error fall up to Chrome, so we can easily jump to the line number.
-					// Unfortunately, if we don't catch the error, we can't report it to FJSL!
-
+					// setTimeout can be passed a string.  But we want a function so we can call it later.
 					if (typeof fn === 'string') {
 						var str = fn;
 						fn = function(){ eval(str); };
 					}
-					if (!typeof fn === 'function') {
-						throw new Error("[FJSL] setTimeout was not given a function!",fn);
+					// CONSIDER: Of dubious value
+					if (typeof fn !== 'function') {
+						console.error("[FJSL] setTimeout was not given a function!",fn);
+						return;
 					}
 
-					var passed = tryToDo(fn);
-
-					if (!passed) {
-
-						// tryToDo has caught and reported the Error, but it is nice
-						// to reproduce the Error for the browser, which might have
-						// devtools that can make use of it.
-
-						// DO NOT DO THIS!  It can cause an infinite loop sometimes.
-						// E.g. if the function creates a setTimeout before it fails
-						/*
-						console.log("Re-running to reproduce stack-trace (may fail)");
-						fn();
-						throw new Error("Re-run failed to produce any error!",fn);
-						*/
-
-					}
-
-					// We don't need to return here.  setTimeout won't do anything with the returned value.
-
+					// We don't really need to return here.  setTimeout won't do anything with the returned value.
+					// Similarly it probably hasn't passed us any arguments.  The context object 'this' is probably 'window'.
+					return tryToDo(fn, this, arguments);
 				};
 
-				return oldSetTimeout(wrappedFn,ms);
+				return oldSetTimeout(wrappedFn, ms);
 			};
 
 		}
