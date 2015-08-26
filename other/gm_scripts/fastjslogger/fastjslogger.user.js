@@ -176,8 +176,9 @@
 			// Must set the colors again, in case the page defined its own bg or fg color for pres that conflicts ours.
 			css += " .fastJSLogger > pre  { background-color: #ffffcc; color: black; }";
 			// css += " .fastJSLogger > pre > input { width: 100%, background-color: #888888; }";
-			css += " .fastJSLogger        { opacity: 0.8; } ";
-			css += " .fastJSLogger:hover  { opacity: 1.0; } ";
+			css += " .fastJSLogger        { opacity: 0.1; transition: opacity 1s ease-out; } ";
+			css += " .fastJSLogger:hover  { opacity: 1.0; transition: opacity 400ms linear; } ";
+			css += " .fastJSLogger.notifying { opacity: 1.0; transition: opacity 200ms linear; } ";
 			if (document.location.host.match(/wikipedia/))
 				css += " .fastJSLogger > pre  { font-size: 60%; }";
 			else
@@ -317,22 +318,40 @@
 
 		}
 
+		function debounce(duration, fn) {
+			var timer = null;
+			return function() {
+				clearTimeout(timer);
+				timer = setTimeout(fn, duration);
+			};
+		}
+
+		var clearOpacity = debounce(3000, function(){
+			//logDiv.style.opacity = '';
+			logDiv.className = logDiv.className.replace(/(^|\s)notifying(\s|$)/, '');
+		});
+
 		function showLogger() {
 			if (logDiv) {
-				logDiv.style.display = '';
+				// logDiv.style.display = '';
 				//// BUG: Transition is not working!  Perhaps it only works when switching between CSS classes.
 				// logDiv.style._webkit_transition_property = 'opacity';
 				// logDiv.style._webkit_transition_duration = '2s';
-				logDiv.style.opacity = 1.0;
+				//logDiv.style.opacity = 1.0;
+				if (!logDiv.className.match(/(^|\s)notifying(\s|$)/)) {
+					logDiv.className += " notifying";
+				}
+				clearOpacity();
 			}
 		}
 
 		function hideLogger() {
 			if (logDiv) {
-				logDiv.style.display = 'none';
+				// logDiv.style.display = 'none';
 				// logDiv.style._webkit_transition_property = 'opacity';
 				// logDiv.style._webkit_transition_duration = '2s';
 				// logDiv.style.opacity = 0.0;
+				clearOpacity();
 			}
 		}
 
