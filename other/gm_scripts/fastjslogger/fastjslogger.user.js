@@ -266,22 +266,26 @@
 
 			if (logContainer) {
 
-				// We cannot do arguments.join (FF4)
 				var out = "";
 				for (var i=0;i<arguments.length;i++) {
 					var obj = arguments[i];
-					var str = ""+obj;
+					var str = "" + obj;
+					if (obj && obj.constructor === "Array") {
+						str = "[" + obj.map(showObject).join(", ") + "]";
+					}
 					// Non-standard: inform type if toString() is dull.
-					if (str === "[object Object]" && typeof obj === 'object' /*&& obj!==null*/) {
-						if (obj.constructor) {
-							str = "[object "+obj.constructor.name+"]";
-						} else {
-							// str += " [no type]";
+					if (str === "[object Object]") {
+						str = "";
+						if (typeof obj !== 'object') {
+							str += "(" + (typeof obj) + ")";
 						}
+						if (obj.constructor && obj.constructor.name) {
+							str = "[" + obj.constructor.name + "]";
+						}
+						str += showObject(obj);
+					} else {
 					}
-					if (str.length > 202) {
-						str = shortenString(str);
-					}
+					str = shortenString(str);
 					var gap = (i>0?' ':'');
 					out += gap + str;
 				}
@@ -538,6 +542,7 @@
 			}
 		}
 
+		// TODO: Unify showObject and shortenString with replay.js's toDetailedString and toSimpleString.
 		function showObject(obj) {
 			return "{ " + Object.keys(obj).map(function(prop) {
 				return prop + ": " + shortenString(obj[prop]);
@@ -690,13 +695,14 @@
 			// document.body.addEventListener("error",handleError,true);
 		}
 
+		// Split into shortenString, escapeString, compressString, and toSimpleString.
 		function shortenString(s) {
 			s = ""+s;
 			s = s.replace(/\n[ \t]+/,'\\n ','g');
 			s = s.replace(/\n/,'\\n','g');
 			s = s.replace(/\t/,'  ','g');
-			if (s.length>202) {
-				s = s.substring(0,202)+"...";
+			if (s.length > 202) {
+				s = s.substring(0,202) + "...";
 			}
 			return s;
 		}
