@@ -11,7 +11,7 @@
 // @exclude        https://duckduckgo.com/*
 //// Causes login dialogs to open!
 // @exclude        http://www.jobs.ac.uk/*
-// @version        1.5.1
+// @version        1.5.2
 // ==/UserScript==
 // Based on FaviconizeGoogle.
 
@@ -136,14 +136,16 @@ function createFaviconFor(url) {
 	var imageExtensions = ( alwaysUseGoogle ? [] : ['ico','png','gif','jpg'] );
 	function tryExtension(evt) {
 		var ext = imageExtensions.shift();
+		// Use protocol (http/https) of current page, to avoid mixed-content warnings/failures.
+		var protocol = document.location.protocol.replace(/:$/, '');
 		if (ext) {
-			img.src = 'http://'+host+'/favicon.'+ext;
+			img.src = protocol + '://' + host + '/favicon.' + ext;
 		} else {
 			if (!alwaysUseGoogle) {
-				img.title = "Failed to find favicon for "+host;
+				img.title = "Failed to find favicon for " + host;
 			}
-			//img.src = 'http://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
-			img.src = 'http://g.etfv.co/' + protocol + "://" + host; // As suggested by decembre
+			//img.src = protocol + '://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
+			img.src = protocol + '://g.etfv.co/' + protocol + "://" + host; // As suggested by decembre
 			// @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
 			img.removeEventListener('error',tryExtension,true);
 		}

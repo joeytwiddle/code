@@ -3,7 +3,7 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @version        1.2.4
+// @version        1.2.5
 // @include      http://www.google.*/search?*
 // @include      https://www.google.*/search?*
 // @include      http://www.google.com.*/search?*
@@ -52,8 +52,10 @@ function createFaviconFor(url) {
 	// if (host == document.location.host) {
 		// return null;
 	// }
+	// Use protocol (http/https) of current page, to avoid mixed-content warnings/failures.
+	var protocol = document.location.protocol.replace(/:$/, '');
 	var img = document.createElement('IMG');
-	img.src = 'http://'+host+'/favicon.ico';
+	img.src = protocol + '://'+host+'/favicon.ico';
 	img.width = '16';
 	img.height = '16';
 	img.className = 'favicon';

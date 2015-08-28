@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.2.1
+// @version        1.2.3
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
 // @include        https://*/*
@@ -281,11 +281,13 @@ function addFaviconToLinkObviouslyIMeanWhyWouldntYou(link) {
   var imageExtensions = ( alwaysUseGoogle ? [] : ['gif','jpg','png','ico'] );
   function tryExtension(evt) {
     var ext = imageExtensions.pop();
+    // Use protocol (http/https) of current page, to avoid mixed-content warnings/failures.
+    var protocol = document.location.protocol.replace(/:$/, '');
     if (ext) {
-      img.src = 'http://'+host+'/favicon.'+ext;
+      img.src = protocol + '://' + host + '/favicon.' + ext;
     } else {
-      img.title = "Failed to find favicon for "+host;
-      img.src = 'http://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
+      img.title = "Failed to find favicon for " + host;
+      img.src = protocol + '://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
       // @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
       img.removeEventListener('error',tryExtension,true);
     }
@@ -880,3 +882,9 @@ if (highlightLinkGroups) {
 
 setTimeout(runRelatedLinksPager, delayBeforeRunning);
 
+
+
+
+if ( document.location.href.match("last.fm/.*page=") ) {
+	GM_addStyle("a:visited { color: darkblue; }")
+}
