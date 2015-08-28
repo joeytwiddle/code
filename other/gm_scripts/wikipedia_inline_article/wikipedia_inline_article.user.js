@@ -189,7 +189,7 @@ function newInlineWindow(event, href, link, windowID){
 	//closeInlineWindows();
 	
 	// Setup some constants for use in creating the inline window...
-	var windowWidth = Math.round(document.body.clientWidth * 0.55);
+	var windowWidth = Math.round(document.body.clientWidth * 0.70);
 	var windowHeight = Math.round(window.innerHeight * 0.55);
 	var windowPadding = 13;
 	var windowTextPadding = 10;
