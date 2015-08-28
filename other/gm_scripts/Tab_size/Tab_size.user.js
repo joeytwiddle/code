@@ -12,6 +12,8 @@
 // ==/UserScript==
 
 // TODO: Make it so tabs display using a unicode symbol, but when selected and copied, copy as normal tabs.
+// BUG: Our injected <span> HTML becomes visible on http://octodecillion.com/blog/use-groovy-to-find-path-of-a-file-in-a-directory-tree/
+//      This is probably due to his syntax highlighter running later.
 
 //var REPLACEMENT = '  ';
 //var REPLACEMENT = '->';
