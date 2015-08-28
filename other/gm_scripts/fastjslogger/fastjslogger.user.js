@@ -3,6 +3,8 @@
 // @namespace      FastJSLogger
 // @description    Intercepts console.log calls to display log messages in a div floating on the page.  Tries to be a replacement for normal browser Error Consoles (which can be a little slow to open).
 // @include        *
+// @version        1.2.4
+// @grant          none
 // ==/UserScript==
 
 
@@ -140,7 +142,7 @@
 			b.style.zIndex = 2000;
 
 			b.onclick = function() {
-				GM_log("[",b,"] Destroying:",elem);
+				//GM_log("[",b,"] Destroying:",elem);
 				elem.style.display = 'none';
 				elem.parentNode.removeChild(elem);
 			};
@@ -166,19 +168,26 @@
 		function createGUI() {
 
 			var css = "";
-			css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 40%; /*max-height: 90%; height: 320px;*/ background-color: #ffffcc; color: black; border: 1px solid black; z-index: 10000; } ";
+			css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 40%; /*max-height: 90%; height: 320px;*/ background-color: #ff8; color: black; border: 1px solid #666; border-radius: 5px; padding: 2px 4px; z-index: 10000; } ";
 			css += " .fastJSLogger > span { max-height: 10%; }";
+			css += " .fastJSLogger > .fjsl-title { font-weight: bold; }";
 			// css += " .fastJSLogger > pre  { max-height: 90%; overflow: auto; }";
 			//// On the pre, max-height: 90% is not working, but specifying px does.
 			var maxHeight = window.innerHeight * 0.8 | 0;
 			css += " .fastJSLogger > pre  { max-height: "+maxHeight+"px; overflow: auto; word-wrap: break-word; }";
-			css += " .fastJSLogger > pre  { padding: 0.4em; }";
+			css += " .fastJSLogger > pre  { padding: 0px; margin: 0.4em 0.2em; }";
 			// Must set the colors again, in case the page defined its own bg or fg color for pres that conflicts ours.
-			css += " .fastJSLogger > pre  { background-color: #ffffcc; color: black; }";
+			css += " .fastJSLogger > pre  { /* background-color: #ffffcc; */ background-color: #888; color: black; }";
+			css += " .fastJSLogger > pre  { font-family: Sans; }";
 			// css += " .fastJSLogger > pre > input { width: 100%, background-color: #888888; }";
-			css += " .fastJSLogger        { opacity: 0.1; transition: opacity 1s ease-out; } ";
-			css += " .fastJSLogger:hover  { opacity: 1.0; transition: opacity 400ms linear; } ";
-			css += " .fastJSLogger.notifying { opacity: 1.0; transition: opacity 200ms linear; } ";
+			css += " .fastJSLogger > pre > div    { border-top: 1px solid #888; padding: 0px 2px; }";
+			css += " .fastJSLogger > pre > .log   { background-color: #fff; }";
+			css += " .fastJSLogger > pre > .info  { background-color: #aaf; }";
+			css += " .fastJSLogger > pre > .warn  { background-color: #ff6; }";
+			css += " .fastJSLogger > pre > .error { background-color: #f99; }";
+			css += " .fastJSLogger           { opacity: 0.1; transition: opacity 1s ease-out; } ";
+			css += " .fastJSLogger:hover     { opacity: 1.0; transition: opacity 400ms ease-out; } ";
+			css += " .fastJSLogger.notifying { opacity: 1.0; transition: opacity 200ms ease-out; } ";
 			if (document.location.host.match(/wikipedia/))
 				css += " .fastJSLogger > pre  { font-size: 60%; }";
 			else
@@ -200,6 +209,7 @@
 			// I/O: logDiv, logContainer
 
 			var heading = newSpan("FastJSLogger");
+			heading.className = "fjsl-title";
 			logDiv.appendChild(heading);
 
 			// addCloseButtonTo(logDiv);
@@ -213,14 +223,14 @@
 
 			var logContainer = newNode("pre");
 
-			var rollupButton = newSpan("[-]");
+			var rollupButton = newSpan("[--]");
 			rollupButton.style.float = 'right';
 			rollupButton.style.cursor = 'pointer';
 			rollupButton.style.paddingLeft = '10px';
 			rollupButton.onclick = function() {
 				if (logContainer.style.display == 'none') {
 					logContainer.style.display = '';
-					rollupButton.textContent = "[-]";
+					rollupButton.textContent = "[--]";
 				} else {
 					logContainer.style.display = 'none';
 					rollupButton.textContent = "[+]";
@@ -259,7 +269,10 @@
 
 		}
 
-		function addToFastJSLog(a,b,c) {
+		// @parameter channel String
+		// @parameter args Array<*>
+		// Do not pass more than two parameters; addToFastJSLog will ignore any extra.
+		function addToFastJSLog(channel, args) {
 
 			// Make FJSL visible if hidden
 			showLogger();
@@ -267,8 +280,8 @@
 			if (logContainer) {
 
 				var out = "";
-				for (var i=0;i<arguments.length;i++) {
-					var obj = arguments[i];
+				for (var i=0; i<args.length; i++) {
+					var obj = args[i];
 					var str = "" + obj;
 					if (obj && obj.constructor === "Array") {
 						str = "[" + obj.map(showObject).join(", ") + "]";
@@ -290,17 +303,14 @@
 					out += gap + str;
 				}
 
+				var d = document.createElement("div");
+				d.className = channel;
+				d.textContent = out;
+
 				if (logContainer.childNodes.length >= 1000) {
 					logContainer.removeChild(logContainer.firstChild);
 				}
 
-				// logContainer.appendChild(document.createElement("br"));
-				// logContainer.appendChild(document.createTextNode(out));
-				// logContainer.appendChild(document.createTextNode("div")).textContent = out;
-				// var d = document.createElement("div");
-				// d.style.fontStyle = 'Monospaced';
-				var d = document.createElement("div");
-				d.textContent = out;
 				logContainer.appendChild(d);
 
 				// Scroll to bottom
@@ -370,6 +380,8 @@
 		// Create console.log if it does not exist.
 
 		var oldConsole = this.console; // When running as a userscript in Chrome, cannot see this.console!
+		// TODO: We should probably remove all this GM_ stuff.
+		// We aren't using it even if we do find it.
 		var oldGM_log = this.GM_log;
 
 		var target = ( this.unsafeWindow ? this.unsafeWindow : window );
@@ -380,7 +392,6 @@
 		var preventInfLoop = null;
 
 		target.console.log = function(a,b,c) {
-
 			// I tried disabling this and regretted it!
 			// My Console bookmarklet can cause an infloop with FJSL if you want to test it.
 			if (a+b+c === preventInfLoop) {
@@ -409,8 +420,7 @@
 			}
 			*/
 
-			return addToFastJSLog.apply(this,arguments);
-
+			addToFastJSLog("log", arguments);
 		};
 
 		//// NOT TESTED.  Intercept Greasemonkey log messages.  (Worth noting we have disabled calls *to* GM_log above.)
@@ -423,67 +433,41 @@
 
 		/* Provide/intercept console.info/warn/error(). */
 
-		target.console.error = function(a,b,c) {
+		target.console.error = function() {
 			// We can get away with this in Chrome!
 
-			var args = Array.prototype.slice.call(arguments,0);
-			args.unshift("[ERROR]");
+			//var args = Array.prototype.slice.call(arguments,0);
+			//args.unshift("[ERROR]");
 
-			if (oldConsole) {
-				if (oldConsole.error) {
-					oldConsole.error.apply(oldConsole,arguments);
-				} else {
-					oldConsole.log.apply(oldConsole,args);
-				}
+			oldConsole.error.apply(oldConsole, arguments);
+
+			addToFastJSLog("error", arguments); // ,'\n'+getStack(2,20).join("\n"));
+
+			// Report stacktrace if we were passed an error.
+			if (arguments[0] instanceof Error) {
+				//target.console.error("" + arguments[0].stack);
+				addToFastJSLog("error", "" + arguments[0].stack);
 			}
-
-			// TODO CONSIDER: if (a instanceof Error) { ... report stack? }
-			if (a instanceof Error) {
-				addToFastJSLog.apply(this,args); // ,'\n'+getStack(2,20).join("\n"));
-				return target.console.error(""+a.stack);
-			}
-
-			return addToFastJSLog.apply(this,args); // ,'\n'+getStack(2,20).join("\n"));
 		};
 
 		// Could generalise the two functions below:
 		//interceptLogLevel("warn");
 		//interceptLogLevel("info");
 
-		target.console.warn = function(a,b,c) {
-			var args = Array.prototype.slice.call(arguments,0);
-			args.unshift("[WARN]");
-			// args.push(""+getCallerFromStack());
-			if (oldConsole) {
-				if (oldConsole.warn) {
-					oldConsole.warn.apply(oldConsole,arguments);
-				} else {
-					oldConsole.log.apply(oldConsole,args);
-				}
-			}
+		target.console.warn = function() {
+			//var args = Array.prototype.slice.call(arguments,0);
+			//args.push(""+getCallerFromStack());
+
+			oldConsole.warn.apply(oldConsole, arguments);
+			addToFastJSLog("warn", arguments);
+
 			//// This was quite useful on one occasion.  But not in the presence of lots of warnings!
 			// logStack(getStackFromCaller());
-			//// It appeared before the warn line in FJSL, although in the correct order in Chrome's console.
-
-			// CONSIDER: I guess we should forward the log-level as an argument to
-			// addToFastJSLog, so it can decide whether to mark or color entries.
-			// OTOH we are marking here, which is kind of a good place!
-			// So perhaps we should forward level marker and color, like cool_logger does.
-			// addToFastJSLog can decide whether to ignore them based on options (bare/mono).
-			return addToFastJSLog.apply(this,args);
 		};
 
-		target.console.info = function(a,b,c) {
-			var args = Array.prototype.slice.call(arguments,0);
-			args.unshift("[INFO]");
-			if (oldConsole) {
-				if (oldConsole.info) {
-					oldConsole.info.apply(oldConsole,arguments);
-				} else {
-					oldConsole.log.apply(oldConsole,args);
-				}
-			}
-			return addToFastJSLog.apply(this,args);
+		target.console.info = function() {
+			oldConsole.info.apply(oldConsole, arguments);
+			addToFastJSLog("info", arguments);
 		};
 
 		/*
@@ -769,8 +753,8 @@
 				}
 				var newHandler = function(evt) {
 					if (FJSL.logEvents) {
-						var isNastyMouseEvent = ["mousemove","mouseover","mouseout"].indexOf(evt.type) >= 0;
-						if (!isNastyMouseEvent || FJSL.logCommonMouseEvents) {
+						var isSpammyEvent = ["mousemove","mouseover","mouseout","mousedown","mouseup","keydown","keyup"].indexOf(evt.type) >= 0;
+						if (!isSpammyEvent || FJSL.logCommonMouseEvents) {
 							if (evt.target.parentNode == logContainer) {
 								// Do not log events in the console's log area, such as DOMNodeInserted!
 							} else {
@@ -823,7 +807,7 @@
 							if (knownKeys[key] === undefined) {
 								if (!firstCheck) {
 									var obj = global[key];
-									console.log("[NEW_GLOBAL] "+key+" =",obj);
+									console.log("[New global detected] "+key+" =",obj);
 								}
 								knownKeys[key] = 1;
 							}
