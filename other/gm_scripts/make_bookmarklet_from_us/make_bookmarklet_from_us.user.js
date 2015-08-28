@@ -29,7 +29,9 @@
 // But in Chrome it is a useful way to prevent the script from being cached when you are developing it.
 var inGoogleChrome = window && window.navigator && window.navigator.vendor.match(/Google/);
 
+// It doesn't make much sense for me to make it browser-dependent, because I share my bookmarks between Chrome and Firefox (using XMarks).
 var preventBrowserFromCachingBookmarklets = inGoogleChrome;
+//var preventBrowserFromCachingBookmarklets = true;
 
 // Sometimes Chrome refuses to acknowledge that a script has been updated, and repeatedly installs an old version from its cache!
 var preventCachingOfInstallScripts = inGoogleChrome;
@@ -60,7 +62,7 @@ var defaultScripts = [];
 var includeGMCompat = addGreasemonkeyLibToBookmarklets;
 if (includeGMCompat) {
 	// defaultScripts.push("http://hwi.ath.cx/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
-	defaultScripts.push("http://neuralyte.org/~joey/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
+	defaultScripts.push("//neuralyte.org/~joey/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
 }
 
 function buildLiveBookmarklet(link) {
@@ -68,7 +70,9 @@ function buildLiveBookmarklet(link) {
 
 	var scriptsToLoad = defaultScripts.slice(0);
 
-	scriptsToLoad.push(link.href);
+	// The bookmarklet should load scripts using the same protocol as the page.  Otherwise browsers may give error messages about "mixed content", and refuse to load the script.
+	var url = link.href.replace(/^http[s]*:/, "//");
+	scriptsToLoad.push(url);
 
 	var neverCacheStr = ( neverCache ? "+'?dummy='+new Date().getTime()" : "" );
 
@@ -217,7 +221,7 @@ var sourcesLoaded = {};
 function getSourceFor(url) {
 	return {
 		then: function(handleResponse){
-			// I found this was needed one time on Chrome!
+			// Prevent caching of this resource.  I found this was needed one time on Chrome!
 			// It probably doesn't need to be linked to preventCachingOfInstallScripts or preventBrowserFromCachingBookmarklets.
 			url += "?dummy="+Math.random();
 			console.log("Loading "+url);
