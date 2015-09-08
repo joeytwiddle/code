@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
-// @version        1.1.5
+// @version        1.1.7
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -152,20 +152,25 @@ if (animateThumbnails) {
 	function initThumbnailAnimator() {
 		// function createThumbnailAnimatorEvent(thumbImage) {
 		var thumbImage    = null;
+		var originalHref  = null;
 		var evt    = null;
 		var timer  = null;
-		var frames = ["1.jpg","2.jpg","3.jpg"];   // "default.jpg",
+		//var frames = ["1.jpg","2.jpg","3.jpg"];   // "default.jpg",
+		var frames = ["1","2","3"];
 		var frameI = 0;
 		function changeFrame() {
 			frameI = (frameI + 1) % frames.length;
-			thumbImage.src = thumbImage.src.replace(/\/[^/]*$/,'') + '/' + frames[frameI];
+			var extension = originalHref.replace(/^.*\./, '');
+			var filename = frames[frameI] + '.' + extension;
+			thumbImage.src = originalHref.replace(/\/[^/]*$/,'') + '/' + filename;
 		}
 		function startAnimation() {
-			if (thumbImage.src.match(/^data:/)) {
+			originalHref = thumbImage.src;
+			if (originalHref.match(/^data:/)) {
 				return;
 			}
 			// We make this check quite late, due to lazy loading
-			if (thumbImage.src.match(/\/(.qdefault|default|0)\.jpg$/)) {
+			if (originalHref.match(/\/(.qdefault|default|0)\.(jpg|webp)$/)) {
 				// logElem("Starting animation",thumbImage);
 				timer = setInterval(changeFrame,600);
 			}
@@ -176,7 +181,8 @@ if (animateThumbnails) {
 				clearInterval(timer);
 				timer = null;
 				// This isn't really neccessary, except to ensure the check for default\.jpg above works next time!
-				thumbImage.src = thumbImage.src.replace(/\/[^/]*$/,'') + '/' + "default.jpg";
+				//thumbImage.src = thumbImage.src.replace(/\/[^/]*$/,'') + '/' + "default.jpg";
+				thumbImage.src = originalHref;
 			}
 		}
 		function logElem(name,elem) {
