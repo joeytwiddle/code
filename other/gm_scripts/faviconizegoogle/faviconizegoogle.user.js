@@ -17,6 +17,7 @@
 // @include      http://www.google.com.*/
 // @include      https://www.google.com.*/
 // @include      https://encrypted.google.*/search?*
+// @grant        none
 // ==/UserScript==
 
 // DONE: Provided more options where to place favicon: by the link or by the
@@ -54,8 +55,11 @@ function createFaviconFor(url) {
 	// }
 	// Use protocol (http/https) of current page, to avoid mixed-content warnings/failures.
 	var protocol = document.location.protocol.replace(/:$/, '');
+	//console.log("[FaviconizeGoogle.user.js] protocol:" ,protocol);
 	var img = document.createElement('IMG');
-	img.src = protocol + '://'+host+'/favicon.ico';
+	//img.src = protocol + '://'+host+'/favicon.ico';
+	img.src = '//www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
+	//img.src = '//g.etfv.co/http://" + host; // As suggested by decembre
 	img.width = '16';
 	img.height = '16';
 	img.className = 'favicon';
