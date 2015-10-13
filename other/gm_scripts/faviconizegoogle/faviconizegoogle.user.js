@@ -85,38 +85,68 @@ var links = getElementsByTagNameAndClassName("A",'l');
 if (links.length == 0)
 	links = document.getElementsByTagName("A");
 
-// GM_log("Got links = "+links.snapshotLength);
+// console.log("Got links = "+links.snapshotLength);
 
 var style = document.createElement('STYLE');
 var padSide = (placeFaviconAfter?'left':'right');
 style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; width: 1em; height: 1em; padding-bottom: 0.2em; }";
 document.getElementsByTagName('head')[0].appendChild(style);
 
-// for (var i=0;i<links.snapshotLength;i++) {
-	// var link = links.snapshotItem(i);
-for (var i=0;i<links.length;i++) {
-	var link = links[i];
-	// if (link.href.match('^javascript:') || link.href.match('^#')) {
-		// continue;
-	// }
-	//// Skip relative and same-host links:
-	if (link.href.match(/^[/]/) || link.href.match("://"+document.location.host)) {
-		continue;
-	}
-	var img = createFaviconFor(link.href);
-	var targetNode = (placeFaviconByUrl ? link.parentNode.parentNode.getElementsByTagName('cite')[0] : link);
-	if (placeFaviconInsideLink) {
-		if (placeFaviconAfter) {
-			targetNode.appendChild(img);
-		} else {
-			targetNode.insertBefore(img,targetNode.firstChild);
+function updateFavicons() {
+
+	// for (var i=0;i<links.snapshotLength;i++) {
+		// var link = links.snapshotItem(i);
+	for (var i=0;i<links.length;i++) {
+		var link = links[i];
+		// if (link.href.match('^javascript:') || link.href.match('^#')) {
+			// continue;
+		// }
+		//// Skip relative and same-host links:
+		if (link.href.match(/^[/]/) || link.href.match("://"+document.location.host)) {
+			continue;
 		}
-	} else {
-		if (placeFaviconAfter) {
-			targetNode.parentNode.insertBefore(img,targetNode.nextSibling);
+		//console.log("[faviconizegoogle.user.js] link.getAttribute(data-faviconized):" ,link.getAttribute("data-faviconized"));
+		if (link.getAttribute("data-faviconized") != null) {
+			// Already faviconized
+			console.log("[faviconizegoogle.user.js] Skipping");
+			continue;
+		}
+		link.setAttribute("data-faviconized", "yes");
+		var img = createFaviconFor(link.href);
+		var targetNode = (placeFaviconByUrl ? link.parentNode.parentNode.getElementsByTagName('cite')[0] : link);
+		if (placeFaviconInsideLink) {
+			if (placeFaviconAfter) {
+				targetNode.appendChild(img);
+			} else {
+				targetNode.insertBefore(img,targetNode.firstChild);
+			}
 		} else {
-			targetNode.parentNode.insertBefore(img,targetNode);
+			if (placeFaviconAfter) {
+				targetNode.parentNode.insertBefore(img,targetNode.nextSibling);
+			} else {
+				targetNode.parentNode.insertBefore(img,targetNode);
+			}
 		}
 	}
+
 }
 
+// TODO: Use MutationObserver instead
+
+var last_srg = null;
+
+function checkForUpdate () {
+	var new_srg = document.getElementsByClassName("srg")[0];
+	//console.log("[FaviconizeGoogle.user.js] last_srg:" ,last_srg);
+	//console.log("[faviconizegoogle.user.js] new_srg:" ,new_srg);
+	if (new_srg !== last_srg) {
+		//console.log("Page change detected!");
+		updateFavicons();
+		last_srg = new_srg;
+	} else {
+		//console.log("Pages are the same:", last_srg, new_srg);
+	}
+	setTimeout(checkForUpdate, 1000);
+}
+
+setTimeout(checkForUpdate, 100);
