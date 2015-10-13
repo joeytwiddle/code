@@ -3,7 +3,7 @@
 // @namespace      FastJSLogger
 // @description    Intercepts console.log calls to display log messages in a div floating on the page.  Tries to be a replacement for normal browser Error Consoles (which can be a little slow to open).
 // @include        *
-// @version        1.2.4
+// @version        1.2.7
 // @grant          none
 // ==/UserScript==
 
@@ -168,8 +168,8 @@
 		function createGUI() {
 
 			var css = "";
-			css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 40%; /*max-height: 90%; height: 320px;*/ background-color: #ff8; color: black; border: 1px solid #666; border-radius: 5px; padding: 2px 4px; z-index: 10000; } ";
-			css += " .fastJSLogger > span { max-height: 10%; }";
+			css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 40%; /*max-height: 90%; height: 320px;*/ background-color: #333; color: white; border: 1px solid #666; border-radius: 5px; padding: 2px 4px; z-index: 10000; } ";
+			css += " .fastJSLogger > span { max-height: 10%; padding: 0 0.3em; }";
 			css += " .fastJSLogger > .fjsl-title { font-weight: bold; }";
 			// css += " .fastJSLogger > pre  { max-height: 90%; overflow: auto; }";
 			//// On the pre, max-height: 90% is not working, but specifying px does.
@@ -180,10 +180,11 @@
 			css += " .fastJSLogger > pre  { /* background-color: #ffffcc; */ background-color: #888; color: black; }";
 			css += " .fastJSLogger > pre  { font-family: Sans; }";
 			// css += " .fastJSLogger > pre > input { width: 100%, background-color: #888888; }";
-			css += " .fastJSLogger > pre > div    { border-top: 1px solid #888; padding: 0px 2px; }";
-			css += " .fastJSLogger > pre > .log   { background-color: #fff; }";
+			css += " .fastJSLogger > pre > div    { border-top: 1px solid #888; padding: 0px 2px; ";
+			css += "                                white-space: normal; word-break: break-all; }";
+			css += " .fastJSLogger > pre > .log   { background-color: #eee; color: #555; }";
 			css += " .fastJSLogger > pre > .info  { background-color: #aaf; }";
-			css += " .fastJSLogger > pre > .warn  { background-color: #ff6; }";
+			css += " .fastJSLogger > pre > .warn  { background-color: #ff4; }";
 			css += " .fastJSLogger > pre > .error { background-color: #f99; }";
 			css += " .fastJSLogger           { opacity: 0.1; transition: opacity 1s ease-out; } ";
 			css += " .fastJSLogger:hover     { opacity: 1.0; transition: opacity 400ms ease-out; } ";
@@ -191,7 +192,7 @@
 			if (document.location.host.match(/wikipedia/))
 				css += " .fastJSLogger > pre  { font-size: 60%; }";
 			else
-				css += " .fastJSLogger > pre { font-size: 85%; } ";
+				css += " .fastJSLogger > pre { font-size: 70%; } ";
 			addStyle(css);
 
 			// Add var before logDiv to break hideLogger()!
@@ -290,10 +291,16 @@
 					if (str === "[object Object]") {
 						str = "";
 						if (typeof obj !== 'object') {
+							// Surely this is incredibly unlikely!  Apart from the obvious case of a String.
 							str += "(" + (typeof obj) + ")";
 						}
 						if (obj.constructor && obj.constructor.name) {
 							str = "[" + obj.constructor.name + "]";
+							if (obj.constructor.name === "Object") {
+								str = "";
+								// Because showObject will give it {}s, this is implied.
+								// Although Chrome's console does actually print: "Object { ... }"
+							}
 						}
 						str += showObject(obj);
 					} else {
@@ -389,15 +396,16 @@
 		// Replace the old console
 		target.console = {};
 
-		var preventInfLoop = null;
+		var lastArgs = [];
 
 		target.console.log = function(a,b,c) {
 			// I tried disabling this and regretted it!
 			// My Console bookmarklet can cause an infloop with FJSL if you want to test it.
-			if (a+b+c === preventInfLoop) {
+			var args = Array.prototype.slice.call(arguments, 0);
+			if (arraysEqual(args, lastArgs)) {
 				return;
 			}
-			preventInfLoop = a+b+c;
+			lastArgs = args;
 
 			// Replicate to the old loggers we intercepted (overrode)
 
@@ -492,6 +500,15 @@
 
 
 		// Some more library functions:
+
+		function arraysEqual(a, b) {
+			for (var i=0; i<a.length; i++) {
+				if (a[i] !== b[i]) {
+					return false;
+				}
+			}
+			return true;
+		}
 
 		function tryToDo(fn, target, args) {
 			try {
