@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name           Title Youtube Locations
 // @namespace      TYTLs
-// @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features addScrollbars, animateThumbnails and reduceFontSizes!
-// @version        1.1.7
+// @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features add scrollbars, animate thumbnails, reduce font sizes and un-float the header.
+// @version        1.1.8
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -35,6 +35,7 @@ var reduceFontSizes    = true;
 var addScrollbars      = true;
 var scrollDownToVideo  = false; // YouTube's header ("masthead") is now floating.  Setting this true will un-float it, then scroll down to hide it.  But scrolling containers should then be enlarged.
 var animateThumbnails  = true;
+var unfloatTheHeader   = true;
 
 
 
@@ -229,5 +230,15 @@ if (animateThumbnails) {
 	}
 	setTimeout(initThumbnailAnimator,1000);
 
+}
+
+
+
+if (unfloatTheHeader) {
+	GM_addStyle("#masthead-positioner { position: static; }");
+	var gapElement = document.getElementById("masthead-positioner-height-offset");
+	if (gapElement) {
+		gapElement.parentNode.removeChild(gapElement);
+	}
 }
 
