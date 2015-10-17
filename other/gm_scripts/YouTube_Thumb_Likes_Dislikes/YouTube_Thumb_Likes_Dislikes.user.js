@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.0.0
+// @version        1.0.1
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -45,6 +45,7 @@ var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails
 
 
 // BUG: It only triggers when we move our mouse *off* the link.  Why is that?!
+//      Is it triggering on the description text, and not the title?
 
 
 
@@ -53,8 +54,8 @@ var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails
 
 function suitableLink(link) {
 	return (
-		link.tagName == "A"
-		&& link.pathname.indexOf("/watch")==0
+		link.tagName.toUpperCase() == "A"
+		&& link.pathname.indexOf("/watch") >= 0
 		// But not if it's the same page:
 		&& link.href.replace(/#.*/,'') != document.location.href.replace(/#.*/,'')
 	);
@@ -95,50 +96,28 @@ function lookupLikesDislikes(target) {
 
 		function gotTargetPage(response) {
 			var content = response.responseText;
-			// GM_log("GOT CONTENT LENGTH: "+content.length);
+			//GM_log("GOT CONTENT LENGTH: "+content.length);
 			if (content) {
 				var lePage = document.createElement("div");
 				lePage.innerHTML = content;
+				//console.log("GOT lePage:", lePage);
+				//unsafeWindow.lePage = lePage;
 				var infoElem = lePage.getElementsByClassName("watch-likes-dislikes")[0];
 				infoElem = infoElem || lePage.getElementsByClassName("video-extras-likes-dislikes")[0]; // Oct 2012
-				// GM_log("GOT INFOELEM: "+infoElem);
-				if (infoElem) {
-					var infoText = infoElem.textContent.trim();
+				//console.log("GOT INFOELEM: "+infoElem);
 
-					// Find suitable element for adding tooltip info.
-					var elemWithTitle = findClosestLinkElem(target);
-					// On sidebar thumbnails this tends to be the containing <A> rather
-					// than the <span> holding the video title, which is what I usually
-					// mouseover!  However on YT's front page it does find the title.
+				// Find suitable element for adding tooltip info.
+				var elemWithTitle = findClosestLinkElem(target);
+				// On sidebar thumbnails this tends to be the containing <A> rather
+				// than the <span> holding the video title, which is what I usually
+				// mouseover!  However on YT's front page it does find the title.
+
+				if (infoElem) {
+
+					var infoText = infoElem.textContent.trim();
 
 					if (addCountsToTooltip) {
 						elemWithTitle.title += " ("+infoText+")";
-					}
-
-					if (addLightSaberBarToThumbnail) {
-
-						// Pictures are easier to read than words:
-						var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
-						lightSaber = lightSaber || lePage.getElementsByClassName("video-extras-sparkbars")[0]; // Oct 2012
-						if (lightSaber) {
-							if (lightSaber.clientWidth == 0) {
-								GM_log("Unfortunately the lightSaber had width 0.  Perhaps its dimensions are supposed to be loaded by Ajax.  "+lightSaber.outerHTML);
-							} else {
-								target.appendChild(lightSaber);
-								// It often falls on the line below the thumbnail, aligned left
-								// Here is a dirty fix to align it right, with all the other info.
-								if (document.location.pathname === "/watch") { // not on search results
-									lightSaber.style.marginLeft = '124px';
-								}
-								// Bars are unneccessarily wide on search results pages, so:
-								if (lightSaber.clientWidth > 150) {
-									lightSaber.style.maxWidth = '120px';
-								}
-							}
-						} else {
-							elemWithTitle.title += " [No likes/dislikes available]";
-						}
-
 					}
 
 					if (addCountsToThumbnail) {
@@ -148,20 +127,43 @@ function lookupLikesDislikes(target) {
 						target.appendChild(span);
 					}
 
-					if (addVideoDescriptionToTooltip) {
-						// Uncaught TypeError: Object #<HTMLDivElement> has no method 'getElementById'
-						// var descrElem = lePage.getElementById("watch-description-text");
-						var descrElem = fakeGetElementById(lePage,"watch-description-text");
-						if (descrElem) {
-							elemWithTitle.title += " ::: " + descrElem.textContent.trim();
+				}
+
+				if (addLightSaberBarToThumbnail) {
+
+					// Pictures are easier to read than words:
+					var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
+					lightSaber = lightSaber || lePage.getElementsByClassName("video-extras-sparkbars")[0]; // Oct 2012
+					if (lightSaber) {
+						target.appendChild(lightSaber);
+						// It often falls on the line below the thumbnail, aligned left
+						// Here is a dirty fix to align it right, with all the other info.
+						if (document.location.pathname === "/watch") { // not on search results
+							lightSaber.style.marginLeft = '124px';
 						}
+						// Bars are unneccessarily wide on search results pages, so:
+						if (lightSaber.clientWidth > 150) {
+							lightSaber.style.maxWidth = '120px';
+						}
+					} else {
+						elemWithTitle.title += " [No likes/dislikes available]";
 					}
 
 				}
+
+				if (addVideoDescriptionToTooltip) {
+					// Uncaught TypeError: Object #<HTMLDivElement> has no method 'getElementById'
+					// var descrElem = lePage.getElementById("watch-description-text");
+					var descrElem = fakeGetElementById(lePage,"watch-description-text");
+					if (descrElem) {
+						elemWithTitle.title += " ::: " + descrElem.textContent.trim();
+					}
+				}
+
 			}
 		}
 
-		// GM_log("Requesting: "+target.href);
+		//console.log("Requesting: "+target.href);
 		GM_xmlhttpRequest({
 			method: "GET",
 			url: target.href,
@@ -182,6 +184,8 @@ function ifSuitable(fn) {
 		var target = evt.target || evt.srcElement;
 		if (suitableLink(target)) {
 			fn(target);
+			//} else {
+			//    console.log("Not suitable:",target);
 		}
 	};
 }
@@ -194,7 +198,6 @@ function ifSuitable(fn) {
 var hoveredElem = null;
 var hoverTimer = null;
 
-/*
 function startHover(target) {
 	stopHover();
 	hoveredElem = target;
@@ -208,7 +211,6 @@ function stopHover() {
 
 document.body.addEventListener("mouseover",ifSuitable(startHover),false);
 document.body.addEventListener("mouseout",ifSuitable(stopHover),false);
-*/
 
 function hasParent(node,seekNode) {
 	while (node != null) {
@@ -234,7 +236,7 @@ function watchForHover(evt) {
 		if (hasParent(target,hoveredElem)) {
 			return;
 		}
-		// GM_log("Cancelling hover on "+hoveredElem+" because of mousemove on "+target.outerHTML);
+		//GM_log("Cancelling hover on "+hoveredElem+" because of mousemove on "+target.outerHTML);
 		hoveredElem = null;
 		clearTimeout(hoverTimer);
 		hoverTimer = null;
