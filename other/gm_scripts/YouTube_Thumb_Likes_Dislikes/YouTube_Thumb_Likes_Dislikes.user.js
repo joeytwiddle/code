@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.0.1
+// @version        1.0.2
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -44,8 +44,8 @@ var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails
 
 
 
-// BUG: It only triggers when we move our mouse *off* the link.  Why is that?!
-//      Is it triggering on the description text, and not the title?
+// BUG: Hover detection is very poor.  It appears to only trigger when we move the mouse over the description text or uploader's name, but not when we hover over the actual link title!
+//      The easiest thing for the user is just to pass their mouse slowly up/down the text next to a thumbnail, to trigger the data lookup.
 
 
 
@@ -53,11 +53,14 @@ var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails
 // http://userscripts.org/scripts/search?q=youtube+likes+dislikes&submit=Search
 
 function suitableLink(link) {
+	if (link.tagName.toUpperCase() !== "A") {
+		link = link.parentNode;
+	}
 	return (
-		link.tagName.toUpperCase() == "A"
+		link.tagName.toUpperCase() === "A"
 		&& link.pathname.indexOf("/watch") >= 0
 		// But not if it's the same page:
-		&& link.href.replace(/#.*/,'') != document.location.href.replace(/#.*/,'')
+		&& link.href.replace(/#.*/,'') !== document.location.href.replace(/#.*/,'')
 	);
 }
 
@@ -104,6 +107,7 @@ function lookupLikesDislikes(target) {
 				//unsafeWindow.lePage = lePage;
 				var infoElem = lePage.getElementsByClassName("watch-likes-dislikes")[0];
 				infoElem = infoElem || lePage.getElementsByClassName("video-extras-likes-dislikes")[0]; // Oct 2012
+				infoElem = infoElem || lePage.getElementsByClassName("like-button-renderer")[0]; // Oct 2015
 				//console.log("GOT INFOELEM: "+infoElem);
 
 				// Find suitable element for adding tooltip info.
@@ -114,7 +118,15 @@ function lookupLikesDislikes(target) {
 
 				if (infoElem) {
 
+					// Old:
 					var infoText = infoElem.textContent.trim();
+
+					// New:
+					var newLikedButton = infoElem.querySelector(".like-button-renderer-like-button-unclicked");
+					if (newLikedButton) {
+						var newDislikedButton = infoElem.querySelector(".like-button-renderer-dislike-button-unclicked");
+						infoText = newLikedButton.textContent + " likes, " + newDislikedButton.textContent + " dislikes.";
+					}
 
 					if (addCountsToTooltip) {
 						elemWithTitle.title += " ("+infoText+")";
@@ -198,6 +210,7 @@ function ifSuitable(fn) {
 var hoveredElem = null;
 var hoverTimer = null;
 
+/*
 function startHover(target) {
 	stopHover();
 	hoveredElem = target;
@@ -211,6 +224,7 @@ function stopHover() {
 
 document.body.addEventListener("mouseover",ifSuitable(startHover),false);
 document.body.addEventListener("mouseout",ifSuitable(stopHover),false);
+*/
 
 function hasParent(node,seekNode) {
 	while (node != null) {
