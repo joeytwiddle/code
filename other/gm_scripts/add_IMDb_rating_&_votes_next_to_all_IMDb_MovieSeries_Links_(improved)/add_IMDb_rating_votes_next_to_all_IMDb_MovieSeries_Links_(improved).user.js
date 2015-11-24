@@ -1,5 +1,5 @@
 ﻿// ==UserScript==
-// @name         add IMDb rating & votes next to all IMDb Movie/Series Links (improved)
+// @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
 // @author         StackOverflow community (especially Brock Adams)
 // @version        2015-11-23-joeytwiddle
