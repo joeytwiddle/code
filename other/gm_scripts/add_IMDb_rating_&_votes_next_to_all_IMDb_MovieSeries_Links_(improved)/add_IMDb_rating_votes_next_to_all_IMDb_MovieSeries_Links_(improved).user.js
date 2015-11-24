@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
 // @author         StackOverflow community (especially Brock Adams)
-// @version        2015-11-23-joeytwiddle
+// @version        2015-11-24-2-joeytwiddle
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
 // @namespace https://greasyfork.org/users/2427
@@ -28,7 +28,17 @@ function processIMDB_Links () {
         )
             continue;
 
-        if (skipEpisodes && currentLink.parentNode.className.match(/filmo-episodes/)) {
+        // Skip thumbnails on the search results page
+        if (currentLink.parentNode.className.match(/\bprimary_photo\b/)) {
+            continue;
+        }
+
+        // Skip thumbnails in the six recommendations area of a title page
+        if (currentLink.parentNode.className.match(/\brec_item\b/)) {
+            continue;
+        }
+
+        if (skipEpisodes && currentLink.parentNode.className.match(/\bfilmo-episodes\b/)) {
             continue;
         }
 
