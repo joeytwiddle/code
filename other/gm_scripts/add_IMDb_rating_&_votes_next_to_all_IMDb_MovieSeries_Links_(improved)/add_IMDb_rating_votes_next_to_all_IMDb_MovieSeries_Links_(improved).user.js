@@ -2,9 +2,10 @@
 // @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
 // @author         StackOverflow community (especially Brock Adams)
-// @version        2015-11-24-2-joeytwiddle
+// @version        2015-11-24-5-joeytwiddle
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
 // @namespace https://greasyfork.org/users/2427
 // ==/UserScript==
 // Special Thanks to Brock Adams for this script: http://stackoverflow.com/questions/23974801/gm-xmlhttprequest-data-is-being-placed-in-the-wrong-places/23992742
@@ -12,6 +13,8 @@
 var maxLinksAtATime     = 100; //-- pages can have 100's of links to fetch. Don't spam server or browser.
 var fetchedLinkCnt      = 0;
 var skipEpisodes        = true; //-- I only want to see ratings for movies or TV shows, not TV episodes
+
+var $ = unsafeWindow.$;
 
 function processIMDB_Links () {
     //--- Get only links that could be to IMBD movie/TV pages.
@@ -28,17 +31,35 @@ function processIMDB_Links () {
         )
             continue;
 
+        // I am beginning to think a whitelist might be better than this blacklist!
+
         // Skip thumbnails on the search results page
-        if (currentLink.parentNode.className.match(/\bprimary_photo\b/)) {
+        if ($(currentLink).closest('.primary_photo').length) {
             continue;
         }
 
         // Skip thumbnails in the six recommendations area of a title page
-        if (currentLink.parentNode.className.match(/\brec_item\b/)) {
+        if ($(currentLink).closest('.rec_item').length) {
             continue;
         }
 
-        if (skipEpisodes && currentLink.parentNode.className.match(/\bfilmo-episodes\b/)) {
+        // Skip top-rated episodes on the right-hand sidebar of TV series pages; they already display a rating anyway!
+        if ($(currentLink).closest('#top-rated-episodes-rhs').length) {
+            continue;
+        }
+
+        // Skip thumbnail of title at top of Season page
+        if ($(currentLink).find(':only-child').prop('tagName') === 'IMG') {
+            continue;
+        }
+
+        // Skip the thumbnail of each episode on a season page (episode names still processed)
+        if ($(currentLink).closest('.image').length) {
+            continue;
+        }
+
+        // Skip episodes on actor pages
+        if (skipEpisodes && $(currentLink).closest('.filmo-episodes').length) {
             continue;
         }
 
@@ -115,14 +136,15 @@ function prependIMDB_Rating (resp, targetLink) {
                }
 
            // ratingTxt   = ratingM[1] + " - " + votesM[1];
-           ratingTxt   = "<b>" + justrate + "</b>" + " / " + votes;
+           ratingTxt   = "<strong>" + justrate + "</strong>" + " / " + votes;
            colnumber = Math.round(justrate);
            }
         }
     }
 
 
-    targetLink.setAttribute("title", ratingTxt.replace(/<[/]b>/,'','g') );
+    // NOTE: I switched from <b> to <strong> simply because on Season pages, the rating injected after episode titles was getting uglified by an IMDB CSS rule: .list_item .info b { font-size: 15px; }
+    targetLink.setAttribute("title", ratingTxt.replace(/<\/*strong>/g,'') );
 
     if (justrate < 5) {
         return;
