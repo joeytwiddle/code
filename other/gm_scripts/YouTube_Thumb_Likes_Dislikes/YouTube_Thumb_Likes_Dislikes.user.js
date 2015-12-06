@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.0.3
+// @version        1.0.4
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -52,12 +52,18 @@ var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails
 // Some other scripts like this:
 // http://userscripts.org/scripts/search?q=youtube+likes+dislikes&submit=Search
 
-function isSuitableLink(link) {
-	while (link && typeof link.tagName === 'string' && link.tagName.toUpperCase() !== "A") {
-		link = link.parentNode;
+function findLinkAbove(elem) {
+	while (elem && typeof elem.tagName === 'string' && elem.tagName.toUpperCase() !== "A") {
+		elem = elem.parentNode;
 	}
+	return elem;
+}
+
+function isSuitableLink(elem) {
+	var link = findLinkAbove(elem);
 	return (
 		link
+		&& typeof link.tagName === 'string'
 		&& link.tagName.toUpperCase() === "A"
 		&& link.pathname.indexOf("/watch") >= 0
 		// But not if it's the same page:
@@ -94,9 +100,9 @@ function findClosestLinkElem(orig) {
 }
 
 // Display likes/dislikes on links to other videos
-function lookupLikesDislikes(target) {
-	if (target && !target.doneLikesDislikes) {
-		target.doneLikesDislikes = true;
+function lookupLikesDislikes(link) {
+	if (link && !link.doneLikesDislikes) {
+		link.doneLikesDislikes = true;
 
 		function gotTargetPage(response) {
 			var content = response.responseText;
@@ -112,7 +118,7 @@ function lookupLikesDislikes(target) {
 				//console.log("GOT INFOELEM: "+infoElem);
 
 				// Find suitable element for adding tooltip info.
-				var elemWithTitle = findClosestLinkElem(target);
+				var elemWithTitle = findClosestLinkElem(link);
 				// On sidebar thumbnails this tends to be the containing <A> rather
 				// than the <span> holding the video title, which is what I usually
 				// mouseover!  However on YT's front page it does find the title.
@@ -137,7 +143,7 @@ function lookupLikesDislikes(target) {
 						var span = document.createElement("div");
 						span.className = "stat";
 						span.appendChild(document.createTextNode(infoText));
-						target.appendChild(span);
+						link.appendChild(span);
 					}
 
 				}
@@ -148,7 +154,7 @@ function lookupLikesDislikes(target) {
 					var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
 					lightSaber = lightSaber || lePage.getElementsByClassName("video-extras-sparkbars")[0]; // Oct 2012
 					if (lightSaber) {
-						target.appendChild(lightSaber);
+						link.appendChild(lightSaber);
 						// It often falls on the line below the thumbnail, aligned left
 						// Here is a dirty fix to align it right, with all the other info.
 						if (document.location.pathname === "/watch") { // not on search results
@@ -176,36 +182,23 @@ function lookupLikesDislikes(target) {
 			}
 		}
 
-		//console.log("Requesting: "+target.href);
+		//console.log("Requesting: "+link.href);
 		GM_xmlhttpRequest({
 			method: "GET",
-			url: target.href,
+			url: link.href,
 			headers: {
 				// "Reason": "I want to display watch-likes-dislikes, watch-sparkbars and watch-description-text by this thumbnail"
 			},
 			onload: gotTargetPage,
 			onerror: function(err){
 				// Cannot ""+err.  Chrome once gave me: Uncaught TypeError: Function.prototype.toString is not generic
-				GM_log("Got error requesting YT page: "+target.href);
+				GM_log("Got error requesting YT page: "+link.href);
 				GM_log(err);
 			}
 		});
 
 	}
 }
-
-function ifSuitable(fn) {
-	return function(evt) {
-		var target = evt.target || evt.srcElement;
-		if (isSuitableLink(target)) {
-			fn(target);
-			//} else {
-			//    console.log("Not suitable:", target);
-		}
-	};
-}
-
-// document.body.addEventListener("mouseover", ifSuitable(lookupLikesDislikes), false);
 
 // Hover detection is a fiddle, because a mouseout event is fired on the A element immediately after the mouseover, presumably due to all the things inside it.
 // DONE: We don't cancel hover if we are firing on a child of the hoveredElem.
@@ -226,13 +219,14 @@ function hasAncestor(node, seekNode) {
 
 function watchForHover(evt) {
 	var target = evt.target || evt.srcElement;
+	var link = findLinkAbove(target);
 	// Do nothing (don't start a new timeout or cancel existing timeout) if we are now on a child of the hoveredElem.
 	if (hoveredElem && hasAncestor(target, hoveredElem)) {
 		return;
 	}
-	if (isSuitableLink(target)) {
+	if (isSuitableLink(link)) {
 		clearTimeout(hoverTimer);
-		hoveredElem = target;
+		hoveredElem = link;
 		hoverTimer = setTimeout(function(){
 			lookupLikesDislikes(hoveredElem);
 			hoveredElem = null;
