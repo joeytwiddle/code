@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.0.2
+// @version        1.0.3
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -53,11 +53,12 @@ var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails
 // http://userscripts.org/scripts/search?q=youtube+likes+dislikes&submit=Search
 
 function suitableLink(link) {
-	if (link.tagName.toUpperCase() !== "A") {
+	while (link && typeof link.tagName === 'string' && link.tagName.toUpperCase() !== "A") {
 		link = link.parentNode;
 	}
 	return (
-		link.tagName.toUpperCase() === "A"
+		link
+		&& link.tagName.toUpperCase() === "A"
 		&& link.pathname.indexOf("/watch") >= 0
 		// But not if it's the same page:
 		&& link.href.replace(/#.*/,'') !== document.location.href.replace(/#.*/,'')
@@ -184,7 +185,9 @@ function lookupLikesDislikes(target) {
 			},
 			onload: gotTargetPage,
 			onerror: function(err){
-				GM_log("Got error requesting YT page: "+err);
+				// Cannot ""+err.  Chrome once gave me: Uncaught TypeError: Function.prototype.toString is not generic
+				GM_log("Got error requesting YT page: "+target.href);
+				GM_log(err);
 			}
 		});
 
@@ -226,7 +229,8 @@ document.body.addEventListener("mouseover",ifSuitable(startHover),false);
 document.body.addEventListener("mouseout",ifSuitable(stopHover),false);
 */
 
-function hasParent(node,seekNode) {
+// Including self
+function hasAncestor(node, seekNode) {
 	while (node != null) {
 		if (node == seekNode) {
 			return true;
@@ -239,6 +243,7 @@ function hasParent(node,seekNode) {
 function watchForHover(evt) {
 	var target = evt.target || evt.srcElement;
 	if (suitableLink(target)) {
+		clearTimeout(hoverTimer);
 		hoveredElem = target;
 		hoverTimer = setTimeout(function(){
 			if (hoveredElem) {
@@ -247,7 +252,7 @@ function watchForHover(evt) {
 		},1000);
 	} else {
 		// Don't cancel if we are a child of hoveredElem
-		if (hasParent(target,hoveredElem)) {
+		if (hasAncestor(target, hoveredElem)) {
 			return;
 		}
 		//GM_log("Cancelling hover on "+hoveredElem+" because of mousemove on "+target.outerHTML);
