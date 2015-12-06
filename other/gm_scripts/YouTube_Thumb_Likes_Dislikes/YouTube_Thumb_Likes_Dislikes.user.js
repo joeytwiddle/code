@@ -208,26 +208,10 @@ function ifSuitable(fn) {
 // document.body.addEventListener("mouseover", ifSuitable(lookupLikesDislikes), false);
 
 // Hover detection is a fiddle, because a mouseout event is fired on the A element immediately after the mouseover, presumably due to all the things inside it.
-// I suppose we could say "don't cancel hover if we are firing on a child of the hoveredElem...  Or we could use jQuery, or steal jQuery's mechanism.
+// DONE: We don't cancel hover if we are firing on a child of the hoveredElem.
 
 var hoveredElem = null;
 var hoverTimer = null;
-
-/*
-function startHover(target) {
-	stopHover();
-	hoveredElem = target;
-	hoverTimer = setTimeout(function(){
-		lookupLikesDislikes(hoveredElem);
-	}, 1000);
-}
-function stopHover() {
-	clearTimeout(hoverTimer);
-}
-
-document.body.addEventListener("mouseover", ifSuitable(startHover), false);
-document.body.addEventListener("mouseout", ifSuitable(stopHover), false);
-*/
 
 // Including self
 function hasAncestor(node, seekNode) {
@@ -242,22 +226,22 @@ function hasAncestor(node, seekNode) {
 
 function watchForHover(evt) {
 	var target = evt.target || evt.srcElement;
+	// Do nothing (don't start a new timeout or cancel existing timeout) if we are now on a child of the hoveredElem.
+	if (hoveredElem && hasAncestor(target, hoveredElem)) {
+		return;
+	}
 	if (isSuitableLink(target)) {
 		clearTimeout(hoverTimer);
 		hoveredElem = target;
 		hoverTimer = setTimeout(function(){
-			if (hoveredElem) {
-				lookupLikesDislikes(hoveredElem);
-			}
+			lookupLikesDislikes(hoveredElem);
+			hoveredElem = null;
+			hoverTimer = null;
 		}, 1000);
 	} else {
-		// Don't cancel if we are a child of hoveredElem
-		if (hasAncestor(target, hoveredElem)) {
-			return;
-		}
 		//GM_log("Cancelling hover on "+hoveredElem+" because of mousemove on "+target.outerHTML);
-		hoveredElem = null;
 		clearTimeout(hoverTimer);
+		hoveredElem = null;
 		hoverTimer = null;
 	}
 }
