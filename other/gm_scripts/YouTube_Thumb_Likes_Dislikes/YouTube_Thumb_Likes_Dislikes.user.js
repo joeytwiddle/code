@@ -52,7 +52,7 @@ var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails
 // Some other scripts like this:
 // http://userscripts.org/scripts/search?q=youtube+likes+dislikes&submit=Search
 
-function suitableLink(link) {
+function isSuitableLink(link) {
 	while (link && typeof link.tagName === 'string' && link.tagName.toUpperCase() !== "A") {
 		link = link.parentNode;
 	}
@@ -167,7 +167,7 @@ function lookupLikesDislikes(target) {
 				if (addVideoDescriptionToTooltip) {
 					// Uncaught TypeError: Object #<HTMLDivElement> has no method 'getElementById'
 					// var descrElem = lePage.getElementById("watch-description-text");
-					var descrElem = fakeGetElementById(lePage,"watch-description-text");
+					var descrElem = fakeGetElementById(lePage, "watch-description-text");
 					if (descrElem) {
 						elemWithTitle.title += " ::: " + descrElem.textContent.trim();
 					}
@@ -197,15 +197,15 @@ function lookupLikesDislikes(target) {
 function ifSuitable(fn) {
 	return function(evt) {
 		var target = evt.target || evt.srcElement;
-		if (suitableLink(target)) {
+		if (isSuitableLink(target)) {
 			fn(target);
 			//} else {
-			//    console.log("Not suitable:",target);
+			//    console.log("Not suitable:", target);
 		}
 	};
 }
 
-// document.body.addEventListener("mouseover",ifSuitable(lookupLikesDislikes),false);
+// document.body.addEventListener("mouseover", ifSuitable(lookupLikesDislikes), false);
 
 // Hover detection is a fiddle, because a mouseout event is fired on the A element immediately after the mouseover, presumably due to all the things inside it.
 // I suppose we could say "don't cancel hover if we are firing on a child of the hoveredElem...  Or we could use jQuery, or steal jQuery's mechanism.
@@ -219,14 +219,14 @@ function startHover(target) {
 	hoveredElem = target;
 	hoverTimer = setTimeout(function(){
 		lookupLikesDislikes(hoveredElem);
-	},1000);
+	}, 1000);
 }
 function stopHover() {
 	clearTimeout(hoverTimer);
 }
 
-document.body.addEventListener("mouseover",ifSuitable(startHover),false);
-document.body.addEventListener("mouseout",ifSuitable(stopHover),false);
+document.body.addEventListener("mouseover", ifSuitable(startHover), false);
+document.body.addEventListener("mouseout", ifSuitable(stopHover), false);
 */
 
 // Including self
@@ -242,14 +242,14 @@ function hasAncestor(node, seekNode) {
 
 function watchForHover(evt) {
 	var target = evt.target || evt.srcElement;
-	if (suitableLink(target)) {
+	if (isSuitableLink(target)) {
 		clearTimeout(hoverTimer);
 		hoveredElem = target;
 		hoverTimer = setTimeout(function(){
 			if (hoveredElem) {
 				lookupLikesDislikes(hoveredElem);
 			}
-		},1000);
+		}, 1000);
 	} else {
 		// Don't cancel if we are a child of hoveredElem
 		if (hasAncestor(target, hoveredElem)) {
@@ -262,24 +262,24 @@ function watchForHover(evt) {
 	}
 }
 
-document.body.addEventListener("mousemove",watchForHover,false);
+document.body.addEventListener("mousemove", watchForHover, false);
 
 
 if (spamYouTube) {
-	function queueLink(link,when) {
+	function queueLink(link, when) {
 		GM_log("In "+(when/1000|0)+" seconds I will do "+link);
 		setTimeout(function(){
 			lookupLikesDislikes(link);
-		},when);
+		}, when);
 	}
 	var ls = document.getElementsByTagName("A");
 	var lastUrlDone = "";
 	var num = 0;
 	for (var i=0;i<ls.length;i++) {
 		var link = ls[i];
-		if (link.href != lastUrlDone && suitableLink(link)) {
+		if (link.href != lastUrlDone && isSuitableLink(link)) {
 			num++;
-			queueLink(link, 1000 * Math.pow(1.2 + 1.2*num,1.7) );
+			queueLink(link, 1000 * Math.pow(1.2 + 1.2*num, 1.7) );
 			lastUrlDone = link.href;
 		}
 	}
