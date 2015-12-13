@@ -7,9 +7,10 @@
 // @author         Tim Smart, gw111zz, joeytwiddle
 // @copyright      2009 Tim Smart; 2011 gw111zz; 2015 joeytwiddle
 // @license        GNU GPL v3.0 or later. http://www.gnu.org/copyleft/gpl.html
-// @version        1.0.1
+// @version        1.0.2
 // @grant          GM_xmlhttpRequest
 // @grant          GM_openInTab
+// @grant          GM_addStyle
 // ==/UserScript==
 
 // TODO: Auto-update when video changes.
@@ -122,12 +123,12 @@ function loadCaptions (select) {
                                 
       if (captions.length === 0) {
         if (select) {
-          select.options[0].textContent = 'No captions.';
+          select.options[0].textContent = '---';
           select.disabled = true;
         }
         select = document.getElementById(FORMAT_SELECTOR_ID);
         if (select) {
-          select.options[0].textContent = 'No captions.';
+          select.options[0].textContent = '---';
           select.disabled = true;
         }
         return;
@@ -148,8 +149,16 @@ function loadCaptions (select) {
         select.appendChild(option);
       }
 
-      select.options[0].textContent = 'Download captions.';
+      select.options[0].textContent = 'Lang';
       select.disabled               = false;
+
+      // I have three userscripts that add buttons to this div:
+      // - Download_YouTube_Captions (this one)
+      // - Download_YouTube_Videos_as_MP4
+      // - YouTube_Popout_Button
+      // When all of them are together, they are too wide!
+      // But if we reduce the padding from the site's 10px to 8px, then they all fit nicely.
+      GM_addStyle(".yt-uix-button { padding: 0 8px; }");
     }
   });
 }
@@ -165,7 +174,7 @@ function loadFormats (select) {
     select.appendChild(option);
   }
 
-  select.options[0].textContent = 'Select caption format.';
+  select.options[0].textContent = 'Format';
   select.disabled               = false;
 }
 
@@ -173,7 +182,7 @@ function loadFormats (select) {
   var div      = document.createElement('div'),
       select   = document.createElement('select'),
       option   = document.createElement('option'),
-      controls = document.getElementById('watch8-action-buttons') || document.getElementsByClassName("watch-action-buttons")[0] || document.getElementById('watch7-headline');
+      controls = document.getElementById('watch8-secondary-actions') || document.getElementsByClassName("watch-secondary-actions")[0] || document.getElementById('watch8-action-buttons') || document.getElementsByClassName("watch-action-buttons")[0] || document.getElementById('watch7-headline');
 
   div.setAttribute( 'style', 'display: inline-block; margin: 6px;' );
 
@@ -207,8 +216,11 @@ function loadFormats (select) {
 
   format_div.appendChild(format_select);
 
-  controls.appendChild(format_div);
-  controls.appendChild(div);
+  //controls.appendChild(format_div);
+  //controls.appendChild(div);
+  var insertBeforeElement = controls.getElementsByClassName('yt-uix-menu')[0] || div.firstChild;
+  controls.insertBefore(format_div, insertBeforeElement);
+  controls.insertBefore(div, insertBeforeElement);
 
   loadFormats(format_select);
   loadCaptions(select);
