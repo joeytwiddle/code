@@ -1,4 +1,8 @@
-import Random (random,mkStdGen)
+-- Works in Hugs
+--import Random (random,mkStdGen)
+
+-- Works in Hugs and GHC, after `cabal install random`
+import System.Random (random,mkStdGen)
 
 go :: IO()
 go = animate startgrid
