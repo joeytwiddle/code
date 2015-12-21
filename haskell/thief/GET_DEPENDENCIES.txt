@@ -1,0 +1,9 @@
+#tar xfz ~/Downloads/ansi-terminal-0.6.2.3.tar.gz
+#cd ./ansi-terminal-0.6.2.3
+#runhaskell Setup.lhs configure --user
+#runhaskell Setup.lhs build
+#runhaskell Setup.lhs install
+
+cabal update
+cabal install ansi-terminal
+cabal install random

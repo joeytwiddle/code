@@ -11,9 +11,24 @@
 
 
 -- Get required external functions
-import Random (random,mkStdGen)
-import AnsiScreen (cls,at)
-import IOExtensions (getCh)
+--import Random (random,mkStdGen)
+import System.Random
+
+--import AnsiTerminal (cls,at)
+import System.Console.ANSI (clearScreen, setCursorPosition)
+
+--import IOExtensions (getCh)
+import System.IO (getChar)
+
+import Data.Char (toUpper)
+
+--clearScreen = putStr cls
+--putStringAt pos str = putStr (at pos str)
+
+putStringAt (x,y) str = do setCursorPosition y x
+                           putStr str
+
+getCh = getChar
 
 -- Set up some data types
 data Dir = L | R | U | D | N
@@ -28,8 +43,9 @@ type World = (Pos,[Pos],Pos,[Pos],[Dir],Int)
 -- MAIN FUNCTIONS
 
 -- Main initialising function
-main :: Integer -> IO()
-main seed =
+-- Had to rename it from main to go, because GHC expects main to take no arguments
+go :: Integer -> IO()
+go seed =
   instructions >>
   startscreen sw >>
   play sw
@@ -70,13 +86,13 @@ startworld seed = ((1,1),[(div width 2,div height 2)],(width,height),randpos see
 -- Random lists from which values are pulled during game
 murandom (a,b) s = ( f : t )
   where
-    f = toInt (a + (mod (fst r) (b-a+1)))
+    f = fromIntegral (a + (mod (fst r) (b-a+1)))
     t = murandom (a,b) (snd r)
     r = random s
 myrandom :: (Integer,Integer) -> Integer -> [Int]
-myrandom (a,b) s = murandom (a,b) (mkStdGen (toInt s))
+myrandom (a,b) s = murandom (a,b) (mkStdGen (fromIntegral s))
 randpos :: Integer -> [Pos]
-randpos seed = zip (map toInt (myrandom (toInteger(1),toInteger(width)) seed)) (map toInt (myrandom (toInteger(1),toInteger(height)) seed))
+randpos seed = zip (map fromIntegral (myrandom (toInteger(1),toInteger(width)) seed)) (map fromIntegral (myrandom (toInteger(1),toInteger(height)) seed))
 randdir :: Integer -> [Dir]
 randdir seed = map inttodir (myrandom (0,4) seed)
 
@@ -84,7 +100,7 @@ randdir seed = map inttodir (myrandom (0,4) seed)
 inttodir :: Int -> Dir
 inttodir i = [L,R,U,D,N]!!(i)
 -- inttodir :: Integer -> Dir
--- inttodir i = [L,R,U,D,N]!!toInt(i)
+-- inttodir i = [L,R,U,D,N]!!fromIntegral(i)
 
 
 
@@ -129,7 +145,7 @@ movements (g,bs,p,rp,rd,s) key =
   restp p bs >>
   plot newg "=)" >>
   showbs newbs (drop (length bs) rd) >>
-  putStr (at (6,1) []) >>
+  putStringAt (6,1) [] >>
   play (newg,newbs,p,rp,newrd,s)
   where newg = moveg g key
         (newbs,newrd) = movebs bs rd
@@ -192,8 +208,8 @@ dirtopos N = (0,0)
 -- Set up screen ready for a game
 startscreen :: World -> IO()
 startscreen (g,bs,p,rp,rd,s) =
-  putStr cls >>
-  putStr (at (1,1) "THIEF") >>
+  clearScreen >>
+  putStringAt (1,1) "THIEF" >>
   plot (0,0) horbar >>
   plot (0,height+1) horbar >>
   forall [1..height] verbar (>>) (return()) >>
@@ -233,17 +249,17 @@ clearbs bs = forall bs clear (>>) (return())
 
 -- Plots a string at playing area position
 plot :: Pos -> String -> IO()
-plot pos str = putStr (at (scrpos pos) str)
+plot pos str = putStringAt (scrpos pos) str
 
 -- Clears a playing area position
 clear :: Pos -> IO()
-clear pos = putStr (at (scrpos pos) "  ")
+clear pos = putStringAt (scrpos pos) "  "
 
 -- Displays the score
 showsc :: Int -> IO()
 showsc s =
-  putStr (at (1,3) ("Score : "++show s)) >>
-  putStr (at (6,1) [])
+  putStringAt (1,3) ("Score : "++show s) >>
+  putStringAt (6,1) []
 
 
 
@@ -252,8 +268,8 @@ showsc s =
 -- Show instructions if desired
 instructions :: IO()
 instructions =
-  putStr cls >>
-  putStr (at (1,1) "THIEF\n\n") >>
+  clearScreen >>
+  putStringAt (1,1) "THIEF\n\n" >>
   putStr "Would you like instructions (Y/N)?\n\n" >>
   getkeyyn >>= \key ->
   if key=='Y' then
@@ -278,7 +294,7 @@ instructions =
 -- Display for end by being caught by a booglie
 end :: World -> IO()
 end (g,bs,p,rp,rd,s) =
-  putStr (at (1,height+8) "You got caught!\n") >>
+  putStringAt (1,height+8) "You got caught!\n" >>
   putStr ((pre s)++" scored "++(show s)++"!")
 
 -- Comment preceding final score
@@ -291,18 +307,18 @@ pre s = if (s>=10) then
 -- Display for end by succeeding
 end2 :: World -> IO()
 end2 w =
-  putStr (at (1,height+8) "Congratulations!  You have collected enough treasure to save your grandmother!\nThe End.")
+  putStringAt (1,height+8) "Congratulations!  You have collected enough treasure to save your grandmother!\nThe End."
 
 -- Check user really wants to quit
 quit :: World -> IO()
 quit w =
-  putStr (at (7,1) question) >>
+  putStringAt (7,1) question >>
   getkeyyn >>= \key ->
   if key=='N' then
-    putStr (at (7,1) blank) >>
+    putStringAt (7,1) blank >>
     play w
   else
-    putStr (at (1,height+8) "Bye.  Please play again soon!")
+    putStringAt (1,height+8) "Bye.  Please play again soon!"
   where question = "Do you really want to quit Thief (Y/N)?"
         blank = "                                       "
 
