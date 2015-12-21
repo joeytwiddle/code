@@ -1,4 +1,13 @@
-import IOExtensions (getCh)
+import System.IO (getChar, stdin, hSetEcho)
+
+-- BUG: Hugs does not receive the input char(s) until Enter is pressed
+--getCh :: IO Char
+--getCh  = do hSetEcho stdin False
+--            c <- getChar
+--            hSetEcho stdin True
+--            return c
+
+getCh = getChar
 
 type World = (Int,[Int],[Int])
 -- current player, list of beans on board, list of beans held by players
@@ -100,12 +109,13 @@ domoveforkey w key = domove w pos 0
 moveforkey (player,bs,pbs) key = (whatdoiown bs pbs player)!!((read [key]) - 1)
 
 newboard 0 = []
-newboard size = (toInt 4:newboard (size-1))
+newboard size = (fromIntegral 4:newboard (size-1))
 
 newpbs 0 = []
-newpbs ps = (toInt 0:newpbs (ps-1))
+newpbs ps = (fromIntegral 0:newpbs (ps-1))
 
-newworld players size = (toInt 1,newboard size,newpbs players)
+newworld :: Int -> Int -> World
+newworld players size = (fromIntegral 1,newboard size,newpbs players)
 
 nw = newworld 2 16
 
