@@ -89,7 +89,7 @@ newpoint (x,y) g = if occupied (x,y) g then
                      else
                        True
                    else
-                     if (nc>=3) then
+                     if (nc==3) then
                        True
                      else
                        False
