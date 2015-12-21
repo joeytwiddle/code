@@ -21,7 +21,7 @@ baseconv basea baseb s = strbase baseb (numbase basea s)
 -- Convert from integer to string in given base
 strbase :: Base -> Integer -> String
 strbase base 0 = []
-strbase base i = (strbase base divi) ++ [base!!(toInt modi)]
+strbase base i = (strbase base divi) ++ [base!!(fromIntegral modi)]
   where order = length base
         (divi,modi) = divMod i (toInteger order)
 
@@ -59,3 +59,11 @@ baseconvpadded n basea baseb s = pad res
   where res = baseconv basea baseb s
         pad res = replicate numtoadd '0' ++ res
         numtoadd = (n - length res)
+
+-- Examples
+
+binary2decimal input = baseconv binary decimal input
+decimal2binary = baseconv decimal binary
+binary2ascii = baseconv binary ascii
+ascii2binary = baseconv ascii binary
+
