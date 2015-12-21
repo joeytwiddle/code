@@ -49,11 +49,11 @@ startgridrows l = (a : startgridrows b)
 
 murandom (a,b) s = ( f : t )
   where
-    f = toInt (a + (mod (fst r) (b-a+1)))
+    f = fromIntegral (a + (mod (fst r) (b-a+1)))
     t = murandom (a,b) (snd r)
     r = random s
 myrandom :: (Integer,Integer) -> Integer -> [Int]
-myrandom (a,b) s = murandom (a,b) (mkStdGen (toInt s))
+myrandom (a,b) s = murandom (a,b) (mkStdGen (fromIntegral s))
 
 listofbools = map inttobool (myrandom (0,1) 9247)
 
