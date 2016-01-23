@@ -29,8 +29,12 @@ javascript:(function(){
 	/* Both of these should be a bit lighter. (In fact the second one could replace the first.) */
 	addStyle("._4af ._33e { background: rgba(234, 182, 126, 0.98); }");
 	/* But when hovered, it also need styling. */
+	/*
 	addStyle("._33c:hover ._33e { background: rgba(193, 143, 88, 0.98); }");
-	addStyle(", ._33c ._33e:focus { background: rgba(193, 143, 88, 0.98); }");
+	addStyle("._33c ._33e:focus { background: rgba(193, 143, 88, 0.98); }");
+	*/
+	addStyle("._33c:hover:after { content: ''; display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; background: rgba(193, 143, 88, 0.5); }");
+	/*addStyle("._33c:hover ._33e:after, ._33c ._33e:focus:after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; background: rgba(193, 143, 88, 0.5); }");*/
 	/* Make the scrollbar grip always visible when the sidebar is open */
 	addStyle("#fbNotificationsFlyout:hover .uiScrollableAreaTrack { visibility: visible !important; opacity: 1 !important; }");
 }());
