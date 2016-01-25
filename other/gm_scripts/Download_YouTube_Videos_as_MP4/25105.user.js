@@ -3,8 +3,8 @@
 // @description Adds a button that lets you download YouTube videos. Modified to offer lower quality formats when the normal files are too large for low bandwidth users.
 // @homepageURL https://github.com/gantt/downloadyoutube
 // @author Gantt
-// @version 1.8.4
-// @date 2015-10-11
+// @version 1.8.6.1-joey
+// @date 2016-01-18
 // @namespace http://googlesystem.blogspot.com
 // @include http://www.youtube.com/*
 // @include https://www.youtube.com/*
@@ -20,6 +20,8 @@
 // @match https://*.googlevideo.com/videoplayback*
 // @match http://*.youtube.com/videoplayback*
 // @match https://*.youtube.com/videoplayback*
+// @connect-src googlevideo.com
+// @connect-src ytimg.com
 // @grant GM_xmlhttpRequest
 // @grant GM_getValue
 // @grant GM_setValue
@@ -452,7 +454,7 @@ function run() {
   }
   
   function addFromManifest(oldFormat, newFormat) { // find newFormat URL in manifest
-    if (videoManifestURL && videoURL[newFormat]==undefined && SHOW_DASH_FORMATS && FORMAT_RULE['m4a']=='max') {
+    if (videoManifestURL && videoURL[newFormat]==undefined && SHOW_DASH_FORMATS && FORMAT_RULE['m4a']!='none') {
       var matchSig=findMatch(videoManifestURL, /\/s\/([a-zA-Z0-9\.]+)\//i);
       if (matchSig) {
         var decryptedSig=decryptSignature(matchSig);
@@ -475,16 +477,29 @@ function run() {
               debug('DYVAM - Info: matchURL '+matchURL);
               if (!matchURL) return;
               matchURL=matchURL.replace(/&amp\;/g,'&');
-              for (var i=0;i<downloadCodeList.length;i++) {
-                if (downloadCodeList[i].format==oldFormat) {
-                  downloadCodeList[i].format==newFormat;
-                  var downloadFMT=document.getElementById(LISTITEM_ID+oldFormat);
-                  downloadFMT.setAttribute('id', LISTITEM_ID+newFormat);
-                  downloadFMT.parentNode.setAttribute('href', matchURL);
-                  downloadCodeList[i].url=matchURL;
-                  downloadFMT.firstChild.nodeValue=FORMAT_LABEL[newFormat];
-                  addFileSize(matchURL, newFormat);
+              if (FORMAT_RULE['m4a']=='max') {
+                for (var i=0;i<downloadCodeList.length;i++) {
+                  if (downloadCodeList[i].format==oldFormat) {
+                    downloadCodeList[i].format==newFormat;
+                    var downloadFMT=document.getElementById(LISTITEM_ID+oldFormat);
+                    downloadFMT.setAttribute('id', LISTITEM_ID+newFormat);
+                    downloadFMT.parentNode.setAttribute('href', matchURL);
+                    downloadCodeList[i].url=matchURL;
+                    downloadFMT.firstChild.nodeValue=FORMAT_LABEL[newFormat];
+                    addFileSize(matchURL, newFormat);
+                  }
                 }
+              } else if (FORMAT_RULE['m4a']=='all') {
+                downloadCodeList.push(
+                  {url:matchURL,sig:videoSignature[newFormat],format:newFormat,label:FORMAT_LABEL[newFormat]});
+                var downloadFMT=document.getElementById(LISTITEM_ID+oldFormat);
+                var clone=downloadFMT.parentNode.parentNode.cloneNode(true);
+                clone.firstChild.firstChild.setAttribute('id', LISTITEM_ID+newFormat);
+                clone.firstChild.setAttribute('href', matchURL);
+                downloadFMT.parentNode.parentNode.parentNode.appendChild(clone);
+                downloadFMT=document.getElementById(LISTITEM_ID+newFormat);
+                downloadFMT.firstChild.nodeValue=FORMAT_LABEL[newFormat];
+                addFileSize(matchURL, newFormat);
               }
             }
           } 
@@ -669,9 +684,9 @@ function run() {
     if (signatureFunctionName == null) return setPref(STORAGE_CODE, 'error');
     signatureFunctionName=signatureFunctionName.replace('$','\\$');    
     var regCode = new RegExp(signatureFunctionName + '\\s*=\\s*function' +
-    '\\s*\\([\\w$]*\\)\\s*{[\\w$]*=[\\w$]*\\.split\\(""\\);(.+);return [\\w$]*\\.join');
+    '\\s*\\([\\w$]*\\)\\s*{[\\w$]*=[\\w$]*\\.split\\(""\\);\n*(.+);return [\\w$]*\\.join');
     var regCode2 = new RegExp('function \\s*' + signatureFunctionName +
-    '\\s*\\([\\w$]*\\)\\s*{[\\w$]*=[\\w$]*\\.split\\(""\\);(.+);return [\\w$]*\\.join');    
+    '\\s*\\([\\w$]*\\)\\s*{[\\w$]*=[\\w$]*\\.split\\(""\\);\n*(.+);return [\\w$]*\\.join');    
     var functionCode = findMatch(sourceCode, regCode) || findMatch(sourceCode, regCode2);
     debug('DYVAM - Info: signaturefunction ' + signatureFunctionName + ' -- ' + functionCode);            
     if (functionCode == null) return setPref(STORAGE_CODE, 'error');
