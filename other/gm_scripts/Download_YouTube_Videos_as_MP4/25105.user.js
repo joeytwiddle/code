@@ -214,6 +214,10 @@ function run() {
     }
     fetchSignatureScript(scriptURL);
   }
+
+  function cleanupString(str) {
+    return str.replace(/[#"\?:\*]/g,'').replace(/[&\|\\\/]/g,'_').replace(/'/g,'\'').replace(/^\s+|\s+$/g,'').replace(/\.+$/g,'');
+  }
   
    // video title
    var videoTitle=document.title || 'video';
@@ -225,6 +229,12 @@ function run() {
       videoTitle=videoTitle.replace(/#/g, '%23').replace(/&/g, '%26'); //  Mac, Linux
    }
                         
+  var authorName = "";
+  try { authorName = document.getElementsByClassName("yt-user-info")[0].textContent.trim(); }
+  catch (e) {}
+  authorName = cleanupString(authorName);
+  videoTitle = videoTitle + ( authorName ? " by "+authorName : "" );
+
   // parse the formats map
   var sep1='%2C', sep2='%26', sep3='%3D';
   if (videoFormats.indexOf(',')>-1) { 
