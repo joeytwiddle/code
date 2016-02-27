@@ -37,4 +37,16 @@ javascript:(function(){
 	/*addStyle("._33c:hover ._33e:after, ._33c ._33e:focus:after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; background: rgba(193, 143, 88, 0.5); }");*/
 	/* Make the scrollbar grip always visible when the sidebar is open */
 	addStyle("#fbNotificationsFlyout:hover .uiScrollableAreaTrack { visibility: visible !important; opacity: 1 !important; }");
+	/* When new notifications arrive, ensure they get loaded into the sidebar.  If not, the sidebar acts weirdly. */
+	/* Unfortunately this runs for a while but then gets cleared.  Presumably Facebook code is clearing it! */
+	/* I will try setTimeout instead of setInterval. */
+	function checkNotifications(){
+		setTimeout(checkNotifications, 5000);
+		var newNotificationsCount = document.getElementById('notificationsCountValue').textContent;
+		if (newNotificationsCount > 0) {
+			/* toggleButton.click(); */
+			document.querySelector('#fbNotificationsJewel .jewelButton').click();
+		}
+	}
+	checkNotifications();
 }());
