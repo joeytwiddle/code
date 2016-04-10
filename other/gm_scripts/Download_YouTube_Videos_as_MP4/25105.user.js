@@ -3,8 +3,8 @@
 // @description Adds a button that lets you download YouTube videos. Modified to offer lower quality formats when the normal files are too large for low bandwidth users.
 // @homepageURL https://github.com/gantt/downloadyoutube
 // @author Gantt
-// @version 1.8.6.1-joey
-// @date 2016-01-18
+// @version 1.8.7.1-joey
+// @date 2016-04-10
 // @namespace http://googlesystem.blogspot.com
 // @include http://www.youtube.com/*
 // @include https://www.youtube.com/*
@@ -20,8 +20,8 @@
 // @match https://*.googlevideo.com/videoplayback*
 // @match http://*.youtube.com/videoplayback*
 // @match https://*.youtube.com/videoplayback*
-// @connect-src googlevideo.com
-// @connect-src ytimg.com
+// @connect googlevideo.com
+// @connect ytimg.com
 // @grant GM_xmlhttpRequest
 // @grant GM_getValue
 // @grant GM_setValue
