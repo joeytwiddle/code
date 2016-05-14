@@ -2,13 +2,15 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.8.5
+// @version        0.9.0
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @grant          none
 // ==/UserScript==
 
 // bug: If the notifications list is longer than the page, scroll down to the bottom and then try to click on the white space below the Github document's content.  The event does not fire there!
+
+// Contributors: joeytwiddle, SkyzohKey
 
 var mainNotificationsPath = "/notifications";
 
@@ -37,8 +39,7 @@ function onNotificationButtonClicked(evt){
 function fetchNotifications(targetPage){
 	notificationButtonContainer.css({
 		"opacity": "0.3",
-		"background-color": "#ececec",
-		"background-image": "linear-gradient(#d9d9d9, #ececec)"
+		"outline": "none"
 	});
 	$.ajax({
 		url: targetPage,
@@ -66,7 +67,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 		});
 		titleElem.append( textNode(" ("), buttonToSeeAll, textNode(")") );
 	}
-	notificationsDropdown.append( $("<center>").append(titleElem) );
+	//notificationsDropdown.append( $("<span class='notitifcations-dropdown-title'>").append(titleElem) );
 
 	var notificationPage = $("<div>").append( $.parseHTML(data) );
 	var notificationsList = notificationPage.find(".notifications-list");
@@ -74,36 +75,82 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	notificationsList.find("a").each(function(){
 		$(this).attr("title", $(this).text().trim());
 	});
-	var minWidth = Math.min(750, window.innerWidth-48);
+	var minWidth = Math.min(500, window.innerWidth-48);
 	if (notificationsList.children().length == 0) {
-		notificationsDropdown.append("<center>No new notifications</center>");
-		minWidth = 0;
+		notificationsDropdown.append("<span class='notifications-dropdown-no-new'>No new notifications</span>");
+		minWidth = 200;
 	}
 	notificationsDropdown.append(notificationsList);
 	var linkToPage = mainNotificationsPath;
 	//var linkToPage = targetPage;
-	var seeAll = $("<center><b><a href='"+encodeURI(linkToPage)+"'>Notifications page</a></b></center>");
+	var seeAll = $("<a class='notifications-dropdown-see-all' href='"+encodeURI(linkToPage)+"'>See all the notifications</a>");
 	notificationsDropdown.append(seeAll);
 
 	var arrowSize = 10;
 
 	$("<style>").html(""
 	  + " .notifications-dropdown { "
-	  + "   border: 1px solid #ddd; "
+	  + "   border: 1px solid rgba(0, 0, 0, 0.15); "
 	  + "   background-color: #fff; "
-	  + "   padding: 2px 16px; "
-	  + "   box-shadow: 0px 2px 8px 0px rgba(0,0,0,0.25); "
-	  + "   border-radius: 24px; "
+	  //+ "   padding: 2px 16px; "
+	  + "   box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.15); "
+	  + "   border-radius: 4px; "
 	  //+ "   max-height: 90%; "
-	  + "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
-	  + "   z-index: 10000000; "     // To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues
+	  //+ "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
+	  + "   z-index: 50; "     // To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues
 	  + " } "
-	  + " .notifications-dropdown > center { "
-	  + "   padding: 8px 8px; "
+	  + " .notifications-dropdown > .css-truncate, .notifications .list-group-item-name a { "
+	  + "   max-width: 200px !important;"				
+	  + " } "
+	  + " .notifications-dropdown-see-all { "
+	  + "   display: block; "
+	  + "   font-weight: bold; "
+	  //+ "   margin-top: 20px; "
+	  + "   padding: 5px; "
+	  + "   text-align: center; "
+	  + "   background-color: #F5F5F5 !important; "
+	  + "   border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; "
+	  + " } "
+	  + " .notifications-dropdown-see-all:hover { "
+	  + "   background-color: #4078C0 !important; "
+	  + "   color: white; "
+	  + "   text-decoration: none; "
+	  + " } "
+	  + " .notifications-dropdown-no-new { "
+	  + "   display: block; "
+	  + "   height: 30px; "
+	  + "   line-height: 30px; "
+	  + "   padding: 0 10px; "
+	  + "   margin-bottom: 0; "
+	  + "   text-align: center; "
+	  + "   font-weight: bold; "
+	  + "   font-size: 16px; "
+	  + " } "
+	  // Redesign the notification area.
+	  + " .notifications-dropdown .boxed-group > h3 { "
+	  + "   border-radius: 0; "
+	  + "   border-width: 0px 0px 0px; "
+	  + " } "
+	  + " .notifications-dropdown .boxed-group:first-child h3 { "
+	  + "   border-top-left-radius: 3px; "
+	  + "   border-top-right-radius: 3px; "
+	  + " } "
+	  + " .notifications-dropdown .boxed-group-inner { "
+	  + "   border: 0; "
+	  + "   border-radius: 0; "
+	  + "   padding: 0; "
+	  + "   border-top: 1px solid #D8D8D8; "
+	  + "   border-bottom: 1px solid #D8D8D8; "
+	  + " } "
+	  + " .notifications-dropdown .notifications-list .boxed-group { "
+	  + "   margin: 0 !important; "
+	  + " } "
+	  + " .notifications-dropdown .notifications-list .paginate-container { "
+	  + "   margin: 0 !important;"
 	  + " } "
 	  // GitHub uses default 20px here, but it applies to the last one too, which messes up our layout.
 	  + " .notifications-dropdown .notifications-list .boxed-group:not(:last-child) { "
-	  + "   margin-bottom: 16px; "
+	  //+ "   margin-bottom: 16px; "
 	  + " } "
 	  + " .notifications-dropdown .notifications-list .boxed-group:last-child { "
 	  + "   margin-bottom: 0px; "
@@ -129,7 +176,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  + "   height: 0px; "
 	  + "   border-left: "+arrowSize+"px solid transparent; "
 	  + "   border-right: "+arrowSize+"px solid transparent; "
-	  + "   border-bottom: "+arrowSize+"px solid white; "
+	  + "   border-bottom: "+arrowSize+"px solid #C3C3C3; "
 	  + "   z-index: 10000001; "
 	  + " } "
 	  + " .notification-indicator.tooltipped.tooltip-hidden:before, .notification-indicator.tooltipped.tooltip-hidden:after { "
@@ -256,3 +303,4 @@ makeNotificationBlocksCollapsable(document.body);
 // Optional: Also add the rollup feature for individual files on diff pages.
 // TODO: This should be run on-demand, in case we reached a file or diff page via pushState().
 makeFileAndDiffBlocksCollapsable(document.body);
+
