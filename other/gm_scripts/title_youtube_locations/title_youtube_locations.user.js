@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features add scrollbars, animate thumbnails, reduce font sizes and un-float the header.
-// @version        1.1.8
+// @version        1.1.11
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -154,7 +154,6 @@ if (animateThumbnails) {
 		// function createThumbnailAnimatorEvent(thumbImage) {
 		var thumbImage    = null;
 		var originalHref  = null;
-		var evt    = null;
 		var timer  = null;
 		//var frames = ["1.jpg","2.jpg","3.jpg"];   // "default.jpg",
 		var frames = ["1","2","3"];
@@ -166,6 +165,10 @@ if (animateThumbnails) {
 			thumbImage.src = originalHref.replace(/\/[^/]*$/,'') + '/' + filename;
 		}
 		function startAnimation() {
+			// Because there was a bug that the running animation would not stop!
+			if (timer) {
+				clearInterval(timer);
+			}
 			originalHref = thumbImage.src;
 			if (originalHref.match(/^data:/)) {
 				return;
