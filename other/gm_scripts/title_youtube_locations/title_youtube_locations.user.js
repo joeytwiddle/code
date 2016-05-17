@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features add scrollbars, animate thumbnails, reduce font sizes and un-float the header.
-// @version        1.1.11
+// @version        1.2.0
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -152,6 +152,7 @@ if (animateThumbnails) {
 	// we are not checking the event target like we should do.
 	function initThumbnailAnimator() {
 		// function createThumbnailAnimatorEvent(thumbImage) {
+		var filenameRE = /\/(.qdefault|default|0)\.(jpg|webp)\b/;
 		var thumbImage    = null;
 		var originalHref  = null;
 		var timer  = null;
@@ -160,9 +161,10 @@ if (animateThumbnails) {
 		var frameI = 0;
 		function changeFrame() {
 			frameI = (frameI + 1) % frames.length;
-			var extension = originalHref.replace(/^.*\./, '');
+			var match = originalHref.match(filenameRE);
+			var extension = match[2];
 			var filename = frames[frameI] + '.' + extension;
-			thumbImage.src = originalHref.replace(/\/[^/]*$/,'') + '/' + filename;
+			thumbImage.src = originalHref.replace(filenameRE, '/' + filename);
 		}
 		function startAnimation() {
 			// Because there was a bug that the running animation would not stop!
@@ -174,7 +176,7 @@ if (animateThumbnails) {
 				return;
 			}
 			// We make this check quite late, due to lazy loading
-			if (originalHref.match(/\/(.qdefault|default|0)\.(jpg|webp)$/)) {
+			if (originalHref.match(filenameRE)) {
 				// logElem("Starting animation",thumbImage);
 				timer = setInterval(changeFrame,600);
 			}
