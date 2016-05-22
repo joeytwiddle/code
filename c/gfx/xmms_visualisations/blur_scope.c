@@ -147,7 +147,7 @@ void bscope_read_config(void)
 #define blurTao2 0.9
 
 #ifdef SKIP_BLURRING
-	#define fadeRate 0.88
+	#define fadeRate 0.80
 #else
 	#define fadeRate 0.92
 	#define BOTTOM_OUT 64
@@ -281,13 +281,13 @@ void generate_cmap(void)
 				if (i == 255)
 					colors[i] = 0xFFFFFF;
 				else
-					colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
+					colors[i] = (((guint32)(i*red/350) << 16) | ((guint32)(i*green/350) << 8) | ((guint32)(i*blue/350)));
 
 			#else
 
 				// Fade black -> color -> white in 2 stages.
 				// High firstPhaseEnd makes only the previous frame's line brighter than blue.  Good for slow CPUs with a low framerate?
-				#define firstPhaseEnd 210.0
+				#define firstPhaseEnd 250.0
 				if (i <= firstPhaseEnd) {
 					float thruFirst = (float)i/firstPhaseEnd;
 					colors[i] = (((guint32)(thruFirst*red) << 16) | ((guint32)(thruFirst*green) << 8) | ((guint32)(thruFirst*blue)));
