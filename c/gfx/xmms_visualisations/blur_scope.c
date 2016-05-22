@@ -79,6 +79,8 @@ VisPlugin *get_vplugin_info(void)
 //// At 256 we rather notice that the y-axis is double-chunked ^^
 // #define HEIGHT 512
 
+// Tracks which have been volume/gain-normalised may produce rather "flat" curves.
+// We might like to enlargen them by multiplying HEIGHT by 1.5 here, but that will occasionally cause segfaults on unnormalised tracks when we try to render outside the box!
 #define SCALE_HEIGHT (HEIGHT/128)
 
 // Joey's:
@@ -123,8 +125,9 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x00BFFF;  // cyan lightning
 		// bscope_cfg.color = 0x008FFF;  // electric cyan
-		bscope_cfg.color = 0x007FFF;  // electric blue
+		// bscope_cfg.color = 0x007FFF;  // electric blue
 		// bscope_cfg.color = 0x0087FF;  // lighter electric blue
+		bscope_cfg.color = 0x0057FF;  // darker electric blue
 		// bscope_cfg.color = 0x0000FF;  // pure blue
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
@@ -147,7 +150,7 @@ void bscope_read_config(void)
 #define blurTao2 0.9
 
 #ifdef SKIP_BLURRING
-	#define fadeRate 0.80
+	#define fadeRate 0.85
 #else
 	#define fadeRate 0.92
 	#define BOTTOM_OUT 64
@@ -281,7 +284,7 @@ void generate_cmap(void)
 				if (i == 255)
 					colors[i] = 0xFFFFFF;
 				else
-					colors[i] = (((guint32)(i*red/350) << 16) | ((guint32)(i*green/350) << 8) | ((guint32)(i*blue/350)));
+					colors[i] = (((guint32)(i*red/400) << 16) | ((guint32)(i*green/400) << 8) | ((guint32)(i*blue/400)));
 
 			#else
 
