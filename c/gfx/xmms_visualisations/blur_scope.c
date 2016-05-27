@@ -156,6 +156,13 @@ void bscope_read_config(void)
 	#define BOTTOM_OUT 64
 #endif
 
+// The signal for this frame will be white (1.0)
+// But we may want to jump down the scale quite a bit on the next frame
+#define SECOND_INTENSITY_SCALE 0.64
+
+// Shape of the intensity colour dropoff (1.0 = linear)
+#define INTENSITY_CURVE_POWER 1.0
+
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 {
@@ -271,6 +278,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 void generate_cmap(void)
 {
 	guint32 colors[256],i,red,blue,green;
+	float intensity;
 	if(window)
 	{
 		red = (guint32)((bscope_cfg.color >> 16) /*& 0xff*/);
@@ -279,12 +287,18 @@ void generate_cmap(void)
 		for(i = 255; i > 0; i--)
 		{
 
+			//intensity = (float)i / 400.0;
+			intensity = (float)i / 255.0;
+			//intensity = pow(intensity * 0.7, 2);
+			intensity = intensity * SECOND_INTENSITY_SCALE;
+			intensity = pow(intensity, INTENSITY_CURVE_POWER);
+
 			#ifdef SKIP_BLURRING
 
 				if (i == 255)
 					colors[i] = 0xFFFFFF;
 				else
-					colors[i] = (((guint32)(i*red/400) << 16) | ((guint32)(i*green/400) << 8) | ((guint32)(i*blue/400)));
+					colors[i] = (((guint32)((float)red*intensity) << 16) | ((guint32)((float)green*intensity) << 8) | ((guint32)((float)blue*intensity)));
 
 			#else
 
