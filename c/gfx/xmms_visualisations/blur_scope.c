@@ -72,7 +72,8 @@ VisPlugin *get_vplugin_info(void)
 // #define WIDTH 720
 // #define WIDTH 800   // Favourite
 // #define WIDTH 960
-#define WIDTH 1024
+// 1024 is the max but we should not use 1024 because we look ahead to the next value, in order to interpolate
+#define WIDTH 1023
 #define HEIGHT 128
 // #define HEIGHT 192
 // #define HEIGHT 256
@@ -434,7 +435,8 @@ static void bscope_render_pcm(gint16 data[2][512])
 		//// When HEIGHT used to be 128:
 		y = (HEIGHT / 2) + SCALE_HEIGHT*(data[0][i >> 1] >> 9);
 
-		//// Since we are reading only 1 sample for 2 pixels, we interpolate the second pixel:
+		//// The input data appears to come in identical pairs, which produces an undesirable staircase effect
+		//// To make the curve appear smooth, we interpolate every odd reading with the next.
 		if (i%2 == 1)
 			y = (y + (HEIGHT / 2) + SCALE_HEIGHT*(data[0][(i+2) >> 1] >> 9))/2;
 
