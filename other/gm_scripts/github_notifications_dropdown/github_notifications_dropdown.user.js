@@ -2,16 +2,17 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.9.2
+// @version        0.9.3
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
-// @grant          GM_addStyle
+// @grant          none
 // ==/UserScript==
 
-// Since we added the @require, Firefox+Greasemonkey was having a huge freeze during page load.  This was only a problem with @grant none; setting @grant GM_addStyle cured it (even though we aren't actually using it).
-
 // bug: If the notifications list is longer than the page, scroll down to the bottom and then try to click on the white space below the Github document's content.  The event does not fire there!
+
+// When using @grant none then we should also avoid messing with the page's jQuery (or lack or jQuery).
+this.$ = this.jQuery = jQuery.noConflict(true);
 
 // Contributors: joeytwiddle, SkyzohKey
 
