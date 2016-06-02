@@ -128,7 +128,7 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0x008FFF;  // electric cyan
 		// bscope_cfg.color = 0x007FFF;  // electric blue
 		// bscope_cfg.color = 0x0087FF;  // lighter electric blue
-		bscope_cfg.color = 0x0057FF;  // darker electric blue
+		bscope_cfg.color = 0x0037FF;  // darker electric blue
 		// bscope_cfg.color = 0x0000FF;  // pure blue
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
@@ -151,7 +151,7 @@ void bscope_read_config(void)
 #define blurTao2 0.9
 
 #ifdef SKIP_BLURRING
-	#define fadeRate 0.85
+	#define fadeRate 0.90
 #else
 	#define fadeRate 0.92
 	#define BOTTOM_OUT 64
