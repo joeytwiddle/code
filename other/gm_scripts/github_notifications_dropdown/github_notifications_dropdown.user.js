@@ -11,7 +11,7 @@
 
 // bug: If the notifications list is longer than the page, scroll down to the bottom and then try to click on the white space below the Github document's content.  The event does not fire there!
 
-// When using @grant none then we should also avoid messing with the page's jQuery (or lack or jQuery).
+// When using @grant none then we should also avoid messing with the page's jQuery (or lack of jQuery).
 this.$ = this.jQuery = jQuery.noConflict(true);
 
 // Contributors: joeytwiddle, SkyzohKey
