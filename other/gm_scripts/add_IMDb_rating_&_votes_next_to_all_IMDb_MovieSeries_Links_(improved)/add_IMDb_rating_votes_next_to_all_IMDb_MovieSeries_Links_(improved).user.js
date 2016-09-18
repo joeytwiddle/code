@@ -1,8 +1,8 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
 // @author         StackOverflow community (especially Brock Adams)
-// @version        2015-11-24-5-joeytwiddle
+// @version        2015-11-24-6-joeytwiddle
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
@@ -55,6 +55,11 @@ function processIMDB_Links () {
 
         // Skip the thumbnail of each episode on a season page (episode names still processed)
         if ($(currentLink).closest('.image').length) {
+            continue;
+        }
+
+        // Skip thumbnails in "Known For" section of actor pages
+        if ($(currentLink).closest('.known-for').length && $(currentLink).find('img').length) {
             continue;
         }
 
@@ -144,17 +149,17 @@ function prependIMDB_Rating (resp, targetLink) {
 
 
     // NOTE: I switched from <b> to <strong> simply because on Season pages, the rating injected after episode titles was getting uglified by an IMDB CSS rule: .list_item .info b { font-size: 15px; }
-    targetLink.setAttribute("title", ratingTxt.replace(/<\/*strong>/g,'') );
+    targetLink.setAttribute("title", "Rated " + ratingTxt.replace(/<\/*strong>/g,'').replace(/\//,'by') + " users." );
 
     if (justrate < 5) {
         return;
     }
 
 
-    // Slowly approach full opacity as votesNum increases.  1000 votes results in opacity 0.5.
-    var opacity = 1 - 1 / (1 + 0.001 * votesNum);
-    // Actually let's not start from 0.
-    opacity = 0.1 + 0.9*opacity;
+    // Slowly approach full opacity as votesNum increases.  10,000 votes results in opacity 0.5 (actually 0.6 when adjusted).
+    var opacity = 1 - 1 / (1 + 0.0001 * votesNum);
+    // Actually let's not start from 0; we may still want to see the numbers!
+    opacity = 0.2 + 0.8*opacity;
     // Don't use too many decimal points; it's ugly!
     //opacity = Math.round(opacity * 10000) / 10000;
     opacity = opacity.toFixed(3);
@@ -163,7 +168,8 @@ function prependIMDB_Rating (resp, targetLink) {
     var resltSpan       = document.createElement ("span");
     // resltSpan.innerHTML = '<b><font style="border-radius: 5px;padding: 1px;border: #575757 solid 1px; background-color:' + color[colnumber] + ';">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
     // resltSpan.innerHTML = '<b><font style="background-color:' + justrate + '">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
-    resltSpan.innerHTML = '&nbsp;<font style="font-weight: normal;font-size: 80%;opacity: '+opacity+';border-radius: 3px;padding: 1px 4px;border: #575757 solid 1px; background-color:' + color[colnumber] + ';">' + '' + ratingTxt + '</font>';
+    // I wanted vertical padding 1px but then the element does not fit in the "also liked" area, causing the top border to disappear!  Although reducing the font size to 70% is an alternative.
+    resltSpan.innerHTML = '&nbsp;<font style="font-weight: normal;font-size: 80%;opacity: '+opacity+';border-radius: 3px;padding: 0px 4px;border: #575757 solid 1px; background-color:' + color[colnumber] + ';color: black;">' + '' + ratingTxt + '</font>';
 
 
     if (isError)

@@ -1,1 +1,0 @@
-./add_IMDb_rating_votes_next_to_all_IMDb_MovieSeries_Links_(improved).user.js
