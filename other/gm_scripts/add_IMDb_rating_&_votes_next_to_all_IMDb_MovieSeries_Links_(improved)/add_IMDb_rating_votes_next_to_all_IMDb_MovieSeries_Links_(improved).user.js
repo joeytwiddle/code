@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
 // @author         StackOverflow community (especially Brock Adams)
-// @version        2015-11-24-6-joeytwiddle
+// @version        2015-11-24-7-joeytwiddle
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
@@ -111,17 +111,34 @@ function fetchTargetLink (linkNode) {
 function prependIMDB_Rating (resp, targetLink) {
     var isError     = true;
     var ratingTxt   = "** Unknown Error!";
+    var colnumber   = 0;
+    var justrate    = 'RATING_NOT_FOUND';
 
     if (resp.status != 200  &&  resp.status != 304) {
         ratingTxt   = '** ' + resp.status + ' Error!';
     }
     else {
-        var ratingM = resp.responseText.match (/Users rated this (.*) \(/);
-        var votesM  = resp.responseText.match (/\((.*) votes\) -/);
+        // Example value: ["Users rated this 8.5/10 (", "8.5/10"]
+        //var ratingM = resp.responseText.match (/Users rated this (.*) \(/);
+        // Example value: ["(1,914 votes) -", "1,914"]
+        //var votesM  = resp.responseText.match (/\((.*) votes\) -/);
 
-      //  if (/\(awaiting \d+ votes\)|\(voting begins after release\)/i.test (resp.responseText) ) {
+        var doc = document.createElement('div');
+        doc.innerHTML = resp.responseText;
+        var elem = doc.querySelector('.title-overview .vital .ratingValue strong');
+        var title = elem && elem.title || '';
+
+        var ratingT = title.replace(/ based on .*$/, '');
+        var votesT  = title.replace(/.* based on /, '').replace(/ user ratings/, '');
+
+        // The code below expects arrays (originally returned by string match)
+        var ratingM = [ratingT, ratingT + "/10"];
+        var votesM  = [votesT, votesT];
+
+        //console.log('ratingM', ratingM);
+        //console.log('votesM', votesM);
+
         if (/\(awaiting \d+ votes\)|\(voting begins after release\)|in development,/i.test (resp.responseText) ) {
-            
                 ratingTxt   = "NR";
                 isError     = false;
                 colnumber = 0;
@@ -164,7 +181,7 @@ function prependIMDB_Rating (resp, targetLink) {
     //opacity = Math.round(opacity * 10000) / 10000;
     opacity = opacity.toFixed(3);
 
-    color = ["#Faa", "#Faa","#Faa", "#Faa","#Faa", "#F88","#Faa", "#ff7","#7e7", "#5e5", "#0e0", "#ddd"]
+    var color = ["#Faa", "#Faa","#Faa", "#Faa","#Faa", "#F88","#Faa", "#ff7","#7e7", "#5e5", "#0e0", "#ddd"];
     var resltSpan       = document.createElement ("span");
     // resltSpan.innerHTML = '<b><font style="border-radius: 5px;padding: 1px;border: #575757 solid 1px; background-color:' + color[colnumber] + ';">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
     // resltSpan.innerHTML = '<b><font style="background-color:' + justrate + '">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
