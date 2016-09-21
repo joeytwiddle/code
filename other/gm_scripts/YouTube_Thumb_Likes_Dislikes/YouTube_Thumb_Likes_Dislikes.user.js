@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.0.6
+// @version        1.0.7
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -155,10 +155,13 @@ function lookupLikesDislikes(link) {
 					lightSaber = lightSaber || lePage.getElementsByClassName("video-extras-sparkbars")[0]; // Oct 2012
 					if (lightSaber) {
 						link.appendChild(lightSaber);
-						// It often falls on the line below the thumbnail, aligned left
-						// Here is a dirty fix to align it right, with all the other info.
 						if (document.location.pathname === "/watch") { // not on search results
-							lightSaber.style.marginLeft = '124px';
+							// It often falls on the line below the thumbnail, aligned left
+							// Here is a dirty fix to align it right, with all the other info.
+							//lightSaber.style.marginLeft = '124px';
+							// Well none of the other info is aligned right for me now, it's all aligned left.
+							// Just give it a small gap on the right
+							lightSaber.style.marginRight = '10px';
 						}
 						// Bars are unneccessarily wide on search results pages, so:
 						if (lightSaber.clientWidth > 150) {
