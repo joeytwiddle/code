@@ -3,7 +3,7 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @version        1.2.6
+// @version        1.2.7
 // @include      http://www.google.*/search?*
 // @include      https://www.google.*/search?*
 // @include      http://www.google.com.*/search?*
@@ -69,21 +69,24 @@ function createFaviconFor(url) {
 	return img;
 }
 
-function getElementsByTagNameAndClassName(tN,cN) {
-	return filterListBy( document.getElementsByTagName(tN), function(x){ return x.className==cN } );
+function getGoogleResultsLinks() {
+	/*
+	return filterListBy(document.getElementsByTagName('a'), function (x) {
+		// Most pages show links with class 'l'
+		// But on pages where the first result has an indented block of sub-pages,
+		// the indented links have class 'l' but all the other links have no class but parent class 'r'
+		return x.className === 'l' || x.parentNode.className === 'r';
+	});
+	*/
+
+	// a.l
+	// a.fl are small one-line sub-results.  Search "squeak" and see the Wikipedia result.
+	return document.querySelectorAll('.g a:not(.fl)');
 }
 
 function getElementsByClassName(cN) {
 	return getElementsByTagNameAndClassName("*",cN);
 }
-
-// var links = document.evaluate("//a[@class='l']",document,null,6,null);
-// var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
-// var links = document.links.filter( function(x){ return x.className=='l'; } );
-var links = getElementsByTagNameAndClassName("A",'l');
-// Allows it to work on any sites:
-if (links.length == 0)
-	links = document.getElementsByTagName("A");
 
 // console.log("Got links = "+links.snapshotLength);
 
@@ -93,26 +96,35 @@ style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; 
 document.getElementsByTagName('head')[0].appendChild(style);
 
 function updateFavicons() {
+	// var links = document.evaluate("//a[@class='l']",document,null,6,null);
+	// var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
+	// var links = document.links.filter( function(x){ return x.className=='l'; } );
+	var links = getGoogleResultsLinks();
+	// Allows it to work on any sites:
+	if (links.length === 0) {
+		links = document.getElementsByTagName("A");
+	}
 
 	// for (var i=0;i<links.snapshotLength;i++) {
 		// var link = links.snapshotItem(i);
-	for (var i=0;i<links.length;i++) {
+	for (var i = 0; i < links.length; i++) {
 		var link = links[i];
 		// if (link.href.match('^javascript:') || link.href.match('^#')) {
 			// continue;
 		// }
+        var targetUrl = link.getAttribute('data-href') || link.href;
 		//// Skip relative and same-host links:
-		if (link.href.match(/^[/]/) || link.href.match("://"+document.location.host)) {
+		if (targetUrl.match(/^[/]/) || targetUrl.match("://"+document.location.host)) {
 			continue;
 		}
 		//console.log("[faviconizegoogle.user.js] link.getAttribute(data-faviconized):" ,link.getAttribute("data-faviconized"));
-		if (link.getAttribute("data-faviconized") != null) {
+		if (link.getAttribute("data-faviconized")) {
 			// Already faviconized
 			console.log("[faviconizegoogle.user.js] Skipping");
 			continue;
 		}
 		link.setAttribute("data-faviconized", "yes");
-		var img = createFaviconFor(link.href);
+		var img = createFaviconFor(targetUrl);
 		var targetNode = (placeFaviconByUrl ? link.parentNode.parentNode.getElementsByTagName('cite')[0] : link);
 		if (placeFaviconInsideLink) {
 			if (placeFaviconAfter) {
@@ -128,7 +140,6 @@ function updateFavicons() {
 			}
 		}
 	}
-
 }
 
 // TODO: Use MutationObserver instead
