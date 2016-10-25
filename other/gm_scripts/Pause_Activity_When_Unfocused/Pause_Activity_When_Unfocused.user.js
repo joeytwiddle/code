@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Pause Activity When Unfocused
-// @namespace    https://openuserjs.org/users/joeytwiddle
-// @version      0.1
-// @description  Pauses calls to requestAnimationFrame when the tab is not in focus.
+// @namespace    http://tampermonkey.net/
+// @version      0.0.2
+// @description  When page is no longer focused, delay all calls to requestAnimationFrame and setTimeout until the page is refocused.  Useful to prevent CPU overheat when developing games.
 // @author       joeytwiddle
 // @match        http://*/*
 // @match        https://*/*
@@ -16,21 +16,23 @@ setTimeout(function() {
 
     unsafeWindow.addEventListener('blur', function () {
         paused = true;
-        //console.log('Window activity paused');
+        console.log('Window activity paused');
     });
     unsafeWindow.addEventListener('focus', function () {
         paused = false;
-        //console.log('Window activity resumed');
+        console.log('Window activity resumed');
         if (delayedCall) {
             delayedCall.realFunc.apply(delayedCall.this, delayedCall.arguments);
             delayedCall = null;
         }
     });
 
-    //console.log('Wrapping functions...');
+    console.log('Wrapping functions...');
 
-    delayWhenUnfocused('requestAnimFrame');
+    delayWhenUnfocused('setTimeout');
     delayWhenUnfocused('requestAnimationFrame');
+    // This is a polyfill that people occasionally use:
+    delayWhenUnfocused('requestAnimFrame');
 
     var delayedCall = null;
 
@@ -47,6 +49,6 @@ setTimeout(function() {
             }
         };
         unsafeWindow[fnName] = modifiedFunc;
-        //console.log('Replaced ' + fnName + '.');
+        console.log('Replaced ' + fnName + '.');
     }
 }, 2000);
