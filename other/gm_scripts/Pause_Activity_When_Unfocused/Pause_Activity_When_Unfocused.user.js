@@ -1,29 +1,48 @@
 // ==UserScript==
 // @name         Pause Activity When Unfocused
 // @namespace    http://tampermonkey.net/
-// @version      0.0.2
-// @description  When page is no longer focused, delay all calls to requestAnimationFrame and setTimeout until the page is refocused.  Useful to prevent CPU overheat when developing games.
+// @version      0.0.3
+// @description  Postpone calls to requestAnimationFrame and setTimeout when the page loses focus.  Useful to prevent CPU overheat when developing games or graphics.
 // @author       joeytwiddle
 // @match        http://*/*
 // @match        https://*/*
 // @grant        unsafeWindow
 // ==/UserScript==
 
+var delayBeforePausing = 60 * 1000;
+
 setTimeout(function() {
     'use strict';
 
     var paused = false;
+    var timeoutId = null;
+    var delayedCalls = [];
 
     unsafeWindow.addEventListener('blur', function () {
-        paused = true;
-        console.log('Window activity paused');
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(function () {
+            paused = true;
+            console.log('Window activity paused');
+            timeoutId = null;
+        }, delayBeforePausing);
     });
     unsafeWindow.addEventListener('focus', function () {
-        paused = false;
-        console.log('Window activity resumed');
-        if (delayedCall) {
-            delayedCall.realFunc.apply(delayedCall.this, delayedCall.arguments);
-            delayedCall = null;
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+        if (paused) {
+            console.log('Window activity resumed');
+            paused = false;
+        }
+        while (delayedCalls.length > 0) {
+            var delayedCall = delayedCalls.shift();
+            try {
+                delayedCall.realFunc.apply(delayedCall.this, delayedCall.arguments);
+            } catch (e) {
+                //console.error("Error while replaying delayed call:");
+                console.error(e);
+            }
         }
     });
 
@@ -34,8 +53,6 @@ setTimeout(function() {
     // This is a polyfill that people occasionally use:
     delayWhenUnfocused('requestAnimFrame');
 
-    var delayedCall = null;
-
     function delayWhenUnfocused (fnName) {
         var realFunc = unsafeWindow[fnName];
         if (!realFunc) {
@@ -43,7 +60,7 @@ setTimeout(function() {
         }
         var modifiedFunc = function () {
             if (paused) {
-                delayedCall = {this: this, arguments: arguments, realFunc: realFunc};
+                delayedCalls.push( {this: this, arguments: arguments, realFunc: realFunc} );
             } else {
                 return realFunc.apply(this, arguments);
             }
