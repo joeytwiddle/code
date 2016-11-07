@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pause Activity When Unfocused
 // @namespace    http://tampermonkey.net/
-// @version      0.0.3
+// @version      0.0.4
 // @description  Postpone calls to requestAnimationFrame and setTimeout when the page loses focus.  Useful to prevent CPU overheat when developing games or graphics.
 // @author       joeytwiddle
 // @match        http://*/*
@@ -11,7 +11,7 @@
 
 var delayBeforePausing = 60 * 1000;
 
-setTimeout(function() {
+function setupListeners () {
     'use strict';
 
     var paused = false;
@@ -68,4 +68,7 @@ setTimeout(function() {
         unsafeWindow[fnName] = modifiedFunc;
         console.log('Replaced ' + fnName + '.');
     }
-}, 2000);
+}
+
+//setTimeout(setupListeners, 20);
+setupListeners();
