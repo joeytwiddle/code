@@ -3,10 +3,14 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @version        1.2.8
-// @include        /https?:\/\/((www\.)?|encrypted\.)google\..*\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
+// @version        1.2.9
+// @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\..*\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @grant          none
 // ==/UserScript==
+
+var placeFaviconByUrl      = false;   // The little green link below the article title
+var placeFaviconAfter      = false;   // Display after the link instead of before it
+var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
 
 // DONE: Provided more options where to place favicon: by the link or by the
 // url, before or after, inside or outside the link.  However in my opinion
@@ -21,11 +25,8 @@
 // hostname extraction implemented aggressively, which results in favicons
 // being given to unexpected things like bookmarklets which contain a site url.
 
-var placeFaviconByUrl = false;
-var placeFaviconAfter = false;
-var placeFaviconInsideLink = false;
-
-function filterListBy(l,c) {
+/*
+function filterListBy (l,c) {
 	var ret = new Array();
 	for (var i=0;i<l.length;i++) {
 		var it = l[i];
@@ -35,8 +36,9 @@ function filterListBy(l,c) {
 	}
 	return ret;
 }
+*/
 
-function createFaviconFor(url) {
+function createFaviconFor (url) {
 	var host = url.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
 	// if (host == document.location.host) {
 		// return null;
@@ -57,7 +59,11 @@ function createFaviconFor(url) {
 	return img;
 }
 
-function getGoogleResultsLinks() {
+function getGoogleResultsLinks () {
+	// var links = document.evaluate("//a[@class='l']",document,null,6,null);
+	// var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
+	// var links = document.links.filter( function(x){ return x.className=='l'; } );
+
 	/*
 	return filterListBy(document.getElementsByTagName('a'), function (x) {
 		// Most pages show links with class 'l'
@@ -67,31 +73,36 @@ function getGoogleResultsLinks() {
 	});
 	*/
 
+	// For Google search
 	// a.l
 	// a.fl are small one-line sub-results.  Search "squeak" and see the Wikipedia result.
-	return document.querySelectorAll('.g a:not(.fl)');
+	var links = document.querySelectorAll('.g a:not(.fl)');
+
+	// For news.google.com
+	if (links.length === 0) {
+		links = document.querySelectorAll('a.article:not(.esc-thumbnail-link)');
+	}
+
+	return links;
 }
 
-function getElementsByClassName(cN) {
+function getElementsByClassName (cN) {
 	return getElementsByTagNameAndClassName("*",cN);
 }
-
-// console.log("Got links = "+links.snapshotLength);
 
 var style = document.createElement('STYLE');
 var padSide = (placeFaviconAfter?'left':'right');
 style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; width: 1em; height: 1em; padding-bottom: 0.2em; }";
 document.getElementsByTagName('head')[0].appendChild(style);
 
-function updateFavicons() {
-	// var links = document.evaluate("//a[@class='l']",document,null,6,null);
-	// var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
-	// var links = document.links.filter( function(x){ return x.className=='l'; } );
+function updateFavicons () {
 	var links = getGoogleResultsLinks();
+
 	// Allows it to work on any sites:
 	if (links.length === 0) {
 		links = document.getElementsByTagName("A");
 	}
+	// console.log("Got links = "+links.snapshotLength);
 
 	// for (var i=0;i<links.snapshotLength;i++) {
 		// var link = links.snapshotItem(i);
@@ -100,7 +111,7 @@ function updateFavicons() {
 		// if (link.href.match('^javascript:') || link.href.match('^#')) {
 			// continue;
 		// }
-        var targetUrl = link.getAttribute('data-href') || link.href;
+		var targetUrl = link.getAttribute('data-href') || link.href;
 		//// Skip relative and same-host links:
 		if (targetUrl.match(/^[/]/) || targetUrl.match("://"+document.location.host)) {
 			continue;
@@ -130,7 +141,7 @@ function updateFavicons() {
 	}
 }
 
-// TODO: Use MutationObserver instead
+// TODO: Use MutationObserver instead?
 
 var last_srg = null;
 
