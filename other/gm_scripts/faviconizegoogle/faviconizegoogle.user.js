@@ -3,8 +3,8 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @version        1.2.9
-// @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\..*\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
+// @version        1.3.0
+// @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @grant          none
 // ==/UserScript==
 
