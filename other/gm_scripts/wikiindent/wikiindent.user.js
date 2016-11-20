@@ -3,7 +3,7 @@
 // @namespace      joeytwiddle
 // @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // @downstreamURL  http://userscripts.org/scripts/source/60832.user.js
-// @version        1.2.8
+// @version        1.3.0
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
@@ -480,8 +480,10 @@ function doIt() {
 				// toc.style.top = '16px';
 				// A healthy gap from the top allows the user to access things fixed in the top right of the page, if they can scroll finely enough.
 				// toc.style.top = '24px';
-				toc.style.right = '4%';
-				toc.style.top = '10%';   // We want to be below the search box!
+				//toc.style.right = '4%';
+				//toc.style.top = '10%';
+				toc.style.right = '4px';
+				toc.style.top = '84px';   // We want to be below the search box!
 				// toc.style.left = '';
 				// toc.style.bottom = '';
 				toc.style.zIndex = '5000';
@@ -506,10 +508,14 @@ function doIt() {
 				var rootUL = toc.getElementsByTagName("UL")[0];
 				if (!rootUL)
 					rootUL = toc;
-				// TODO: If we can cleanly separate them, we might want to make put a scrollbar on the content element, leaving the title outside it.
+				// DONE: If we can cleanly separate them, we might want to put a scrollbar on the content element, leaving the title outside it.
 				rootUL.style.overflow = "auto";
 				rootUL.style.maxWidth = maxWidth+'px';
 				rootUL.style.maxHeight = maxHeight+'px';
+
+				// But if calc and vh are available, then we can make it adaptive
+				// Of this 132px, 84px comes from the 'top', and the rest comes from the toc title and padding.
+				rootUL.style.maxHeight = "calc(100vh - 132px)";
 
 				/*
 				createFader(toc);
@@ -519,6 +525,23 @@ function doIt() {
 				// GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; overflow: auto; }");
 				GM_addStyle("#toc       { opacity: 0.2; }");
 				GM_addStyle("#toc:hover { opacity: 1.0; }");
+
+				var tocID = "toc";
+				var resetProps = "";
+				// This is a clone of the code in table_of_contents_everyw.user.js
+				GM_addStyle("#"+tocID+" { position: fixed; top: 84px; right: 4px; background-color: #f4f4f4; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; "+resetProps+" }" // max-height: 80%; max-width: 32%; overflow: auto; 
+					+ "#"+tocID+"               { opacity: 0.3; }"
+					+ "#"+tocID+":hover         { box-shadow: 0px 2px 10px 1px rgba(0,0,0,0.3); }"
+					+ "#"+tocID+":hover         { -webkit-box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.3); }"
+					+ "#"+tocID+":hover         { opacity: 1.0; }"
+					+ "#"+tocID+"       > * > * { opacity: 0.0; }"
+					+ "#"+tocID+":hover > * > * { opacity: 1.0; }"
+					+ "#"+tocID+" , #"+tocID+" > * > * { transition: opacity; transition-duration: 400ms; }"
+					+ "#"+tocID+" , #"+tocID+" > * > * { -webkit-transition: opacity; -webkit-transition-duration: 400ms; }"
+					+ "#"+tocID+"               { padding: 0; }"
+					+ "#"+tocID+" > div         { padding: 4px 12px; }"
+					+ "#"+tocID+" > ul          { padding: 0px 12px 2px 12px; margin-top: 0; }"
+				);
 
 				// For Wikia (tested in Chrome):
 				if (getComputedStyle(toc)["background-color"] == "rgba(0, 0, 0, 0)") {
