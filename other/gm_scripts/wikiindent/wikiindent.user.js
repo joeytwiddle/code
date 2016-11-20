@@ -3,7 +3,7 @@
 // @namespace      joeytwiddle
 // @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // @downstreamURL  http://userscripts.org/scripts/source/60832.user.js
-// @version        1.3.1
+// @version        1.3.2
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
@@ -539,8 +539,22 @@ function doIt() {
 				var tocID = "toc";
 				var resetProps = "";
 				// This is a clone of the code in table_of_contents_everyw.user.js
-				GM_addStyle("#"+tocID+" { position: fixed; top: 84px; right: 4px; background-color: #f4f4f4; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; "+resetProps+" }" // max-height: 80%; max-width: 32%; overflow: auto; 
+				GM_addStyle(
+					  "#"+tocID+" {"
+					+ "    position: fixed;"
+					+ "    top: 84px;"
+					+ "    right: 4px;"
+					+ "    background-color: #f4f4f4;"
+					+ "    color: black;"
+					+ "    font-weight: normal;"
+					+ "    padding: 5px;"
+					//+ "    border: 1px solid grey;"
+					+ "    z-index: 9999999;"
+					+ "    "+resetProps
+					+ "}"
 					+ "#"+tocID+"               { opacity: 0.3; }"
+					+ "#"+tocID+"               { border: 1px solid #ccc; }"
+					+ "#"+tocID+":hover         { border: 1px solid grey; }"
 					+ "#"+tocID+":hover         { box-shadow: 0px 2px 10px 1px rgba(0,0,0,0.3); }"
 					+ "#"+tocID+":hover         { -webkit-box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.3); }"
 					+ "#"+tocID+":hover         { opacity: 1.0; }"
