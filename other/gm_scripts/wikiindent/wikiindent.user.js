@@ -148,8 +148,8 @@ function clearStyle(elem) {
 	elem.style.right = 'auto';
 	elem.style.bottom = 'auto';
 	elem.style.left = 'auto';
-	elem.style.color = 'black';
-	elem.style.backgroundColor = 'white';
+	//elem.style.color = 'black';
+	//elem.style.backgroundColor = 'white';
 	return elem;
 }
 
@@ -167,6 +167,7 @@ function newSpan(text) {
 	return clearStyle(newNode("span",{textContent:text}));
 }
 
+/*
 function addCloseButtonTo(where, toc) {
 	var closeButton = newSpan("[X]");
 	// closeButton.style.float = 'right';
@@ -177,6 +178,20 @@ function addCloseButtonTo(where, toc) {
 	closeButton.onclick = function() { toc.parentNode.removeChild(toc); };
 	closeButton.id = "closeTOC";
 	where.appendChild(closeButton);
+}
+*/
+
+function addCloseButtonTo(where, toc) {
+	var closeSpan = newNode("span");
+	var closeLink = newNode("a",{textContent:"close"});
+	closeLink.onclick = function() { toc.parentNode.removeChild(toc); };
+	closeLink.id = "closeTOC";
+	closeLink.style.cursor = 'pointer';
+	closeSpan.appendChild(document.createTextNode("["));
+	closeSpan.appendChild(closeLink);
+	closeSpan.appendChild(document.createTextNode("]"));
+	//closeSpan.style.paddingLeft = '5px';
+	where.appendChild(closeSpan);
 }
 
 function addHideButtonTo(toc, tocInner) {
