@@ -2,15 +2,17 @@
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.10
-// @include       http://wikipedia.tld/*
-// @include       http://*.wikipedia.tld/*
-//// Since TLD doesn't work in Chrome:
+// @version       1.2.14
+//// http:
 // @include       http://wikipedia.org/*
 // @include       http://*.wikipedia.org/*
+// @include       http://wiktionary.org/*
+// @include       http://*.wiktionary.org/*
 //// https:
 // @include       https://wikipedia.org/*
 // @include       https://*.wikipedia.org/*
+// @include       https://wiktionary.org/*
+// @include       https://*.wiktionary.org/*
 // @grant         GM_log
 // @grant         GM_xmlhttpRequest
 // @grant         GM_addStyle
@@ -51,6 +53,8 @@
 // FIXED: When opening a window for some articles, such as "The Wawona Tree" on page "Yosemite", "Coordinates" appeared placed in the inline window's header, obscuring the "close" button.
 
 // FIXED: Now when an inline article is scrolled, and a link in it is hovered, the second new window sometimes appears in the wrong place.
+
+// 1.2.11: Now works better on links on the search results page.  (It would often fail because the user would mouse over the "matching text" <span> instead of the enclosing <a>.)
 
 var allowPreviewsInPreviews = true;   // If false, feature is not available for links inside previewed articles.
 
@@ -495,14 +499,25 @@ function getElementOffset(element,whichCoord) {
 // Begin the action
 //setTimeout(rewriteLinks,4000);
 
+function findMatchingParent(elem, seekTagName) {
+	if (!elem || typeof elem.tagName !== 'string') return null;
+	if (elem.tagName.toLowerCase() === seekTagName.toLowerCase()) {
+		return elem;
+	} else {
+		return findMatchingParent(elem.parentNode, seekTagName);
+	}
+}
+
 // Joey's hover detection:
-// BUG TODO: Can fire when the user scrolls the page and that causes a link to appear under the mouse.
-//           Could be avoided by only checking for hover after a 'mousemove' event.
+// BUG TODO: Can fire when the user scrolls the page and that causes a link to appear under the mouse.  This is annoying!
+//           Could be avoided by only checking for hover recently after a 'mousemove' event.
+//           Or conversely, by not checking recently after a 'scroll' event.
 var hoverTimer, hoverTarget;
 function isSuitableLink(evt) {
 	var target = evt.target || evt.sourceElement;
-	return (target && target.tagName=="A" && target.getAttribute("href").indexOf("/wiki/")==0);
-	// Check: '//div[@id="content"]//a[starts-with(@href,"/wiki/")]',
+	target = findMatchingParent(target, "A");
+	return (target && target.href && target.href.indexOf("/wiki/") >= 0);
+	// Alternative: '//div[@id="content"]//a[starts-with(@href,"/wiki/")]',
 }
 function onMouseOver(evt) {
 	if (isSuitableLink(evt)) {
@@ -524,6 +539,7 @@ function onClick(evt) {
 	onMouseOut(evt);
 }
 function hoverDetected() {
+	hoverTarget = findMatchingParent(hoverTarget, "A");
 	if (!allowPreviewsInPreviews && findParentInlineWindow(hoverTarget)) {
 		return;
 	}
