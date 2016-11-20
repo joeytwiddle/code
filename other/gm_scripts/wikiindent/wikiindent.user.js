@@ -3,7 +3,7 @@
 // @namespace      joeytwiddle
 // @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // @downstreamURL  http://userscripts.org/scripts/source/60832.user.js
-// @version        1.3.0
+// @version        1.3.1
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
@@ -515,7 +515,17 @@ function doIt() {
 
 				// But if calc and vh are available, then we can make it adaptive
 				// Of this 132px, 84px comes from the 'top', and the rest comes from the toc title and padding.
-				rootUL.style.maxHeight = "calc(100vh - 132px)";
+				rootUL.style.maxHeight = "calc(100vh - 128px)";
+
+				// Slide up into the corner as the page scrolls
+				window.addEventListener('scroll', checkSize);
+				window.addEventListener('resize', checkSize);
+				
+				function checkSize () {
+					var top = Math.min(84, Math.max(4, 84 - document.body.scrollTop));
+					document.getElementById('toc').style.top = top + 'px';
+					rootUL.style.maxHeight = (window.innerHeight - top - 44) + 'px';
+				}
 
 				/*
 				createFader(toc);
@@ -547,6 +557,8 @@ function doIt() {
 				if (getComputedStyle(toc)["background-color"] == "rgba(0, 0, 0, 0)") {
 					toc.style.backgroundColor = 'white';
 				}
+
+				checkSize();
 
 				return true;
 
