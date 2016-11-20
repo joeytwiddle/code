@@ -3,7 +3,7 @@
 // @namespace      joeytwiddle
 // @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // @downstreamURL  http://userscripts.org/scripts/source/60832.user.js
-// @version        1.3.2
+// @version        1.3.3
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
@@ -555,8 +555,8 @@ function doIt() {
 					+ "#"+tocID+"               { opacity: 0.3; }"
 					+ "#"+tocID+"               { border: 1px solid #ccc; }"
 					+ "#"+tocID+":hover         { border: 1px solid grey; }"
-					+ "#"+tocID+":hover         { box-shadow: 0px 2px 10px 1px rgba(0,0,0,0.3); }"
-					+ "#"+tocID+":hover         { -webkit-box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.3); }"
+					+ "#"+tocID+":hover         { box-shadow: 0px 2px 12px 0px rgba(0,0,0,0.1); }"
+					+ "#"+tocID+":hover         { -webkit-box-shadow: 0px 2px 12px 0px rgba(0,0,0,0.1); }"
 					+ "#"+tocID+":hover         { opacity: 1.0; }"
 					+ "#"+tocID+"       > * > * { opacity: 0.0; }"
 					+ "#"+tocID+":hover > * > * { opacity: 1.0; }"
