@@ -2,7 +2,7 @@
 // @name           URLs Need Titles
 // @namespace      UNT
 // @description    When you paste a URL to a friend, it is useful if it contains the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs!
-// @version        1.2.7
+// @version        1.2.8
 // @include        http://*/*
 // @include        https://*/*
 // @grant          none
@@ -25,6 +25,10 @@ var rules = [
     /* An example rule:
 
     {
+        changeTitle: true / false,  Some of the rules do not change the URL,
+                                    but change the page title instead.  This
+                                    can be useful for bookmarking.
+
         hostMatch: "youtube.TLD",   All subdomains will be accepted, e.g.
                                     somewhere.youtube.com.  TLD will match one
                                     or two toplevel domain elements, e.g.
@@ -118,13 +122,13 @@ var rules = [
         }
     },
 
+    // Mid 2016: They are actually doing this now, so this script is no longer needed.
+    /*
     {
+        changeTitle: true,
         hostMatch: "github.com",
         pathMatch: "/[^/]*/[^/]*/*",
         getTitle: function(){
-            // This is a naughty hack.  It doesn't return a title to put in the URL.
-            // Instead it grabs the repository description from the page, and puts that in the title*.
-            // This is useful when bookmarking a git repository, because the name alone is often not very descriptive.
             //var repoDescriptionElems = document.getElementsByClassName("repository-description");
             // Late 2015
             var repoDescriptionElems = document.getElementsByClassName("repository-meta-content");
@@ -135,8 +139,21 @@ var rules = [
             }
             return null;
         }
-    }
+    },
+    */
 
+    {
+        changeTitle: true,
+        hostMatch: "engineers.sg",
+        pathMatch: "/video/.*",
+        getTitle: function(){
+            var titleElement = document.querySelector('h4');
+            if (titleElement && titleElement.textContent) {
+                document.title = titleElement.textContent + " - Engineers.SG";
+            }
+            return null;
+        }
+    }
 
 ];
 
