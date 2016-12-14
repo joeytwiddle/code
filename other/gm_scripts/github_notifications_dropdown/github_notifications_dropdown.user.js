@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.9.3
+// @version        0.9.4
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
@@ -264,7 +264,8 @@ function makeFileAndDiffBlocksCollapsable(parentElement){
 // When an element matching headerSelector is clicked, the next sibling bodySelector will be collapsed or expanded (toggled).
 function makeBlocksCollapsable(parentElement, headerSelector, bodySelector){
 	$(headerSelector, parentElement).click(function(e){
-		var $divToCollapse = $(this).next(bodySelector);
+		// The parent of the header is usually a `div.file`
+		var $divToCollapse = $(this).parent().find(bodySelector);
 		var wasHidden = $divToCollapse.hasClass("ghndd-collapsed");
 		var hideContent = !wasHidden;
 		if (hideContent) {
@@ -306,5 +307,7 @@ makeNotificationBlocksCollapsable(document.body);
 
 // Optional: Also add the rollup feature for individual files on diff pages.
 // TODO: This should be run on-demand, in case we reached a file or diff page via pushState().
-makeFileAndDiffBlocksCollapsable(document.body);
-
+// Delay added because sometimes only 11 files were visible, but more were visible if we waited longer.
+setTimeout(function(){
+	makeFileAndDiffBlocksCollapsable(document.body);
+}, 2000);
