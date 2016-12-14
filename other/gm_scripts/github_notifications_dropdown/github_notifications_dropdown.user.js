@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
-// @copyright      2014, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.9.4
+// @copyright      2014-2016, Paul "Joey" Clark (http://neuralyte.org/~joey)
+// @version        0.9.5
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
@@ -14,7 +14,7 @@
 // When using @grant none then we should also avoid messing with the page's jQuery (or lack of jQuery).
 this.$ = this.jQuery = jQuery.noConflict(true);
 
-// Contributors: joeytwiddle, SkyzohKey
+// Contributors: joeytwiddle, SkyzohKeyx, Marti
 
 var mainNotificationsPath = "/notifications";
 
