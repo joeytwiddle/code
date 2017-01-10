@@ -1,9 +1,9 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name           FaviconizeGoogle
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @version        1.3.1
+// @version        1.3.2
 // @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @grant          none
 // ==/UserScript==
@@ -147,7 +147,8 @@ function updateFavicons () {
 var last_srg = null;
 
 function checkForUpdate () {
-	var new_srg = document.getElementsByClassName("srg")[0];
+	// #ires was needed for the News tab, which doesn't have a .srg.  Perhaps we could use ires for all tabs.
+	var new_srg = document.getElementsByClassName("srg")[0] || document.getElementById("ires");
 	//console.log("[FaviconizeGoogle.user.js] last_srg:" ,last_srg);
 	//console.log("[faviconizegoogle.user.js] new_srg:" ,new_srg);
 	if (new_srg !== last_srg) {
