@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014-2016, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.9.5
+// @version        0.9.6
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
@@ -30,8 +30,8 @@ function listenForNotificationClick(){
 }
 
 function onNotificationButtonClicked(evt){
-	// Act normally, do nothing, if modifier key is pressed.
-	if (evt.ctrlKey || evt.shiftKey || evt.metaKey) {
+	// Act normally (do nothing) if a modifier key is pressed, or if it was a right or middle click.
+	if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.which !== 1) {
 		return;
 	}
 	evt.preventDefault();
@@ -264,6 +264,10 @@ function makeFileAndDiffBlocksCollapsable(parentElement){
 // When an element matching headerSelector is clicked, the next sibling bodySelector will be collapsed or expanded (toggled).
 function makeBlocksCollapsable(parentElement, headerSelector, bodySelector){
 	$(headerSelector, parentElement).click(function(e){
+		// Act normally (do nothing) if a modifier key is pressed, or if it was a right or middle click.
+		if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.which !== 1) {
+			return;
+		}
 		// The parent of the header is usually a `div.file`
 		var $divToCollapse = $(this).parent().find(bodySelector);
 		var wasHidden = $divToCollapse.hasClass("ghndd-collapsed");
