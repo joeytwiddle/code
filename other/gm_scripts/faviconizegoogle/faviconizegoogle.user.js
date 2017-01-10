@@ -3,7 +3,7 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @version        1.3.0
+// @version        1.3.1
 // @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @grant          none
 // ==/UserScript==
@@ -76,7 +76,8 @@ function getGoogleResultsLinks () {
 	// For Google search
 	// a.l
 	// a.fl are small one-line sub-results.  Search "squeak" and see the Wikipedia result.
-	var links = document.querySelectorAll('.g a:not(.fl)');
+	// a._vQb._mnc are images which appear next to articles on the News tab
+	var links = document.querySelectorAll('.g a:not(.fl):not(._vQb):not(._mnc)');
 
 	// For news.google.com
 	if (links.length === 0) {
