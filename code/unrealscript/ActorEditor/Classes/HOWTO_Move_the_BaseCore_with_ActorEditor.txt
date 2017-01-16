@@ -10,22 +10,24 @@ position on the map.
 Where is a good place to put the core?
 
 Hard to reach.  This usually means somewhere deep in the base, so enemies must
-be passed to reach it.  Height is always an advantage, but not out of reach!
+be passed to reach it.  Height is always an advantage, but not out of reach,
+because players need to be able to upgrade and heal their BaseCore.
 
 Not too exposed.  Think about the amount of floor space available to someone
 who wants to hit your core.  If there is a wide area from which people can see
-your core, they will run around in that space spamming.  (Avoid Thorns4way!)
+your core, they will run around in that space spamming.  (Unlike Thorns4way!)
 
 But don't make it *impossible* for players to reach the enemy core.  Leave them
 some floor space when they do reach the core.  Give them one or two vaguely
-passable routes to the enemy flagroom.  (Avoid HillForts or Niven.)
+passable routes to the enemy flagroom.  (Unlike HillForts or Niven.)
 
 
 
 HOW TO MOVE THE BASE CORES using ActorEditor
 
 I do this as a spectator.  It might be easier to work in CTF mode, so you can
-see the flag moving.  Otherwise follow the instructions closely!
+see the flag when it moves.  Otherwise follow the instructions closely and
+blindly!
 
 Install the ActorEditor mutator, and configure it to run in Siege games.
 
@@ -55,7 +57,7 @@ Now focus back on the flag marker, and input the location you just saw:
 
 6> mutate store location 500,-600,320
 
-Be careful to read the little -s!
+Look out carefully for any '-' chars, they are small!
 
 You can check to see if the actor went to the right place by refocusing:
 
@@ -95,12 +97,10 @@ Notes:
 You can try moving BaseCore0 instead of FlagBase0, but it won't work!  You will
 see the glow move (maybe useful), but the mesh will not move, and your new
 location will be IGNORED when the map restarts.  We must change the FlagBase
-positions, since the BaseCores are spawned from these *after* the map has loaded.
+positions, because ActorEditor runs before the BaseCores are spawned from the
+FlagBases.
 
 If your server runs CTF and Siege modes, the flags will move in both games!  If
 you don't want that to happen, configure your server/mapvote to only run the
 ActorEditor mutator during Siege matches, and not for CTF games.
-
-
-
 
