@@ -201,6 +201,7 @@ function addHideButtonTo(toc, tocInner) {
 	// rollupButton.style.styleFloat = 'right'; // IE7
 	rollupButton.style.cursor = 'pointer';
 	rollupButton.style.paddingLeft = '10px';
+	rollupButton.style.paddingRight = '10px';
 	function toggleRollUp() {
 		if (tocInner.style.display == 'none') {
 			tocInner.style.display = '';
@@ -215,6 +216,7 @@ function addHideButtonTo(toc, tocInner) {
 	}
 	rollupButton.onclick = toggleRollUp;
 	rollupButton.id = "togglelink";
+	rollupButton.className = "togglelink";
 	toc.appendChild(rollupButton);
 	if (GM_getValue("WI_toc_rolledUp",false)) {
 		toggleRollUp();
@@ -243,8 +245,7 @@ function addButtonsConditionally(toc) {
 	// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
 	// We cannot test this immediately, because it gets loaded in later!
 	function addButtonsNow() {
-
-		var hideShowButton = document.getElementById("togglelink");
+		var hideShowButton = document.getElementById("togglelink") || toc.getElementsByClassName("togglelink")[0];
 		if (!hideShowButton) {
 			var tocInner = toc.getElementsByTagName("ol")[0]; // Mozdev (can't get them all!)
 			tocInner = tocInner || toc.getElementsByTagName("ul")[0]; // Wikipedia
