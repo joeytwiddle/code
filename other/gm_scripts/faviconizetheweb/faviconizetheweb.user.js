@@ -9,9 +9,11 @@
 // @exclude        https://www.delicious.com/search*
 // @exclude        http://duckduckgo.com/*
 // @exclude        https://duckduckgo.com/*
+//// Not possible due to content policy
+// @exclude        https://github.com/*
 //// Causes login dialogs to open!
 // @exclude        http://www.jobs.ac.uk/*
-// @version        1.5.2
+// @version        1.5.3
 // ==/UserScript==
 // Based on FaviconizeGoogle.
 
@@ -147,7 +149,8 @@ function createFaviconFor(url) {
 			//img.src = protocol + '://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
 			img.src = protocol + '://g.etfv.co/' + protocol + "://" + host; // As suggested by decembre
 			// @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
-			img.removeEventListener('error',tryExtension,true);
+			//img.removeEventListener('error',tryExtension,true);
+			img.onerror = undefined;
 		}
 		if (evt) {
 			// Will this stop the browser from displaying the error?
