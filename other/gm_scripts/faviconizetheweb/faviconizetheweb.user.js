@@ -13,7 +13,7 @@
 // @exclude        https://github.com/*
 //// Causes login dialogs to open!
 // @exclude        http://www.jobs.ac.uk/*
-// @version        1.5.3
+// @version        1.5.4
 // ==/UserScript==
 // Based on FaviconizeGoogle.
 
@@ -146,10 +146,10 @@ function createFaviconFor(url) {
 			if (!alwaysUseGoogle) {
 				img.title = "Failed to find favicon for " + host;
 			}
-			//img.src = protocol + '://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
-			img.src = protocol + '://g.etfv.co/' + protocol + "://" + host; // As suggested by decembre
+			img.src = protocol + '://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
+			// img.src = protocol + '://g.etfv.co/' + protocol + "://" + host; // As suggested by decembre
 			// @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
-			//img.removeEventListener('error',tryExtension,true);
+			// img.removeEventListener('error',tryExtension,true);
 			img.onerror = undefined;
 		}
 		if (evt) {
