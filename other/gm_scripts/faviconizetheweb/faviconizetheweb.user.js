@@ -13,7 +13,7 @@
 // @exclude        https://github.com/*
 //// Causes login dialogs to open!
 // @exclude        http://www.jobs.ac.uk/*
-// @version        1.5.5
+// @version        1.5.6
 // ==/UserScript==
 // Based on FaviconizeGoogle.
 
@@ -197,7 +197,7 @@ function checkLink(link) {
 		return;
 	}
 	// Do not faviconize links which contain (or are only) an image
-	if (link.getElementsByTagName("IMG").length > 0) {
+	if (link.getElementsByTagName("IMG").length > 0 || link.getElementsByTagName("SVG").length > 0) {
 		return;
 	}
 	if (link.protocol === "file:") {
