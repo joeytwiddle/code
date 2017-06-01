@@ -13,7 +13,7 @@
 // @exclude        https://github.com/*
 //// Causes login dialogs to open!
 // @exclude        http://www.jobs.ac.uk/*
-// @version        1.5.4
+// @version        1.5.5
 // ==/UserScript==
 // Based on FaviconizeGoogle.
 
@@ -203,6 +203,10 @@ function checkLink(link) {
 	if (link.protocol === "file:") {
 		return;
 		// We might be able to guess the real hostname from the path and do a web request for the favicon, or search the folders above for a favicon file?
+	}
+	// StackExchange's "Hot Network Questions" links already have favicons!
+	if (link.previousSibling && link.previousSibling.classList && link.previousSibling.classList.contains('favicon')) {
+		return;
 	}
 
 	// Let's not create a duplicate favicon if the page offers the same link with two different <A>s:
