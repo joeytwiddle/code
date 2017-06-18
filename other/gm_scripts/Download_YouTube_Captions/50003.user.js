@@ -7,7 +7,8 @@
 // @author         Tim Smart, gw111zz, joeytwiddle
 // @copyright      2009 Tim Smart; 2011 gw111zz; 2015 joeytwiddle
 // @license        GNU GPL v3.0 or later. http://www.gnu.org/copyleft/gpl.html
-// @version        1.0.2
+// @version        1.0.3
+// @connect        video.google.com
 // @grant          GM_xmlhttpRequest
 // @grant          GM_openInTab
 // @grant          GM_addStyle
@@ -188,6 +189,8 @@ function loadFormats (select) {
 
   select.id       = 'captions_selector';
   select.disabled = true;
+
+  select.setAttribute('style', 'max-width: 80px;');
 
   option.textContent = 'Loading...';
   option.selected    = true;
