@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.0.7
+// @version        1.0.8
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -12,6 +12,7 @@
 // @include        http://www.google.co.uk/search?q=*&tbm=vid&*
 // @include        https://www.google.co.uk/search?q=*&tbm=vid&*
 // @grant          GM_log
+// @grant          GM_addStyle
 // @grant          GM_xmlhttpRequest
 // ==/UserScript==
 
@@ -123,6 +124,8 @@ function lookupLikesDislikes(link) {
 				// than the <span> holding the video title, which is what I usually
 				// mouseover!  However on YT's front page it does find the title.
 
+				// CONSIDER: We might want to add our extra elements to .stat.view-count or .yt-lockup-meta-info (on channel pages) or perhaps a clone of that element.
+
 				if (infoElem) {
 
 					// Old:
@@ -142,6 +145,8 @@ function lookupLikesDislikes(link) {
 					if (addCountsToThumbnail) {
 						var span = document.createElement("div");
 						span.className = "stat";
+						// On channel pages, the stat rule does not apply, so we apply it ourselves:
+						span.style.fontSize = '11px';
 						span.appendChild(document.createTextNode(infoText));
 						link.appendChild(span);
 					}
@@ -171,6 +176,11 @@ function lookupLikesDislikes(link) {
 						elemWithTitle.title += " [No likes/dislikes available]";
 					}
 
+				}
+
+				if (addCountsToTooltip || addLightSaberBarToThumbnail) {
+					// On channel pages, the extra elements we add are hidden by this rule, so we grow it larger
+					GM_addStyle('.yt-ui-ellipsis-2 { max-height: 5.5em; } .webkit .yt-ui-ellipsis-2 { -webkit-line-clamp: 5; }');
 				}
 
 				if (addVideoDescriptionToTooltip) {
