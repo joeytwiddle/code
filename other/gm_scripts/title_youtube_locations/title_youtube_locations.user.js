@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features add scrollbars, animate thumbnails, reduce font sizes and un-float the header.
-// @version        1.2.0
+// @version        1.2.2
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -109,6 +109,9 @@ if (addScrollbars) {
 			// TODO BUG: Why does this work in the console, but not from the userscript?
 			// document.getElementById("watch-main").style.width = (960+24)+"px";
 			GM_addStyle(" #watch-sidebar, #watch7-sidebar { border: 1px solid; border-color: #c8c8c8 #dddddd #dddddd #c8c8c8; } ");
+			// Without this, the Google notifications dropdown will appear behind our sidebar.
+			// But with it, the sidebar is not clickable!  :-(
+			//GM_addStyle(" #watch-sidebar, #watch7-sidebar { z-index: -20; } ");
 		}
 
 		if (scrollDownToVideo) {
@@ -152,7 +155,7 @@ if (animateThumbnails) {
 	// we are not checking the event target like we should do.
 	function initThumbnailAnimator() {
 		// function createThumbnailAnimatorEvent(thumbImage) {
-		var filenameRE = /\/(.qdefault|default|0)\.(jpg|webp)\b/;
+		var filenameRE = /\/([^/]*)\.(jpg|webp)(\?.*|$)/;
 		var thumbImage    = null;
 		var originalHref  = null;
 		var timer  = null;
