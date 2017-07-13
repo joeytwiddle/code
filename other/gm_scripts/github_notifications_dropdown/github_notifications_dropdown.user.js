@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014-2016, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        0.9.7
+// @version        0.9.8
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
@@ -103,7 +103,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  //+ "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
 	  + "   z-index: 50; "     // To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues
 	  + " } "
-	  + " .notifications-dropdown > .css-truncate, .notifications .list-group-item-name a { "
+	  + " .notifications-dropdown > .css-truncate, .notifications-dropdown .list-group-item-name a { "
 	  + "   max-width: 200px !important;"				
 	  + " } "
 	  + " .notifications-dropdown-see-all { "
