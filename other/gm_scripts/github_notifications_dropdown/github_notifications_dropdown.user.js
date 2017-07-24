@@ -79,7 +79,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	notificationsList.find("a").each(function(){
 		$(this).attr("title", $(this).text().trim());
 	});
-	var minWidth = Math.min(500, window.innerWidth-48);
+	var minWidth = Math.min(700, window.innerWidth - 48);
 	if (notificationsList.children().length == 0) {
 		notificationsDropdown.append("<span class='notifications-dropdown-no-new'>No new notifications</span>");
 		minWidth = 200;
@@ -104,7 +104,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  + "   z-index: 50; "     // To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues
 	  + " } "
 	  + " .notifications-dropdown > .css-truncate, .notifications-dropdown .list-group-item-name a { "
-	  + "   max-width: 200px !important;"				
+	  + "   max-width: " + (minWidth - 300) + "px !important;"
 	  + " } "
 	  + " .notifications-dropdown-see-all { "
 	  + "   display: block; "
