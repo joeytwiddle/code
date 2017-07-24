@@ -19,7 +19,7 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 var mainNotificationsPath = "/notifications";
 
 var notificationButtonLink = $(".header a.notification-indicator[href]");
-var notificationButtonContainer = notificationButtonLink.closest(".header-nav-item");
+var notificationButtonContainer = notificationButtonLink.closest("li");
 var closeClickTargets = $("body, .header a.notification-indicator[href]");
 
 var notificationsDropdown = null;
