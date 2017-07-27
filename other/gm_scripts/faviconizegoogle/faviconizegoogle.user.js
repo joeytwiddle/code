@@ -1,10 +1,11 @@
 ﻿// ==UserScript==
 // @name           FaviconizeGoogle
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
-// @description    Adds favicons next to Google search results.
+// @description    Adds favicons next to Google search results.  Also works for startpage.com
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
-// @version        1.3.2
+// @version        1.3.3
 // @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
+// @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
 // ==/UserScript==
 
@@ -84,6 +85,11 @@ function getGoogleResultsLinks () {
 		links = document.querySelectorAll('a.article:not(.esc-thumbnail-link)');
 	}
 
+	// For startpage.com
+	if (links.length === 0) {
+		links = document.querySelectorAll('.clk > a');
+	}
+
 	return links;
 }
 
@@ -148,7 +154,7 @@ var last_srg = null;
 
 function checkForUpdate () {
 	// #ires was needed for the News tab, which doesn't have a .srg.  Perhaps we could use ires for all tabs.
-	var new_srg = document.getElementsByClassName("srg")[0] || document.getElementById("ires");
+	var new_srg = document.getElementsByClassName("srg")[0] || document.getElementById("ires") || document.querySelector('.web_regular_results');
 	//console.log("[FaviconizeGoogle.user.js] last_srg:" ,last_srg);
 	//console.log("[faviconizegoogle.user.js] new_srg:" ,new_srg);
 	if (new_srg !== last_srg) {
