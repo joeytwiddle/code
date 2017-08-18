@@ -1,0 +1,4 @@
+@eddiemoore 16:19
+@sneakertack nyc is good for coverage. istanbul is not really being updated. haven’t tried blanket. mocha is ok. tape is really good. jest is really good too. i used to use ava for testing, was good for small stuff but as soon as you got to big projects it basically stalled my fairly new macbook for over a minute
+
+(nyc is the thing to use after istanbul)
