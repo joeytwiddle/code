@@ -1,29 +1,70 @@
 'use strict';
 
-var list0 = ['a', 'b', 'c'];
-list0.forEach(item => {
-  console.log(item);
-  if (item === 'b') {
-    list0.splice(list0.indexOf(item), 1);
-  }
-});
+console.log("We want every loop to loop 'a', 'b' and 'c', even if we remove 'b' during the loop.");
 
 console.log();
 
-var list2 = ['a', 'b', 'c'];
-for (var item of list2) {
-  console.log(item);
-  if (item === 'b') {
-    list2.splice(list2.indexOf(item), 1);
-  }
-}
+(function () {
+  console.log("// BAD: list.forEach");
+  var list = ['a', 'b', 'c'];
+  list.forEach(item => {
+    console.log(item);
+    if (item === 'b') {
+      list.splice(list.indexOf(item), 1);
+    }
+  });
+}());
 
 console.log();
 
-var list1 = ['a', 'b', 'c'];
-Array.from(list1).forEach(item => {
-  console.log(item);
-  if (item === 'b') {
-    list1.splice(list1.indexOf(item), 1);
+(function () {
+  console.log("// BAD: for item of list");
+  var list = ['a', 'b', 'c'];
+  for (var item of list) {
+    console.log(item);
+    if (item === 'b') {
+      list.splice(list.indexOf(item), 1);
+    }
   }
-});
+}());
+
+console.log();
+
+(function () {
+  console.log("// GOOD: Array.from(list).forEach");
+  var list = ['a', 'b', 'c'];
+  Array.from(list).forEach(item => {
+    console.log(item);
+    if (item === 'b') {
+      list.splice(list.indexOf(item), 1);
+    }
+  });
+}());
+
+console.log();
+
+(function () {
+  console.log("// GOOD: for item of Array.from(list)");
+  var list = ['a', 'b', 'c'];
+  for (var item of Array.from(list)) {
+    console.log(item);
+    if (item === 'b') {
+      list.splice(list.indexOf(item), 1);
+    }
+  }
+}());
+
+console.log();
+
+(function () {
+  console.log("// OK I GUESS: for i = list.length; i--");
+  var list = ['a', 'b', 'c'];
+  for (var i = list.length; i--; ) {
+    var item = list[i];
+    console.log(item);
+    if (item === 'b') {
+      list.splice(list.indexOf(item), 1);
+    }
+  }
+}());
+
