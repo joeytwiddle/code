@@ -2,7 +2,7 @@
 // @name           URLs Need Titles
 // @namespace      UNT
 // @description    When you paste a URL to a friend, it is useful if it contains the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs!
-// @version        1.2.9
+// @version        1.3.0
 // @include        http://*/*
 // @include        https://*/*
 // @grant          none
@@ -48,6 +48,8 @@ var rules = [
 
     */
 
+    /*
+    // Oh dear, this has started causing annoying reloads.  TODO Perhaps we can do it with pushState instead...
     {
         hostMatch: "youtube.TLD",
         pathMatch: "/watch",
@@ -55,6 +57,7 @@ var rules = [
             return document.title.replace(/ - YouTube$/,'');
         }
     },
+    */
 
     {
         hostMatch: "xkcd.TLD",
