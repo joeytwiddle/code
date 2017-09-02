@@ -2,7 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Puts the video title in the location bar of all YouTube video pages.  Now with extra features add scrollbars, animate thumbnails, reduce font sizes and un-float the header.
-// @version        1.2.2
+// @version        1.3.0
 // @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
@@ -30,7 +30,7 @@
 
 
 
-var addTitleToLocation = true;
+var addTitleToLocation = false; // Oh dear, the primary feature of this plugin has started causing annoying reloads.  TODO Perhaps we can do it with pushState instead...
 var reduceFontSizes    = true;
 var addScrollbars      = true;
 var scrollDownToVideo  = false; // YouTube's header ("masthead") is now floating.  Setting this true will un-float it, then scroll down to hide it.  But scrolling containers should then be enlarged.
