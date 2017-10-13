@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
-// @copyright      2014-2016, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.0.0
-// @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.  (Now also makes files in diff views collapsable.)
+// @copyright      2014-2017, Paul "Joey" Clark (http://neuralyte.org/~joey)
+// @version        1.1.0
+// @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // @grant          none
@@ -15,6 +15,15 @@
 this.$ = this.jQuery = jQuery.noConflict(true);
 
 // Contributors: joeytwiddle, SkyzohKeyx, Marti
+
+// ==Options==
+
+var makeBlocksCollapsableOnNotificationsPage = true;
+
+// Disabled by default because it was conflicting with other scripts (https://github.com/joeytwiddle/code/issues/2)
+var makeAllFileAndDiffBlocksCollapsable = false;
+
+// ==/Options==
 
 var mainNotificationsPath = "/notifications";
 
@@ -307,11 +316,15 @@ function textNode(text){
 listenForNotificationClick();
 
 // Optional: If we are on the notifications page, add our rollup feature there too!
-makeNotificationBlocksCollapsable(document.body);
+if (makeBlocksCollapsableOnNotificationsPage) {
+	makeNotificationBlocksCollapsable(document.body);
+}
 
 // Optional: Also add the rollup feature for individual files on diff pages.
-// TODO: This should be run on-demand, in case we reached a file or diff page via pushState().
-// Delay added because sometimes only 11 files were visible, but more were visible if we waited longer.
-setTimeout(function(){
-	makeFileAndDiffBlocksCollapsable(document.body);
-}, 2000);
+if (makeAllFileAndDiffBlocksCollapsable) {
+	// TODO: This should be run on-demand, in case we reached a file or diff page via pushState().
+	// Delay added because sometimes only 11 files were visible, but more were visible if we waited longer.
+	setTimeout(function(){
+		makeFileAndDiffBlocksCollapsable(document.body);
+	}, 2000);
+}
