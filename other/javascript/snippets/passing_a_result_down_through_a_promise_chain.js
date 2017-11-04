@@ -1,19 +1,22 @@
-// With an impure state object (or you could use 3 vars here)
-const state = {};
-taskA().then(a => {
-  state.a = a;
-  return taskB(state.a);
-}).then(b => {
-  state.b = b;
-  return taskC(state.a, state.b);
-}).then(c => {
+// <grill> how exactly would one go about chaining together a bunch of promises in such a way that previous results would be available in later "links" of the chain
+
+// With three mutable variables in shared scope
+let a, b, c;
+taskA().then(_a => {
+  a = _a;
+  return taskB(a);
+}).then(_b => {
+  b = _b;
+  return taskC(a, b);
+}).then(_c => {
+  c = _c;
   // got c
   // do something with state and c
 }).catch(error => {
   // handle the error
 });
 
-// With scope and indentation (my recommendation if you can't do any of those below)
+// With scope and indentation (I prefer this to avoid the confusing variables)
 taskA().then(a => {
   // got a
   return taskB(a).then(b => {
@@ -61,3 +64,5 @@ Promise.resolve(async () => {
 ).catch(error => {
   // handle the error
 });
+// In this case, the func must pick the variables it wants out of the array it was passed.
+// But alternatively we could call `func.apply(null, arr)` to spread the vars over arguments.
