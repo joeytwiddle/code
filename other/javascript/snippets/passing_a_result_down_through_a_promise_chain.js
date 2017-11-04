@@ -1,25 +1,25 @@
 // With an impure state object (or you could use 3 vars here)
 const state = {};
-taskA().then(firstData => {
-  state.firstData = firstData;
-  return taskB(state.firstData);
-}).then(secondData => {
-  state.secondData = secondData;
-  return taskC(state.firstData, state.secondData);
-}).then(thirdData => {
-  // got thirdData
-  // do something with state and thirdData
+taskA().then(a => {
+  state.a = a;
+  return taskB(state.a);
+}).then(b => {
+  state.b = b;
+  return taskC(state.a, state.b);
+}).then(c => {
+  // got c
+  // do something with state and c
 }).catch(error => {
   // handle the error
 });
 
 // Passing a fresh new pure state object each time (cjohnson's suggestion?)
 Promise.resolve().then(() => {
-  return taskA().then(firstData => ({firstData: firstData})
+  return taskA().then(a => ({a: a})
 ).then(state => {
-  return taskB(state.firstData).then(secondData => Object.assign({}, state, {secondData: secondData});
+  return taskB(state.a).then(b => Object.assign({}, state, {b: b});
 }).then(state => {
-  return taskC(state.firstData, state.secondData).then(thirdData => Object.assign({}, state, {thirdData: thirdData});
+  return taskC(state.a, state.b).then(c => Object.assign({}, state, {c: c});
 }).then(state => {
   // got everything
   // do something with state
@@ -28,12 +28,12 @@ Promise.resolve().then(() => {
 });
 
 // With scope and indentation (my recommendation if you can't do any of those below)
-taskA().then(firstData => {
-  // got firstData
-  return taskB(firstData).then(secondData => {
-    // got secondData
-    return taskC(firstData, secondData).then(thirdData => {
-      // got thirdData
+taskA().then(a => {
+  // got a
+  return taskB(a).then(b => {
+    // got b
+    return taskC(a, b).then(c => {
+      // got c
       // do something with all the data
     });
 }).catch(error => {
@@ -46,7 +46,7 @@ Promise.all([
   taskA(),
   taskB(),
   taskC()
-]).then(([firstData, secondData, thirdData]) => {
+]).then(([a, b, c]) => {
   // do something with all the data
 }).catch(error => {
   // handle the error
@@ -54,9 +54,9 @@ Promise.all([
 
 // With coroutines and the 'co' library: https://github.com/tj/co
 co(function *() {
-  const firstData = yield taskA();
-  const secondData = yield taskB(firstData);
-  const thirdData = yield taskC(firstData, secondData);
+  const a = yield taskA();
+  const b = yield taskB(a);
+  const c = yield taskC(a, b);
   // do something with all the data
 }).catch(error => {
   // handle the error
@@ -64,9 +64,9 @@ co(function *() {
 
 // With async-await
 Promise.resolve(async () => {
-  const firstData = await taskA();
-  const secondData = await taskB(firstData);
-  const thirdData = await taskC(secondData);
+  const a = await taskA();
+  const b = await taskB(a);
+  const c = await taskC(a, b);
   // do something with all the data
 }).catch(error => {
   // handle the error
