@@ -13,20 +13,6 @@ taskA().then(a => {
   // handle the error
 });
 
-// Passing a fresh new pure state object each time (cjohnson's suggestion?)
-Promise.resolve().then(() => {
-  return taskA().then(a => ({a: a})
-).then(state => {
-  return taskB(state.a).then(b => Object.assign({}, state, {b: b});
-}).then(state => {
-  return taskC(state.a, state.b).then(c => Object.assign({}, state, {c: c});
-}).then(state => {
-  // got everything
-  // do something with state
-}).catch(error => {
-  // handle the error
-});
-
 // With scope and indentation (my recommendation if you can't do any of those below)
 taskA().then(a => {
   // got a
@@ -36,18 +22,6 @@ taskA().then(a => {
       // got c
       // do something with all the data
     });
-}).catch(error => {
-  // handle the error
-});
-
-// If the promises can run in parallel
-// (This isn't really solving the problem: results do not get passed down the chain)
-Promise.all([
-  taskA(),
-  taskB(),
-  taskC()
-]).then(([a, b, c]) => {
-  // do something with all the data
 }).catch(error => {
   // handle the error
 });
@@ -62,7 +36,7 @@ co(function *() {
   // handle the error
 });
 
-// With async-await
+// With async-await, very similar
 Promise.resolve(async () => {
   const a = await taskA();
   const b = await taskB(a);
