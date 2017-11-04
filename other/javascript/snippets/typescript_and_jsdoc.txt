@@ -1,0 +1,1 @@
+<`slikts> bradleymeck: typescript supports type checking with jsdoc

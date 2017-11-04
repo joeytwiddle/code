@@ -1,0 +1,6 @@
+the "this" value in an arrow function depends on how its containing function is invoked at runtime, not at definition time.
+the environment record simply doesn't shadow "this"
+regular functions *always* bind a "this" based on how they're invoked. arrow functions simply don't bind a "this" at all.
+<Deide> It just uses `this` as it would any other variable in the enclosing scope. Easy to think about it that way.
+<Sorella> With the difference that regular functions *also* introduce a `this` name.
+<ljharb> also `super` and `arguments`

@@ -2,3 +2,12 @@
 @sneakertack nyc is good for coverage. istanbul is not really being updated. haven’t tried blanket. mocha is ok. tape is really good. jest is really good too. i used to use ava for testing, was good for small stuff but as soon as you got to big projects it basically stalled my fairly new macbook for over a minute
 
 (nyc is the thing to use after istanbul)
+
+----
+
+<ljharb> darkjeepers: tape, mocha, or jest.
+
+If you are using mocha, this article: https://www.codementor.io/codementorteam/javascript-testing-framework-comparison-jasmine-vs-mocha-8s9k27za3
+recommends using chai for assertions
+sinon for test doubles
+and karma if you want your mocha tests to hit a browser

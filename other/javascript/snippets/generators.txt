@@ -1,0 +1,13 @@
+// <`slikts> function* concat(...iterables) { for (const iter of iterables) yield* iter; }
+
+function *foo () {
+    console.log("a:", yield 'A');
+    console.log("b:", yield 'B');
+}
+
+var it = foo();
+
+console.log("next:", it.next());
+console.log("next:", it.next(1));
+console.log("next:", it.next(2));
+

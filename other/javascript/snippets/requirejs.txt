@@ -1,0 +1,5 @@
+`define(a, deps, f)` defines a module named `a`, that depends on the modules specified by `deps`, and that gets constructed by invoking `f` with the objects you get from resolving the names specified in `deps`.
+
+`require([a], function(a){ ... })` instantiates a module with name `a`, and passes it through the function, making it available as the variable `a`.
+
+-- Sorella

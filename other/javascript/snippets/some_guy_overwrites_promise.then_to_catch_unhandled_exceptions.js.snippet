@@ -1,0 +1,43 @@
+// But notably this won't do much if the promise is never .then()-ed!
+
+(function() {
+  var then = Promise.prototype.then;
+  Promise.prototype.then = function(onSuccess, onReject) {
+    var p = this;
+    var newPromise = then.apply(p, arguments);
+    
+    if (!p._addingOurCatch) {
+      p._hasChildren = true;
+      newPromise._addingOurCatch = true;
+      newPromise.catch(function(err) {
+        if (!newPromise._hasChildren) {
+          console.error(err);
+          console.log(err.stack);
+        }
+      });
+      newPromise._addingOurCatch = false;
+    }
+
+    return newPromise;
+  };
+
+  Promise.prototype.catch = function(callback) {
+    return this.then(undefined, callback);
+  };
+
+  var reject = Promise.reject;
+  Promise.reject = function() {
+    var newPromise = reject.apply(this, arguments);
+    return newPromise.then(function(){});
+  };
+}());
+
+console.log('go!');
+
+Promise.resolve().then(function() {
+  throw Error("Uncaught error");
+});
+
+Promise.resolve().then(function() {
+  throw Error("Caught error");
+}).catch(function() {});

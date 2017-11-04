@@ -1,0 +1,14 @@
+<joepie91> joeytwiddle: honestly, my advice would be "just use Bluebird":
+<joepie91> which generally just does the right thing out of the box in terms of debugging and error handling
+<joeytwiddle> good to hear from someone experienced.  we're using Q at the moment
+<joepie91> ES6 promises are currently just not very good :)
+<joepie91> you definitely want to move away from Q, heh
+<joepie91> that's just an outright trashfire
+<joepie91> (but understandable given its goals)
+<joepie91> it's obscenely slow, the API is nigh unusable
+<joepie91> and I mean, it was meant as an experimental implementation so I'm not blaming it for that
+<joeytwiddle> i haven't been using it, in case i want to switch later ;)
+<joepie91> but it means that you should probably not be using it in your code
+<joeytwiddle> (the API i mean)
+<joepie91> :P
+<joepie91> joeytwiddle: mmye, my advice remains "just use Bluebird", including the APIs it offers :P

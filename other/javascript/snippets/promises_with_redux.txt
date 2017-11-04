@@ -1,0 +1,1 @@
+If anyone else is experimenting with redux and feeling overwhelmed by choice when it comes to handling async actions (thunks vs promises vs sagas vs ???) … I've found my peace in the simple combination of http://npm.im/redux-thunk and http://npm.im/redux-actions. For now at least.

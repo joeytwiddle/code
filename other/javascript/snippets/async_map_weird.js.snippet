@@ -1,0 +1,2 @@
+<qswz> an async map feels weird
+<qswz> (async ()=>{   var m = await Promise.all([1,2,3].map( async (i) => {   let x = await delay(i);   return x     }));     console.log(m) })()

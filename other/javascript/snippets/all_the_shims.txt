@@ -1,0 +1,2 @@
+<ljharb> i use html5shiv + es5-shim + modernizr + es6-shim + es7-shim
+<ljharb> upgrade all the things

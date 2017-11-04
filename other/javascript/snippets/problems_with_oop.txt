@@ -1,0 +1,5 @@
+gorilla banana problem
+type coupling problem
+duplication by necessity problem
+
+all impact classical inheritance

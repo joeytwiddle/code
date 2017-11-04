@@ -1,0 +1,9 @@
+<joeytwiddle> Is it possible to transpile-and-run a node app all in one command? e.g. instead of `node app.js` i would run `transpile-then-node app.js` to run on older versions of Node
+<danneu> joeytwiddle: for example, babel can transform at runtime
+<GreenJello> joeytwiddle, install babel-cli and then it's babe-node app.js
+<preaction> npm scripts are things too
+<joeytwiddle> thanks you!
+<GreenJello> you'll also have to configure babel https://brigand.github.io/config-wizard/?babelrc
+<danneu> that's also what ts-node does for typescript code, or coffee's executable for coffeescript code
+<sillyslux> i use "nodemon foo.js --exec babel-node --inspect" occasionly
+<GreenJello> choose node.js app on the second question

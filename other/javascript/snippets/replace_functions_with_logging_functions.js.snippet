@@ -1,0 +1,1 @@
+lamppid, for (var fnName in LibModule){ if (typeof LibModule[fnName] === 'function') { wrapWithLogger(LibModule, fnName); } }   function wrapWithLogger(LibModule, fnName){ var oldFunc = LibModule[fnName]; var newFunc = function(){ console.log(fnName+" was called with arguments:",arguments); return oldFunc.apply(this, arguments); }; LibModule[fnName] = newFunc; }

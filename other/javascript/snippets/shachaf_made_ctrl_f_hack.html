@@ -1,0 +1,87 @@
+<html>
+<!-- Original: http://slbkbs.org/serp.html -->
+<head>
+<title>serp</title>
+<style>
+@media (-webkit-min-device-pixel-ratio:0) { /* webkit only */
+body { overflow: hidden; }
+}
+.node { margin-top: 201vh; white-space: pre; }
+#overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="overlay"></canvas>
+<div class="node"></div>
+<div id="content"></div>
+<div class="node"></div>
+<script>
+var chars = 'abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_+`~,.<>/?\'";:[]{}\\|=- '.split('');
+
+var els = [];
+var prefix = '';
+
+function commonPrefix(s, t) {
+  var len = Math.min(s.length, t.length);
+  var i = 0;
+  while (i < len && s[i] === t[i]) i++;
+  return i;
+}
+
+function update(newPrefix) {
+  var common = commonPrefix(prefix, newPrefix);
+  prefix = newPrefix;
+
+  var unneeded = els.splice(chars.length * common);
+  for (var i = 0; i < unneeded.length; i++) {
+    unneeded[i].parentNode.removeChild(unneeded[i]);
+  }
+
+  for (var i = common; i <= prefix.length; i++) {
+    for (var j = 0; j < chars.length; j++) {
+      var el = document.createElement('div');
+      el.className = "node";
+      el.textContent = prefix.slice(0,i) + chars[j];
+      els.push(el);
+      document.getElementById('content').appendChild(el);
+    }
+  }
+
+  // Move selection to beginning of document
+  window.getSelection().addRange(document.createRange());
+
+  // Draw leaked text onto canvas so it won't mess up search.
+  var cnv = document.getElementById('overlay');
+  cnv.width = document.body.clientWidth;
+  cnv.height = document.body.clientHeight;
+  var ctx = cnv.getContext('2d');
+  ctx.clearRect(0, 0, cnv.width, cnv.height);
+  ctx.font = '50px Arial';
+  ctx.fillText(prefix, 10, 50);
+}
+
+function onScreen(el) {
+  var winh = document.body.clientHeight;
+  var wint = document.body.scrollTop;
+  var elt = el.offsetTop;
+  var elh = el.scrollHeight;
+  return elt >= wint && elt + elh <= wint + winh;
+}
+
+function scrolled() {
+  // It should be easy to do better than linear search.
+  // Possibly checking that an element is exactly in the middle of the screen would be better.
+  for (var i = 0; i < els.length; i++) {
+    if (onScreen(els[i])) {
+      update(els[i].textContent);
+      break;
+    }
+  }
+  document.body.scrollTop = 0;
+}
+
+update('');
+window.addEventListener('scroll', scrolled);
+</script>
+</body>
+</html>

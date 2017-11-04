@@ -1,0 +1,28 @@
+So you thought ES6 arrow functions would make your Javascript code smaller?  Think again!
+
+Of course, arrow functions do reduce code length when we are creating anonymous functions:
+
+```
+// ES5
+var newItems = items.map(function(x){ return x*2; });
+
+// ES6
+var newItems = items.map(x => x*2);
+```
+
+But now some ES6 gurus are recommending using arrow functions in other situations, because they have "clearer semantics":
+
+```
+// ES5
+function counter (state, action) {
+  return state;
+}
+
+// ES6
+const counter = (state, action) => {
+  return state;
+};
+```
+
+So if you follow the advice of these gurus, ES6 will make your Javascript code longer!
+
