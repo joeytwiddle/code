@@ -45,7 +45,7 @@ function onNotificationButtonClicked(evt){
 	}
 	evt.preventDefault();
 	notificationButtonContainer.off("click", onNotificationButtonClicked);
-	var targetPage = notificationButtonLink.attr('href');
+	var targetPage = notificationButtonLink.get(0).href;
 	fetchNotifications(targetPage);
 }
 
