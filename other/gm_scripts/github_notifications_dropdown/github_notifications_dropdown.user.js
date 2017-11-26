@@ -2,7 +2,7 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @copyright      2014-2017, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.1.0
+// @version        1.1.1
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
@@ -14,7 +14,7 @@
 // When using @grant none then we should also avoid messing with the page's jQuery (or lack of jQuery).
 this.$ = this.jQuery = jQuery.noConflict(true);
 
-// Contributors: joeytwiddle, SkyzohKeyx, Marti
+// Contributors: joeytwiddle, SkyzohKeyx, Marti, darkred
 
 // ==Options==
 
@@ -45,7 +45,8 @@ function onNotificationButtonClicked(evt){
 	}
 	evt.preventDefault();
 	notificationButtonContainer.off("click", onNotificationButtonClicked);
-	var targetPage = notificationButtonLink.attr('href');
+	// For GM 4.0 we must use an absolute path, so we use .prop() instead of .attr().  "This is an issue with Firefox and content scripts"
+	var targetPage = notificationButtonLink.prop("href");
 	fetchNotifications(targetPage);
 }
 
