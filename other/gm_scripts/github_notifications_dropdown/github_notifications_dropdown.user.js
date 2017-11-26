@@ -45,7 +45,8 @@ function onNotificationButtonClicked(evt){
 	}
 	evt.preventDefault();
 	notificationButtonContainer.off("click", onNotificationButtonClicked);
-	var targetPage = notificationButtonLink.get(0).href;
+	// For GM 4.0 we must use an absolute path, so we use .prop() instead of .attr().  "This is an issue with Firefox and content scripts"
+	var targetPage = notificationButtonLink.prop("href");
 	fetchNotifications(targetPage);
 }
 
