@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
 // @author         StackOverflow community (especially Brock Adams)
-// @version        2015-11-24-7-joeytwiddle
+// @version        2017-12-27-1-joeytwiddle
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
@@ -213,3 +213,7 @@ continueBttn.addEventListener ("click", function (){
 );
 
 processIMDB_Links ();
+
+// The pages of some celebrities open with the "Actor"/"Actress" section rolled up.
+// When jumping to or expanding one of the sections, we will check for any unhandled links.
+$('#jumpto > *, #filmography > *').on('click', processIMDB_Links);
