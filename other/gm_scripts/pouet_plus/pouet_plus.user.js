@@ -37,47 +37,64 @@ function setImageSource(tt_image, demo_num, ext) {
 	tt_image.src = "http://www.pouet.net/content/screenshots/"+demo_num+"."+ext;
 }
 
+function addImage(tt_image, tt_div) {
+	tt_div.innerHTML = "";
+    tt_div.appendChild(tt_image);
+}
 
 function create_div(event,elem) {
 	var tt_div = document.createElement("div");
 	tt_div.setAttribute("id", "link_tt");
 	tt_div.setAttribute("style", "background:" + bg_color + ";border:1px solid " + border_color + ";padding:2px;color:" + font_color + ";font-family:" + font_face + ";font-size:" + font_size + ";position:absolute;z-index:1000;");
-	var tt_image = new Image();
 	var demo_num = elem.href.replace(/.*?which=([0-9]*).*/,'$1');
-	setImageSource(tt_image, demo_num, "jpg");
-	tryOtherExtensionsIfNeeded(tt_image,demo_num,["gif","png"]);
-	tt_div.appendChild(tt_image);
-	tt_image.parentNode.style.display = 'none';
+	var tt_image = new Image();
+    setImageSource(tt_image, demo_num, "jpg");
+	tryOtherExtensionsIfNeeded(tt_div, tt_image, demo_num, ["gif","png"]);
+    addImage(tt_image, tt_div);
+	tt_div.style.display = 'none';
 	document.body.appendChild(tt_div);
 	locate(event);
 }
 
-function tryOtherExtensionsIfNeeded(tt_image,demo_num,imageTypes) {
+function tryOtherExtensionsIfNeeded(tt_div, tt_image, demo_num, imageTypes) {
+    var fired = false;
 	tt_image.addEventListener("error",function(){
+        if (fired) {
+            return;
+        }
+        fired = true;
 		if (imageTypes.length == 0) {
-			console.log("We have run out of image types to try!");
+			GM_log("We have run out of image types to try!");
 		} else {
 			var ext = imageTypes.pop();
+            // It seems just updating the src was enough to unregister my error event listener (Chrome 32), so now I am going to create and replace the whole image element.
+            tt_image = new Image();
 			setImageSource(tt_image, demo_num, ext);
+            addImage(tt_image, tt_div);
+            tryOtherExtensionsIfNeeded(tt_div, tt_image, demo_num, imageTypes.slice(0));
 		}
 	},false);
 	tt_image.addEventListener("load",function(){
-		tt_image.parentNode.style.display = '';
+		tt_div.style.display = '';
 	},false);
 }
 
 function kill_window() {
-	if (find_div())
-		find_div().parentNode.removeChild(find_div());
+    var div = find_div();
+    if (div) {
+		div.parentNode.removeChild(div);
+    }
 }
 
 var timer = null;
 function resetTimeout(fn) {
-	if (timer)
+    if (timer) {
 		clearTimeout(timer);
 		timer = null;
-	if (fn)
+    }
+    if (fn) {
 		timer = setTimeout(fn,300);
+    }
 }
 
 function create_event(elem) {
