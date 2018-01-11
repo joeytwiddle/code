@@ -2,7 +2,7 @@
 // @name Next Image/Previous Image
 // @author arty <me@arty.name>
 // @namespace http://arty.name/
-// @version 2.0.6
+// @version 2.0.7
 // @description  Quick scroll to next/previous image on a page with n/p buttons (now also looks for canvas and iframe elements)
 // @include *
 // ==/UserScript==
@@ -12,10 +12,15 @@
 // 2012/10 - Now sorting positions so out-of-order images do not break the sequence.
 
 (function(){
+  // Original keys: Forward and Reverse
   // var forwardButton  = 102; // F
   // var backwardButton = 114; // R
+  // Current keys: Next and Previous
   var forwardButton  = 110; // N
   var backwardButton = 112; // P
+  // For Vim / Facebook / 9gag lovers
+  // var forwardButton  = 106; // J
+  // var backwardButton = 107; // K
   var leeway = 2; // This is needed if you have zoomed out the page.  (We might try to set scrollTop to 100, but it will only move to 99.)
 
   var positions = [];
