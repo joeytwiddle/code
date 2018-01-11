@@ -2,8 +2,8 @@
 // @name Next Image/Previous Image
 // @author arty <me@arty.name>
 // @namespace http://arty.name/
-// @version 2.0.5
-// @description  Quick scroll to next/previous image on a page with n/p buttons
+// @version 2.0.6
+// @description  Quick scroll to next/previous image on a page with n/p buttons (now also looks for canvas and iframe elements)
 // @include *
 // ==/UserScript==
 
@@ -29,13 +29,15 @@
     // We force a rescan of the page's images every time, for dynamic pages.
     positions = [];
     if (positions.length === 0) {
-      for (var index = 0; index < document.images.length; index++) {
-        var image = document.images[index];
-        if (image.width * image.height < 200*200) continue;
+      //const images = document.images;
+      const images = document.querySelectorAll('image, canvas, iframe');
+      for (var index = 0; index < images.length; index++) {
+        var image = images[index];
+        if (image.clientWidth * image.clientHeight < 200*200) continue;
         var ytop = getYOffset(image);
         // Vertically centralise smaller images.
-        if (image.height && image.height < window.innerHeight) {
-          ytop -= (window.innerHeight - image.height)/2 | 0;
+        if (image.clientHeight && image.clientHeight < window.innerHeight) {
+          ytop -= (window.innerHeight - image.clientHeight)/2 | 0;
         }
         positions.push([index, ytop]);
       }
