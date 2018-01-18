@@ -2,14 +2,14 @@
 // @name          theguardian
 // @namespace     http://userstyles.org
 // @description	  Make the guardian great again!
-// @author        coxmichael
+// @author        coxmichael + joeytwiddle
 // @homepage      https://userstyles.org/styles/154282
 // @include       http://www.theguardian.com/*
 // @include       https://www.theguardian.com/*
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey02
+// @version       0.20180116142410-joey03
 // ==/UserScript==
 (function() {var css = [
 	".new-header {",
@@ -155,10 +155,22 @@
 	".menu-item__title {",
 	"    color:#fff !important;",
 	"}",
+
+    // Remove the ugly new logo and restore the old one
     ".new-header .new-header__logo {",
-    "    height: 3.6em;",
-    "    padding-top: 1em;",
+    "    height: 4.6em;",
+    "    padding-top: 1.2em;",
     "}",
+    // Something is pushing the text away from the edge; this brings it back
+    //"@media (min-width: 81.25em) body:not(.has-page-skin) .new-header__logo {",
+    //"    margin-right: -1em;",
+    //"}",
+    // But that didn't work, so we use !important instead.  Unfortunately, this might override rules for lower widths too.
+    ".new-header .new-header__logo {",
+    "    margin-right: 0.2em !important;",
+    "}",
+    // TODO: We should shrink the logo for smaller widths
+    // The SVG logo had these sizes:
     // width <  740px => 175x56px
     // width >= 740px => 224x72px
     // width >= 980px => 295x95px
@@ -166,8 +178,9 @@
     "    display: none;",
     "}",
     ".new-header .inline-the-guardian-logo::before, .inline-the-guardian-logo::after {",
-    "    font-size: 280%;",
+    "    font-size: 360%;",
     "    font-weight: 800;",
+    "    letter-spacing: -0.02em;",
     "}",
     ".new-header .inline-the-guardian-logo::before {",
     "    content: 'the';",
@@ -177,6 +190,7 @@
     "    content: 'guardian';",
     "    color: white;",
     "}",
+
     // Instead of the new font "Guardian Egyptian Web" with the sharp serifs
     // use the old font "Guardian Text Egyptian Web" with the softer serifs
     '.d-badge:after,.d2-badge:after,',
