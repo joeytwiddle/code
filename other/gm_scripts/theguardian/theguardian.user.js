@@ -9,7 +9,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey00
+// @version       0.20180116142410-joey01
 // ==/UserScript==
 (function() {var css = [
 	".new-header {",
@@ -154,7 +154,29 @@
 	"",
 	".menu-item__title {",
 	"    color:#fff !important;",
-	"}"
+	"}",
+    ".new-header .new-header__logo {",
+    "    height: 3.6em;",
+    "    padding-top: 1em;",
+    "}",
+    // width <  740px => 175x56px
+    // width >= 740px => 224x72px
+    // width >= 980px => 295x95px
+    ".new-header .inline-the-guardian-logo svg {",
+    "    display: none;",
+    "}",
+    ".new-header .inline-the-guardian-logo::before, .inline-the-guardian-logo::after {",
+    "    font-size: 280%;",
+    "    font-weight: 800;",
+    "}",
+    ".new-header .inline-the-guardian-logo::before {",
+    "    content: 'the';",
+    "    color: #9fdce7;",
+    "}",
+    ".new-header .inline-the-guardian-logo::after {",
+    "    content: 'guardian';",
+    "    color: white;",
+    "}"
 ].join("\n");
 if (typeof GM_addStyle != "undefined") {
 	GM_addStyle(css);
