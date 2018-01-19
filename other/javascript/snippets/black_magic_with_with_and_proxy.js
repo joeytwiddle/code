@@ -1,3 +1,5 @@
+// Posted in gitter:SingaporeJS by soares chen
+
 // Run this in non-strict mode
 
 const proxy = new Proxy({}, {
