@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.2
-// @description  Makes npmjs.com fonts more like GitHub's
+// @version      0.3
+// @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting)
 // @author       joeytwiddle
 // @match        https://www.npmjs.com/package/*
 // @grant        GM_addStyle
@@ -31,10 +31,8 @@
     // A line of code on its own
     GM_addStyle('pre > code { padding: 1em 2em; }');
 
-    // Not black text, but darker than the default #333
-    //GM_addStyle('.markdown p, .markdown li, code { color: #24292e; }');
-    // Just black
-    GM_addStyle('.markdown p, .markdown li, code { color: #000; }');
+    // Darker text
+    GM_addStyle('.markdown p, .markdown li, code { color: rgb(51, 51, 51); }');
 
     // More of a gap after each paragraph?  Wasn't actually needed.  The problem was wrapping due to insufficient width.
     //GM_addStyle('div, .highlight { padding-bottom: 20px; }');
