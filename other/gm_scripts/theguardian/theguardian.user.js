@@ -2,16 +2,18 @@
 // @name          theguardian
 // @namespace     http://userstyles.org
 // @description	  Make the guardian great again!
-// @author        coxmichael + joeytwiddle
+// @author        coxmichael
 // @homepage      https://userstyles.org/styles/154282
-// @copyright     2018, coxmichael and Paul "Joey" Clark (http://neuralyte.org/~joey)
+// @copyright     2018, coxmichael
+// @contributor   Paul "Joey" Clark (https://github.com/joeytwiddle/)
+// @license       CC-BY-4.0
 // @license       GPL-3.0
 // @include       http://www.theguardian.com/*
 // @include       https://www.theguardian.com/*
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey05
+// @version       0.20180116142410-joey06
 // ==/UserScript==
 (function() {var css = [
 	".new-header {",
