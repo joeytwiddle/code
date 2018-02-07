@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -46,4 +46,7 @@
 
     // More of a gap after each paragraph?  Wasn't actually needed.  The problem was wrapping due to insufficient width.
     //GM_addStyle('div, .highlight { padding-bottom: 20px; }');
+
+    // Thicker font for section headers
+    GM_addStyle('.markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 { font-weight: 600; }');
 })();
