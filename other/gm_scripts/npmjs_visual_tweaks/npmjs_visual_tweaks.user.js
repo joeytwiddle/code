@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.6.1
+// @version      0.6.2
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -35,7 +35,15 @@
     GM_addStyle('pre { font-size: 82%; line-height: 1.4; }');
 
     // Darker text
-    GM_addStyle('.markdown p, .markdown li, code { color: rgb(51, 51, 51); }');
+    // Github 2016
+    //GM_addStyle('.markdown p, .markdown li, code { color: #333; }');
+    // Github 2017
+    //GM_addStyle('.markdown p, .markdown li, code { color: #24292e; }');
+    // But weirdly the font strokes appears slightly finer on NPM, for a reason I cannot understand.  To compensate, I use a darker color.
+    GM_addStyle('.markdown p, .markdown li, code { color: #111; }');
+
+    // Links should be normal weight (npm makes them bolder)
+    GM_addStyle('.markdown p a, .markdown li a { font-weight: initial; }');
 
     // Padding around code blocks and snippets
     // A snippet of code appearing within a paragraph
