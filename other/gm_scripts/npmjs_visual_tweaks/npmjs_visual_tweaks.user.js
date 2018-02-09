@@ -10,6 +10,8 @@
 // @grant        GM_addStyle
 // ==/UserScript==
 
+// Motivation: I didn't like the visual context switching between reading Github READMEs and npm READMEs, so I made READMEs on npm look similar to READMEs on Github.
+
 (function() {
     'use strict';
 
