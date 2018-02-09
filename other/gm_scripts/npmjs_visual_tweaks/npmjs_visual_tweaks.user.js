@@ -16,7 +16,7 @@
     'use strict';
 
     // I want to scale down the fonts and everything else a bit.  This was an easy way to do that.
-    GM_addStyle('.container { transform: scale(0.92); transform-origin: 50% 0; }');
+    //GM_addStyle('.container { transform: scale(0.92); transform-origin: 50% 0; }');
 
     // Fill (almost) the whole width of the screen, like Wide-Github does.
     GM_addStyle('.container { width: 98%; max-width: 100%; }');
