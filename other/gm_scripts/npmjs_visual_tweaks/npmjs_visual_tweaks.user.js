@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.6.4
+// @version      0.6.5
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -37,14 +37,15 @@
     GM_addStyle('pre { font-size: 82%; line-height: 1.4; }');
 
     // Darker text
-    // Github 2016
-    GM_addStyle('.markdown p, .markdown li { color: #333; }');
-    // Github 2017
-    //GM_addStyle('.markdown p, .markdown li { color: #24292e; }');
-    // But weirdly the font strokes on npmjs.com appear slightly finer on Mac, for a reason I cannot understand.  To compensate, I use a darker color.
-    //GM_addStyle('.markdown p, .markdown li { color: #111; }');
-    // @todo Use the compensation color only on Mac.  On my Linux, the userAgent is:
-    // On Linux: navigator.userAgent === "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36"
+    if (navigator.userAgent.match(/Mac OS X/)) {
+        // Weirdly, on Mac, the font strokes on npmjs.com appear slightly thinner than those on Github, for a reason I cannot understand.  To compensate, I use a darker color.
+        GM_addStyle('.markdown p, .markdown li { color: #111; }');
+    } else {
+        // Github 2016 (my preference)
+        GM_addStyle('.markdown p, .markdown li { color: #333; }');
+        // Github 2017
+        //GM_addStyle('.markdown p, .markdown li { color: #24292e; }');
+    }
 
     // The boxes around inline code snippets
     GM_addStyle('code { border-radius: 3px; padding: 0.2em 0.4em !important; }');
