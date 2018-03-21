@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.0
+// @version      0.7.1
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -14,6 +14,8 @@
 
 (function() {
     'use strict';
+
+    const floatTheSidebar = true;
 
     // I want to scale down the fonts and everything else a bit.  This was an easy way to do that.
     //GM_addStyle('.container { transform: scale(0.92); transform-origin: 50% 0; }');
@@ -91,4 +93,23 @@
     // This widens the gap between the two panels, so the shadow doesn't overlap too much
     GM_addStyle(".markdown { padding-right: 0.5em; }");
     // This graph does not scale down well to low resolutions, with or without our changes.  I will wait and see if they fix that.
+
+    if (floatTheSidebar) {
+        const mainLeftPanel = document.querySelector('.package__main___3By_B');
+        const readmeElement = document.querySelector('#readme');
+        const headerElement = readmeElement.querySelector('h1');
+        const sidebarElement = document.querySelector('.package__rightSidebar___9dMXo');
+
+        mainLeftPanel.classList.remove('w-two-thirds-ns');
+        mainLeftPanel.classList.remove('mr3-ns');
+        //readmeElement.appendChild(sidebarElement);
+        readmeElement.insertBefore(sidebarElement, headerElement.nextSibling);
+        sidebarElement.style.float = 'right';
+        sidebarElement.style.background = 'white';
+        sidebarElement.style.marginLeft = '2em';
+
+        // BUG: Although the pre blocks kindly respect the sidebar's margin, the h2s fill the entire width behind the float, and so the h2 border lines touch the float.
+        // A solution to that might be, instead of using a margin, wrap the sidebar inside a white div with a left padding so it would be overlay the h2 line.
+        // BUG: At low resolutions, normally the sidebar will break below the readme.  But with our changes, the sidebar appears before the readme!
+    }
 })();
