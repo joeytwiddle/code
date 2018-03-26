@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.2
+// @version      0.7.3
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -89,7 +89,7 @@
 
     // Make the sidebar look like a hovering card
     // Sadly this now reaches all the way down to the bottom of the README
-    GM_addStyle(".package__rightSidebar___9dMXo { padding: 0em 1.4em 0.4em 1.4em !important; box-shadow: 0 0 16px 0 #00000016; margin-top: 2rem; }");
+    GM_addStyle(".package__rightSidebar___9dMXo { padding: 0.9em 1.8em 0.1em 1.8em !important; box-shadow: 0 0 16px 0 #00000016; margin-top: 2.75rem; }");
     // This widens the gap between the two panels, so the shadow doesn't overlap too much
     GM_addStyle(".markdown { padding-right: 0.5em; }");
     // This graph does not scale down well to low resolutions, with or without our changes.  I will wait and see if they fix that.
@@ -115,7 +115,7 @@
         // Clear the existing margin.  Leave a small margin for the shadow.
         GM_addStyle(".mr3-ns { margin-right: 4px; }");
         //readmeElement.appendChild(sidebarElement);
-        readmeElement.insertBefore(sidebarContainer, headerElement.nextSibling);
+        readmeElement.parentNode.insertBefore(sidebarContainer, readmeElement);
 
         // BUG: At low resolutions, normally the sidebar will break to below the readme.  But with our changes, the sidebar appears above the readme!
     }
