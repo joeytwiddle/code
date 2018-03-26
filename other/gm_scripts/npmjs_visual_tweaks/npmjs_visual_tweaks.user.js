@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.1
+// @version      0.7.2
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -89,7 +89,7 @@
 
     // Make the sidebar look like a hovering card
     // Sadly this now reaches all the way down to the bottom of the README
-    GM_addStyle(".package__rightSidebar___9dMXo { padding: 0em 1.4em !important; box-shadow: 0 0 16px 0 #00000016; margin-top: 2rem; }");
+    GM_addStyle(".package__rightSidebar___9dMXo { padding: 0em 1.4em 0.4em 1.4em !important; box-shadow: 0 0 16px 0 #00000016; margin-top: 2rem; }");
     // This widens the gap between the two panels, so the shadow doesn't overlap too much
     GM_addStyle(".markdown { padding-right: 0.5em; }");
     // This graph does not scale down well to low resolutions, with or without our changes.  I will wait and see if they fix that.
@@ -102,14 +102,21 @@
 
         mainLeftPanel.classList.remove('w-two-thirds-ns');
         mainLeftPanel.classList.remove('mr3-ns');
-        //readmeElement.appendChild(sidebarElement);
-        readmeElement.insertBefore(sidebarElement, headerElement.nextSibling);
-        sidebarElement.style.float = 'right';
-        sidebarElement.style.background = 'white';
-        sidebarElement.style.marginLeft = '2em';
 
-        // BUG: Although the pre blocks kindly respect the sidebar's margin, the h2s fill the entire width behind the float, and so the h2 border lines touch the float.
-        // A solution to that might be, instead of using a margin, wrap the sidebar inside a white div with a left padding so it would be overlay the h2 line.
-        // BUG: At low resolutions, normally the sidebar will break below the readme.  But with our changes, the sidebar appears before the readme!
+        const sidebarContainer = document.createElement('div');
+        sidebarContainer.style.float = 'right';
+        sidebarContainer.style.background = 'white';
+        sidebarContainer.style.paddingLeft = '3em';
+        // Move the width from the sidebar to the container
+        sidebarElement.classList.remove('w-third-ns');
+        sidebarContainer.classList.add('w-third-ns');
+        sidebarContainer.appendChild(sidebarElement);
+        GM_addStyle(".markdown { padding-right: 0; }");
+        // Clear the existing margin.  Leave a small margin for the shadow.
+        GM_addStyle(".mr3-ns { margin-right: 4px; }");
+        //readmeElement.appendChild(sidebarElement);
+        readmeElement.insertBefore(sidebarContainer, headerElement.nextSibling);
+
+        // BUG: At low resolutions, normally the sidebar will break to below the readme.  But with our changes, the sidebar appears above the readme!
     }
 })();
