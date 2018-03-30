@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Auto scroll keys
 // @namespace      http://userscripts.org/users/44573
-// @version        1.1.1
+// @version        1.1.2
 // @description    Auto scroll page on Ctrl+Down.  Escape or Space to stop.
 // @include        *
 // ==/UserScript==
@@ -16,11 +16,13 @@ var maxPerSecond = 60;     // Target FPS
 
 var resetThreshold = 10;   // If the user scrolls the page manually by more pixels than this value, then we will start scrolling from the new position.
 
-var attemptSubPixelScrolling = true;
+// When zoomed in, a page pixel will be larger than a screen pixel.  Enabling this will shift by fractions of a page pixel, rather than whole page pixels, so that the text won't make multi-pixel jumps.
+var attemptSubPixelScrolling = false;
 
-// Sub-pixel scrolling may look a little bit jittery, so we could use it only when it's needed.
-// But personally in Chrome I found sub-pixel zooming looked preferable even at zoom 100%.
-var attemptSubPixelScrollingOnlyIfZoomedIn = false; // Clobbers the value of attemptSubPixelScrolling.
+// But at default zoom, sub-pixel scrolling may look a little bit jittery, so this option will enable sub-pixel zooming only when it's needed.
+// (Although personally in Chrome I found sub-pixel zooming looked preferable even at zoom 100%.)
+// This overwrites the value of attemptSubPixelScrolling.
+var attemptSubPixelScrollingOnlyIfZoomedIn = true;
 
 // The user may perform normal scrolling actions during auto-scroll (e.g. by pressing Up or PageUp or using the scroll bar).  We will detect and ackowledge these (update realy) if we see a difference of more than this many pixels.
 // If the threshold is set too low, the script's own scrolling will trigger it, especially on slower machines or under heavy load.
