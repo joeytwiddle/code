@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.3
+// @version      0.7.4
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -93,6 +93,17 @@
     // This widens the gap between the two panels, so the shadow doesn't overlap too much
     GM_addStyle(".markdown { padding-right: 0.5em; }");
     // This graph does not scale down well to low resolutions, with or without our changes.  I will wait and see if they fix that.
+
+    // This is one way of increasing the specificity of our selectors
+    // It could also be used to toggle our tweaks on and off
+    // But I have not yet added it to the selectors above
+    document.body.classList.add("vistweaks");
+
+    // Drop the huge margins above section titles
+    GM_addStyle(".vistweaks .markdown h1, .vistweaks .markdown h2, .vistweaks .markdown h3, .vistweaks .markdown h4, .vistweaks .markdown h5, .vistweaks .markdown h6 { margin-top: 1em; padding-top: 0; }");
+
+    // Indent lists
+    GM_addStyle(".vistweaks .markdown ul, .vistweaks .markdown ol { padding-left: 2em; }");
 
     if (floatTheSidebar) {
         const mainLeftPanel = document.querySelector('.package__main___3By_B');
