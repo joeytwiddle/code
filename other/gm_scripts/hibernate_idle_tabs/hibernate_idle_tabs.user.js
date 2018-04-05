@@ -2,7 +2,7 @@
 // @name           Hibernate Idle Tabs
 // @namespace      HIT
 // @description    If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions.
-// @version        1.1.2
+// @version        1.2.0
 // @downstreamURL  http://userscripts.org/scripts/source/123252.user.js
 // @include        *
 // ==/UserScript==
@@ -10,21 +10,27 @@
 
 /* +++ Config +++ */
 
-var hibernateIfIdleForMoreThan = 4*60*60; // 4 hours
+var hibernateIfIdleForMoreThan = 36*60*60; // 36 hours
 var restoreTime = 0.5; // in seconds
 
-// We need an always-available basically blank HTML page we can navigate to for
-// hibernation.  The userscript will run there and await re-activation.
-// Userscripts do not run on about:blank in Firefox 6.0 or Chromium 2011, but a
-// file:///... URL might work.
+// We need an always-available basically blank HTML page we can navigate to
+// when we hibernate a tab.  The userscript will run on that page, and await
+// re-activation.
+//
+// This page is not really ideal, since it provides an image and unneeded CSS.
+//
+// Also NOTE FOR SECURITY that whatever page you navigate to, the server admin
+// will be able to see which page you hibernated, in their logfile!
+//
+// If you have a blank page somewhere on the net, belonging to an admin you
+// trust, I recommend using that instead.
+//
+var holdingPage = "http://www.google.com/hibernated_tab";
 
-// I got desperate and aimed for a 404 on Google:
-// This is not really satisfactory, since it provides an image and unneeded CSS!
-var holdingPage = "http://neuralyte.org/~joey/hibernated_tab.html";
-
-// If you want to use another holding page, put the old one here to keep your
-// current/saved browser sessions working.
-var oldHoldingPage = "http://www.google.com/hibernated_tab";
+// If you do change the holding, put the old one here, so that any existing
+// hibernated tabs still on the old page will be able to unhibernate.
+//
+var oldHoldingPage = "http://neuralyte.org/~joey/hibernated_tab.html";
 
 var passFaviconToHoldingPage = true;
 var fadeHibernatedFavicons = true;
@@ -52,8 +58,17 @@ var forceHibernateWhenRunTwice = true;
 //
 // (A simpler alternative might be to aim for a 404 on the same domain and use
 // that as the holding page.)
+//
+// If you use Google Chrome or Chromium, then I would recommend using this
+// extension instead, which provides exactly the same functionality, but with
+// better security and probaly better performance too:
+//
+// https://chrome.google.com/webstore/detail/the-great-suspender/klbibkeccnjlkjkiokjodocebajanakg
 
 
+// (TODO: This aforementioned security concern could probably be fixed by passing data to the target page using # rather than ? - although it would only prevent the data from being passed over HTTP, but Javascript running on the target page could still read it.)
+//
+// Sadly, userscripts do not run on about:blank in Firefox 6.0 or Chromium 2011.  I doubt a file:///... URL would work either.
 
 // BUG: Sometimes when un-hibernating, the webserver of the page we return to
 // complains that the referrer URL header is too long!
