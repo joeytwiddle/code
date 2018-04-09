@@ -1,55 +1,21 @@
 // ==UserScript==
 // @name          Google's Old Favicon
 // @description   Brings back the old Google favicon
-// @version       2.16
+// @version       2.17
 // @author        !user
-// @include       http://*.google.tld/*
-// @include       http://google.tld/*
-// @include       https://*.google.tld/*
+// @include       https://www.google.tld/*
 // @include       https://google.tld/*
-//// Joey added these, so they work in Chromium:
-// @include       http://*.google.com/*
-// @include       http://google.com/*
-// @include       http://*.google.co.uk/*
-// @include       http://google.co.uk/*
-// @include       https://*.google.com/*
-// @include       https://google.com/*
-// @include       https://*.google.co.uk/*
-// @include       https://google.co.uk/*
-//// And some new excludes:
-// @exclude       http://code.google.com/*
-//// Joey end.
-// @exclude       http://desktop.google.tld/*
-// @exclude       http://docs.google.tld/*
-// @exclude       http://google.tld/notebook/*
-// @exclude       http://groups.google.tld/*
-// @exclude       http://mail.google.tld/*
-// @exclude       http://pack.google.tld/*
-// @exclude       http://pages.google.tld/*
-// @exclude       http://picasaweb.google.tld/*
-// @exclude       http://toolbar.google.tld/*
-// @exclude       http://sites.google.tld/*
-// @exclude       http://spreadsheets.google.tld/*
-// @exclude       http://webaccelerator.google.tld/*
-// @exclude       http://www.google.tld/calendar/*
-// @exclude       http://www.google.tld/notebook/*
-// @exclude       http://www.google.tld/reader/*
-// @exclude       https://docs.google.tld/*
-// @exclude       https://sites.google.tld/*
-// @exclude       https://spreadsheets.google.tld/*
-// @exclude       https://pages.google.tld/*
-// @exclude       https://groups.google.tld/*
-// @exclude       https://mail.google.tld/*
-// @exclude       https://www.google.tld/calendar/*
-// @exclude       https://www.google.tld/health/*
-// @exclude       https://www.google.tld/reader/*
 // ==/UserScript==
 
+// This doesn't work on the Google Search pages (which is where we want it to work)
+// Although if you widen the includes, it does work on lots of other Google services (where we don't want it!)
 
 // Select the icon you want to use
 // 0:  Old 'G'
 // 1: Blue 'g'
+// 2: Multi-color 'g'
 const EDITION = 0;
+// BUG: Neither 1 or 2 work in my Chrome!  Although 1 was supplied with this script.
 
 var head = document.getElementsByTagName('head')[0];
 var icon = document.createElement('link');
@@ -59,5 +25,7 @@ icon.setAttribute('rel', 'shortcut icon');
 
 if (EDITION == 0) icon.setAttribute('href', 'data:image/x-icon;base64,AAABAAEAEBAAAAAAAABoBQAAFgAAACgAAAAQAAAAIAAAAAEACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAACAAAAAgIAAgAAAAIAAgACAgAAAwMDAAICAgAAAAP8AAP8AAAD//wD/AAAA/wD/AP//AAD///8A//3/AP39/wD6/f8A+P3/AP/8/wD9/P8A+vz/AP/7/wD/+v8A/vr/APz6/wD4+v8A+/n/APP5/wD/+P8A+vj/AO/4/wDm+P8A2fj/AP/3/wD/9v8A9vb/AP/1/wD69f8A9PT/AO30/wD/8/8A//L/APnx/wD28P8A///+APj//gD2//4A9P/+AOP//gD//f4A6f/9AP///AD2//wA8//8APf9/AD///sA/v/7AOD/+wD/+vsA9/X7APr/+gDv/voA///5AP/9+QD/+/kA+e35AP//+ADm//gA4f/4AP/9+AD0+/gA///3APv/9wDz//cA8f/3AO3/9wD/8fcA//32AP369gDr+vYA8f/1AOv/9QD/+/UA///0APP/9ADq//QA///zAP/18wD///IA/fzyAP//8QD///AA9//wAPjw8AD//+8A8//vAP//7gD9/+4A9v/uAP/u7gD//+0A9v/tAP7/6wD/+eoA///pAP//6AD2/+gA//nnAP/45wD38eYA/fblAP/25AD29uQA7N/hAPzm4AD/690AEhjdAAAa3AAaJdsA//LXAC8g1gANH9YA+dnTAP/n0gDh5dIADyjSABkk0gAdH9EABxDRAP/l0AAAJs4AGRTOAPPczQAAKs0AIi7MAA4UywD56soA8tPKANTSygD/18kA6NLHAAAjxwDj28QA/s7CAP/1wQDw3r8A/9e8APrSrwDCtqoAzamjANmPiQDQj4YA35mBAOmefgDHj3wA1qR6AO+sbwDpmm8A2IVlAKmEYgCvaFoAvHNXAEq2VgA5s1UAPbhQAFWtTwBStU0ARbNNAEGxTQA7tEwAObZIAEq5RwDKdEYAULhDANtuQgBEtTwA1ls3ALhgMQCxNzEA2FsvAEC3LQB0MCkAiyYoANZTJwDLWyYAtjMlALE6JACZNSMAuW4iANlgIgDoWCEAylwgAMUuIAD3Vh8A52gdALRCHQCxWhwAsEkcALU4HACMOBwA0V4bAMYyGgCPJRoA218ZAJM7FwC/PxYA0msVAM9jFQD2XBUAqioVAIAfFQDhYRQAujMTAMUxEwCgLBMAnxIPAMsqDgCkFgsA6GMHALE2BAC9JQAAliIAAFYTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8AsbGxsbGxsbGxsbGxsbGxd7IrMg8PDw8PDw8PUBQeJXjQYE9PcKPM2NfP2sWhcg+BzTE7dLjbmG03YWaV4JYye8MPbsLZlEouKRRCg9SXMoW/U53enGRAFzCRtNO7mTiAyliw30gRTg9VbJCKfYs0j9VmuscfLTFbIy8SOhA0Inq5Y77GNBMYIxQUJzM2Vxx2wEmfyCYWMRldXCg5MU0aicRUms58SUVeRkwjPBRSNIfBMkSgvWkyPxVHFIaMSx1/0S9nkq7WdWo1a43Jt2UqgtJERGJ5m6K8y92znpNWIYS1UQ89Mmg5cXNaX0EkGyyI3KSsp6mvpaqosaatq7axsQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
 if (EDITION == 1) icon.setAttribute('href', 'data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC1tbUFHBwcFQAAABoAAAAaAAAAFgAAAA8AAAAWBAAAGwIAABoAAAAXAAAAGQAAABkAAAAaAAAAGg0NDRiOjo4JJiYmDwAAABQAAAATAAAADQwCAR1YFRB4nCsqua0yLMSbLCyxYxoYfBgFAiwDAQAUAAAAEgAAABMAAAAUBwcHEhQUFA0AAAAOAAAACxMEARayLy/F7T9C/640K7FuJR1pZiMgYpczMZqeLSzBIAcFPQEBABAAAAANAAAADgAAAA4XFxcJAAAACgAAAABbKSNY/1ZO/3MdHY8AAAAAAAAAAAAAAAAAAAAAjzc2lHwdG7oDAAAVAAAACAAAAAoAAAAKFxcXBgAAAAcAAAAAVj43Tfx6df87BQFmAQIAAgAAAAQAAAAEAAAAAI0vJomvLCftCwEAHQAAAAQAAAAHAAAABxEREQQAAAAEAAAAAwYEAAi4bVm0uT8/4UwOC1wnBgMlFAQAEF4YGmnwQ0X8niQfxQEAAAgAAAADAAAABAAAAAQzMzMCHh4eAh8fHwMAAAAAKSglBJVbWGfQX16qxktJsLItKNTqP0X/5DxE8VklJTsAAAAAHx8fAh8fHwIfHx8C7+/vBO3t7QTt7e0E7e3tBOrr6wIAAAAAAAAAALWHgkH+VFD/xjI226J1dDYAAAAA7e7uBO3t7QTt7e0E7e3tBP///wn///8K////Cv///wv///8Eybi3HHw1LHeySkjC/nd2/34iIZ1rbGkJ8fHxCv///wr///8K////Cv///wr///8R////E////xP///8P9OTiHtFGSNHPKS//15KSeP7k4Evgb3DOXh4cjouJiCD9/f4R////E////xP///8T////Gf///xv///8b////Dvu3rnbrNCn/o1NTk9/r6wn///8C/9fXaqskJf9kTUxX7e/vGP///xr///8b////G////yH///8k////JP///xb/0MyT00JA/5Byblv7//8d////Fv7Ix3XUNjH/hFhVee/z8x3///8j////JP///yT///8o////Lf///yz///8j//DmZNphWv+Oa2ll4urpJPHy8iLwcWDF0zEn+7edm1f///8m////LP///yz///8s////MP///zX///80////M////y77u7KoxlhZyrV/f3XSc3Oy7z83/7w5NtymioZg5OHgOf///zP///80////Nf///yv///89////Ov///zr///84////M//T0m/3oaGk/bS0uv24ubPujouw2oqIoO3j40r///83////PP///zP///8K////Mf///z7///89////Pf///z3///80////Mf///zH///8x////Mf///zX///88////Pv///zf///8SAAAAAAAAAAAAAAAAI8AAACBAAAAAAAAAEAgAAAYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==');
+// EDITION 2 was stolen from another userscript, and actually started: data:image/png;base64,
+if (EDITION == 2) icon.setAttribute('href', "data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGnRFWHRTb2Z0d2FyZQBQYWludC5ORVQgdjMuNS4xMDD0cqEAAAM5SURBVDhPTZN9TNVVGMefey62ZCTwh21NLdbKTGOtzeLlSqQtFqymzdRoU7cs/8le/urFbi3BS2GpmEaCvbJ2E3MGFOidhZVa5BioCytI3rIk7xW4F3b1+rvcT8/vWFt/PHvOOTvft+d3fgKIk4TOvmFy1gZJe+gTqvafIpVKkoiOcbS4kB6PcMUYpkS0DHHdj+raxUrSQS/DsspDyKoQZl0nM574mt//ilmS+M89nM9I/xfstd0liEgag0YQF+w4DrdsaEPWdSDru5Hy76j84rQlVg4GS0pIiIekV2wfV6KwkgwombgX3PL52zGrf8Cs78A8foxV27rUoWNJzi5fxqQq/udiQsF/6rrXeJWAKdyqaDyNLA+R9uQJzGPfUF7TwZSLvgw/3j6P72+4hua52bTlZNOZNc3ad2cjfUMXrcpINM68Da3Io4eZsTpEqPucPa9r3sOc53OQd/Pw1hYh7/iYXn0PhU/lsmVBJnLbmo/Y334GlWMsluDjI/30Dl+06oFDdUjFHXjrfXh3FyK1eXhqC/Ds0PXOYjxvLEFmrtxL1tL3WfJckM0N7XbybvYjvT9hXrwJ2XM3UpeH1Ct41yJbsj0fz5YiJbhXHZQ3MHvFp1xb9iHZD+5mYCRq1Yci55hb/wiyK9eqmvd8us63EWS7gpVAqnV/c+k28td8wMrXWni25lu6e0ctgTvYcCxMyd6n8WzNVfuq7IL/T7BZK3j4JOFR/RI6sCvjPYycbaK/u5ZLExeunulLKw0+oyTzNbcq1vgwbxUgbyphQMuNPPH3Sbqa8hloSuePVmH4gOFM43yikd/sTH4ZGeS6qmIFF+B9exGmWpUDmn+T1mVnks5gHmNfCanjBudoOvH26VzYJ/Q1lV2NoyK37lihmRciWzVCVRHTNt2PvKoEsUg/vzbM4lIoi2gog1hrJuMtmUx+OYvzn98JiQniToo5gTIF6jADi7Wri9fvQ15RJ04yxcDBtUQ+y2C8+XqiLTMtOLrvRkaP+e0cGk8cxPvCXXgq9T1UaBRXeaPWy+rC/s6TEcLH/Yy1LSXa/ID2h4l37SThxDk11M/sl0oVsBDjV7DfVdbhbVysUOQfPFOSQg11AUoAAAAASUVORK5CYII=");
 
 head.appendChild(icon);
