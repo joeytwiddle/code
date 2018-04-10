@@ -2,17 +2,17 @@
 // @name         Sort Github repos by popularity
 // @namespace    http://tampermonkey.net/
 // @license      MIT
-// @version      0.1.2
+// @version      0.1.3
 // @description  Sort user's Github repositories by popularity (only applies to those visible on the current page)
 // @author       joeytwiddle
 // @match        https://github.com/*tab=repositories*
 // @grant        none
 // ==/UserScript==
 
-setTimeout(function() {
+(function() {
   'use strict';
 
-  if (document.location.search.split('&').some(x => x === "tab=repositories")) {
+  if (document.location.search.split(/[&?]/).some(x => x === "tab=repositories")) {
     // Proceed
   } else {
     // Wrong page
@@ -42,4 +42,4 @@ setTimeout(function() {
     //console.log("Popularity:", popularity);
     return popularity;
   }
-}, 10);
+}());
