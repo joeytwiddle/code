@@ -2,15 +2,22 @@
 // @name         Sort Github repos by popularity
 // @namespace    http://tampermonkey.net/
 // @license      MIT
-// @version      0.1
+// @version      0.1.1
 // @description  Sort user's Github repositories by popularity
 // @author       joeytwiddle
-// @match        https://github.com/*?tab=repositories
+// @match        https://github.com/*tab=repositories*
 // @grant        none
 // ==/UserScript==
 
 setTimeout(function() {
     'use strict';
+
+    if (document.location.search.split('&').some(x => x === "tab=repositories")) {
+        // Proceed
+    } else {
+        // Wrong page
+        return;
+    }
 
     const container = document.querySelector('#user-repositories-list > ul');
     const reposNodeList = document.querySelectorAll('#user-repositories-list > ul > li');
@@ -37,4 +44,4 @@ setTimeout(function() {
         //console.log("Popularity:", popularity);
         return popularity;
     }
-}, 1000);
+}, 10);
