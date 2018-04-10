@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
+// @license        MIT
 // @copyright      2014-2017, Paul "Joey" Clark (http://neuralyte.org/~joey)
 // @version        1.1.1
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
