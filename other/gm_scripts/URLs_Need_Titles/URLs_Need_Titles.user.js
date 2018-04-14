@@ -187,8 +187,15 @@ function setTitle(title) {
         // "_"s paste better into IRC, since " "s become "%20"s which are hard to read.  The second and third parts trim "_"s and newlines from the start and end of the string.
         title = title.replace(/ /g,'_').replace(/^[\r\n_]*/,'').replace(/[\r\n_]*$/,'');
         var strippedHref = document.location.href.replace(/#.*/,'');
-        document.location.replace(strippedHref + '#' + title); // Does not alter browser history
-        // document.location.hash = title; // Crashes Chrome less often
+        if (history.replaceState) {
+            // Does not cause YouTube to reload the page
+            history.replaceState(undefined, document.title, strippedHref + '#' + title);
+        } else {
+            // Does not alter browser history
+            document.location.replace(strippedHref + '#' + title);
+            // Was sometimes a better alternative when Chrome was crashing
+            //document.location.hash = title;
+        }
     }
 }
 
