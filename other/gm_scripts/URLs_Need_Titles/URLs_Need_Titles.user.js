@@ -2,7 +2,7 @@
 // @name           URLs Need Titles
 // @namespace      UNT
 // @description    When you paste a URL to a friend, it is useful if it contains the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs!
-// @version        1.3.1
+// @version        1.3.2
 // @include        http://*/*
 // @include        https://*/*
 // @grant          none
@@ -52,7 +52,7 @@ var rules = [
         hostMatch: "youtube.TLD",
         pathMatch: "/watch",
         getTitle: function(){
-            return document.title.replace(/ - YouTube$/,'');
+            return document.title.replace(/ - YouTube$/,'').replace(/^\([\d]*\) /, '');
         }
     },
 
@@ -122,6 +122,7 @@ var rules = [
         }
     },
 
+    // This was not updating the URL, but the window title, to include the repo description.
     // Mid 2016: They are actually doing this now, so this script is no longer needed.
     //{
     //    changeTitle: true,
