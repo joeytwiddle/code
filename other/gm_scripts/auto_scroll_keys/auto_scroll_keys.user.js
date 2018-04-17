@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name           Auto scroll keys
 // @namespace      http://userscripts.org/users/44573
-// @version        1.1.2
+// @version        1.1.3
 // @description    Auto scroll page on Ctrl+Down.  Escape or Space to stop.
+// @grant          none
 // @include        *
 // ==/UserScript==
 
@@ -132,8 +133,8 @@ function startScroller() {
 }
 
 function queueNextFrame(callback, duration) {
-	if (typeof unsafeWindow.requestAnimationFrame === 'function') {
-		unsafeWindow.requestAnimationFrame(callback);
+	if (typeof window.requestAnimationFrame === 'function') {
+		window.requestAnimationFrame(callback);
 	} else {
 		setTimeout(callback, duration);
 	}
@@ -190,7 +191,7 @@ function u44573_goScroll() {
 			document.body.style.transform = transform;
 		}
 
-		unsafeWindow.scroll(realx, inty); // Leave it to browser to round real values to ints
+		window.scroll(realx, inty); // Leave it to browser to round real values to ints
 
 		lastTime = timeNow;
 
