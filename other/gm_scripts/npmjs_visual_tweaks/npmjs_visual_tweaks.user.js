@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.4
+// @version      0.7.5
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -118,6 +118,7 @@
         sidebarContainer.style.float = 'right';
         sidebarContainer.style.background = 'white';
         sidebarContainer.style.paddingLeft = '3em';
+        sidebarContainer.style.paddingBottom = '2em';
         // Move the width from the sidebar to the container
         sidebarElement.classList.remove('w-third-ns');
         sidebarContainer.classList.add('w-third-ns');
