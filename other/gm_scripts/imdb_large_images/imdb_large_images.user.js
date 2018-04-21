@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         iMDB Large Images
-// @version      1.0.11
+// @version      1.0.11-joey1
 // @description  Large iMDB images when you hover over them.
 // @namespace    https://greasyfork.org/en/scripts/11249-imdb-large-images
 // @homepage     https://greasyfork.org/en/scripts/11249-imdb-large-images
+// @license      ISC
+// @contributors joeytwiddle
 // @match        http://imdb.com/*
 // @match        https://imdb.com/*
 // @match        http://*.imdb.com/*
@@ -47,6 +49,11 @@ z-index: 1000; \
 
   var hoverInFunction = function (e) {
 
+    var mouseX = e.pageX;
+    var mouseY = e.pageY;
+
+    //console.log("[imdb_large_images.user.js] Hover detected", mouseX, mouseY);
+
     var hoveredImage = this.src ? this : $(this).find('img').get(0);
     hoveredImage.style.cursor = 'progress';	
 
@@ -80,6 +87,15 @@ z-index: 1000; \
     $(popImage).mouseout( function() { 
       $(popDiv).remove(); 
     });
+    $(popImage).mousemove( function(e) {
+      var distX = e.pageX - mouseX;
+      var distY = e.pageY - mouseY;
+      var dist = Math.sqrt(distX * distX + distY * distY);
+      //console.log("[imdb_large_images.user.js] Motion detected", dist);
+      if (dist > 25) {
+        $(popDiv).remove();
+      }
+    });
     $(popImage).css('cursor','crosshair');
 
     $(popImage).load( function() {
@@ -88,8 +104,8 @@ z-index: 1000; \
       var pageYOffset = window.pageYOffset;
       var innerWidth = window.innerWidth;
       var innerHeight = window.innerHeight;
-      var mouseX = e.pageX;
-      var mouseY = e.pageY;
+      mouseX = e.pageX;
+      mouseY = e.pageY;
 
       // shrink image if wider than screen 
       if(popImage.width > innerWidth-17) {
