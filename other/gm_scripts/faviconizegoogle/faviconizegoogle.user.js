@@ -156,22 +156,14 @@ function updateFavicons () {
 
 // TODO: Use MutationObserver instead?
 
-var last_srg = null;
 var results_count = -1;
 
 function checkForUpdate () {
-	// #ires was needed for the News tab, which doesn't have a .srg.  Perhaps we could use ires for all tabs.
-	var new_srg = document.getElementsByClassName("srg")[0] || document.getElementById("ires") || document.querySelector('.web_regular_results');
-	//console.log("[FaviconizeGoogle.user.js] last_srg:" ,last_srg);
-	//console.log("[faviconizegoogle.user.js] new_srg:" ,new_srg);
 	var new_results_count = getGoogleResultsLinks().length;
-	if (new_srg !== last_srg || new_results_count !== results_count) {
+	if (new_results_count !== results_count) {
 		//console.log("Page change detected!");
 		updateFavicons();
-		last_srg = new_srg;
 		results_count = new_results_count;
-	} else {
-		//console.log("Pages are the same:", last_srg, new_srg);
 	}
 	setTimeout(checkForUpdate, 1000);
 }
