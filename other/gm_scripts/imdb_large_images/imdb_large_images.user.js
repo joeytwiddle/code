@@ -48,7 +48,6 @@ z-index: 1000; \
   document.getElementsByTagName("head")[0].appendChild(styleElement);
 
   var hoverInFunction = function (e) {
-
     var mouseX = e.pageX;
     var mouseY = e.pageY;
 
@@ -104,8 +103,6 @@ z-index: 1000; \
       var pageYOffset = window.pageYOffset;
       var innerWidth = window.innerWidth;
       var innerHeight = window.innerHeight;
-      mouseX = e.pageX;
-      mouseY = e.pageY;
 
       // shrink image if wider than screen
       if(popImage.width > innerWidth-17) {
