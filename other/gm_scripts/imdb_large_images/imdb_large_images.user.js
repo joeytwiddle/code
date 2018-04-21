@@ -32,7 +32,7 @@ $(document).ready(function() {
   var cssCode = "\
 #largeImagePopover { \
 position: absolute; \
-box-shadow: 0 0 15px #000; \
+box-shadow: 0 0 80px #0009; \
 cursor: pointer; \
 z-index: 1000; \
 } \
@@ -138,6 +138,10 @@ z-index: 1000; \
       $(popImage.parentNode.parentNode).css('left',x);
       $(popImage.parentNode.parentNode).css('top',y);
       $(popImage.parentNode.parentNode).show();
+
+      // For some reason the <div> is 5 pixels taller than the image, which leaves a little transparent box below the image, before the shadow starts
+      // To prevent that, we force the desired size of the <div>
+      $(popImage.parentNode.parentNode).css({ width: popImage.width, height: popImage.height });
 
       hoveredImage.style.cursor = 'crosshair';
     });
