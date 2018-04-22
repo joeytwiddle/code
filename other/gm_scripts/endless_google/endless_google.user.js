@@ -12,7 +12,7 @@
 // @include         https://encrypted.google.*
 // @run-at          document-start
 // @grant           GM_xmlhttpRequest
-// @version         0.0.4-joey1
+// @version         0.0.4-joey2
 // ==/UserScript==
 
 // TODO: on page refresh:
@@ -42,7 +42,7 @@ if (window.top !== window.self) // NOTE: Do not run on iframes
 document.addEventListener('DOMContentLoaded', function () {
 
     // NOTE: Options
-    var request_pct = 0.05; // percentage of window height left on document to request next page, value must be between 0-1
+    var request_pct = 1.50; // percentage of window height left on document to request next page, value must be between 0-1
     var event_type = "scroll"; // or "wheel"
     var on_page_refresh = 1;
     // 0: reload all previous pages requested
