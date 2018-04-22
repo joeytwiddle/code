@@ -12,7 +12,7 @@
 // @include         https://encrypted.google.*
 // @run-at          document-start
 // @grant           GM_xmlhttpRequest
-// @version         0.0.4
+// @version         0.0.4-joey1
 // ==/UserScript==
 
 // TODO: on page refresh:
@@ -61,6 +61,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     input.addEventListener("blur", reset, false); // NOTE: listens for new search input to reset state
     window.addEventListener(event_type, onScroll, false);
+
+    // Disabled by Joey because it is mildly annoying when clicking a link, and I'm not sure what its benefit is
+    //window.addEventListener("beforeunload", function () {
+    //    window.scrollTo(0, 0);
+    //}, false);
 
     function requestNextPage(link) {
         console.log("request next");
