@@ -2,6 +2,7 @@
 // @name           FaviconizeGoogle
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.  Also works for startpage.com
+// @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @version        1.3.3
 // @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
@@ -12,6 +13,11 @@
 var placeFaviconByUrl      = false;   // The little green link below the article title
 var placeFaviconAfter      = false;   // Display after the link instead of before it
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
+
+// Some alternatives/remixes:
+// - https://github.com/NV/faviconize-google.js (Chrome extension)
+// - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
+// - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
 
 // DONE: Provided more options where to place favicon: by the link or by the
 // url, before or after, inside or outside the link.  However in my opinion
