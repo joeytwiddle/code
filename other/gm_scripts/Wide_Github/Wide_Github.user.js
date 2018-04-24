@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 // ==UserScript==
 // @name        Wide Github
@@ -9,20 +9,24 @@
 // @contributor Jason Frey (https://github.com/Fryguy)
 // @contributor Marti Martz (https://github.com/Martii)
 // @license     MIT License; https://raw.githubusercontent.com/xthexder/wide-github/master/LICENSE
-// @version     1.2.0
+// @version     1.2.0-joey1
 // @icon        https://raw.githubusercontent.com/xthexder/wide-github/master/icon.png
 // @homepageURL https://github.com/xthexder/wide-github
 // @supportURL  https://github.com/xthexder/wide-github/issues
 // @include     *github.com*
 // @grant       none
+//// Added by Joey:
+// @run-at      document-start
 // ==/UserScript==
 
 var styleSheet = "" +
-".header .container {" +
+"header .container," +
+"header .container-lg {" +
   "width: auto !important;" +
   "margin-left: 20px !important;" +
   "margin-right: 20px !important;" +
   "min-width: 980px;" +
+  "max-width: initial;" +
 "}" +
 "#js-repo-pjax-container .container {" +
   "width: auto !important;" +
