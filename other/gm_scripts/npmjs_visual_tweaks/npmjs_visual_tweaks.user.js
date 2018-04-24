@@ -89,7 +89,9 @@
 
     // Make the sidebar look like a hovering card
     // Sadly this now reaches all the way down to the bottom of the README
-    GM_addStyle(".package__rightSidebar___9dMXo { padding: 0.9em 1.8em 0.1em 1.8em !important; box-shadow: 0 0 8px 0 #00000033; margin-top: 2.75rem; }");
+    GM_addStyle(".package__rightSidebar___9dMXo { padding: 0.9em 1.8em 0.1em 1.8em !important; margin-top: 2.75rem; }");
+    //GM_addStyle(".package__rightSidebar___9dMXo { box-shadow: 0 0 8px 0 #00000033; }");
+    GM_addStyle(".package__rightSidebar___9dMXo { border: 1px solid #0002 }");
     // This widens the gap between the two panels, so the shadow doesn't overlap too much
     GM_addStyle(".markdown { padding-right: 0.5em; }");
     // This graph does not scale down well to low resolutions, with or without our changes.  I will wait and see if they fix that.
