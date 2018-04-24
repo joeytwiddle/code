@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.5
+// @version      0.7.6
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -106,29 +106,44 @@
     GM_addStyle(".vistweaks .markdown ul, .vistweaks .markdown ol { padding-left: 2em; }");
 
     if (floatTheSidebar) {
-        const mainLeftPanel = document.querySelector('.package__main___3By_B');
-        const readmeElement = document.querySelector('#readme');
-        const headerElement = readmeElement.querySelector('h1');
-        const sidebarElement = document.querySelector('.package__rightSidebar___9dMXo');
+        var checkTheSidebar = function () {
+            const mainLeftPanel = document.querySelector('.package__main___3By_B');
+            if (!mainLeftPanel) return;
 
-        mainLeftPanel.classList.remove('w-two-thirds-ns');
-        mainLeftPanel.classList.remove('mr3-ns');
+            const readmeElement = document.querySelector('#readme');
+            if (!readmeElement) return;
 
-        const sidebarContainer = document.createElement('div');
-        sidebarContainer.style.float = 'right';
-        sidebarContainer.style.background = 'white';
-        sidebarContainer.style.paddingLeft = '3em';
-        sidebarContainer.style.paddingBottom = '2em';
-        // Move the width from the sidebar to the container
-        sidebarElement.classList.remove('w-third-ns');
-        sidebarContainer.classList.add('w-third-ns');
-        sidebarContainer.appendChild(sidebarElement);
-        GM_addStyle(".markdown { padding-right: 0; }");
-        // Clear the existing margin.  Leave a small margin for the shadow.
-        GM_addStyle(".mr3-ns { margin-right: 4px; }");
-        //readmeElement.appendChild(sidebarElement);
-        readmeElement.parentNode.insertBefore(sidebarContainer, readmeElement);
+            const sidebarElement = document.querySelector('.package__rightSidebar___9dMXo');
+            if (!sidebarElement) return;
+            if (sidebarElement.parentNode.classList.contains('visual-tweaks-userscript-sidebar-container')) {
+                //console.log("We have already handled this sidebar");
+                return;
+            }
 
-        // BUG: At low resolutions, normally the sidebar will break to below the readme.  But with our changes, the sidebar appears above the readme!
+            mainLeftPanel.classList.remove('w-two-thirds-ns');
+            mainLeftPanel.classList.remove('mr3-ns');
+
+            const sidebarContainer = document.createElement('div');
+            sidebarContainer.className = 'visual-tweaks-userscript-sidebar-container';
+            sidebarContainer.style.float = 'right';
+            sidebarContainer.style.background = 'white';
+            sidebarContainer.style.paddingLeft = '3em';
+            sidebarContainer.style.paddingBottom = '2em';
+            // Move the width from the sidebar to the container
+            sidebarElement.classList.remove('w-third-ns');
+            sidebarContainer.classList.add('w-third-ns');
+            sidebarContainer.appendChild(sidebarElement);
+            GM_addStyle(".markdown { padding-right: 0; }");
+            // Clear the existing margin.  Leave a small margin for the shadow.
+            GM_addStyle(".mr3-ns { margin-right: 4px; }");
+            //readmeElement.appendChild(sidebarElement);
+            readmeElement.parentNode.insertBefore(sidebarContainer, readmeElement);
+
+            // BUG: At low resolutions, normally the sidebar will break to below the readme.  But with our changes, the sidebar appears above the readme!
+        };
+
+        checkTheSidebar();
+
+        new MutationObserver(mutations => checkTheSidebar()).observe(document.body, { childList: true, subtree: true });
     }
 })();
