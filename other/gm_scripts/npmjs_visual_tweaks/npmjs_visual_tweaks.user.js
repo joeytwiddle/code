@@ -128,7 +128,7 @@
             sidebarContainer.style.float = 'right';
             sidebarContainer.style.background = 'white';
             sidebarContainer.style.paddingLeft = '3em';
-            sidebarContainer.style.paddingBottom = '2em';
+            sidebarContainer.style.paddingBottom = '3em';
             // Move the width from the sidebar to the container
             sidebarElement.classList.remove('w-third-ns');
             sidebarContainer.classList.add('w-third-ns');
