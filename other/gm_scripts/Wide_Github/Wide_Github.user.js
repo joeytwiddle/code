@@ -9,7 +9,7 @@
 // @contributor Jason Frey (https://github.com/Fryguy)
 // @contributor Marti Martz (https://github.com/Martii)
 // @license     MIT License; https://raw.githubusercontent.com/xthexder/wide-github/master/LICENSE
-// @version     1.2.0-joey1
+// @version     1.2.0-joey2
 // @icon        https://raw.githubusercontent.com/xthexder/wide-github/master/icon.png
 // @homepageURL https://github.com/xthexder/wide-github
 // @supportURL  https://github.com/xthexder/wide-github/issues
@@ -30,13 +30,17 @@ var styleSheet = "" +
 "}" +
 "#js-repo-pjax-container .container {" +
   "width: auto !important;" +
-  "margin-left: 20px !important;" +
-  "margin-right: 20px !important;" +
+  //"margin-left: 20px !important;" +
+  //"margin-right: 20px !important;" +
   "min-width: 980px;" +
+  // I use zoom 90% in Chrome.  But that causes the left border of the file list to disappear, if I use an even max-width.  So I have to use an odd max-width.
+  "max-width: 1499px;" +
+  "margin-left: auto !important;" +
+  "margin-right: auto !important;" +
 "}" +
 ".full-width .container {" +
-  "padding-left: 0px !important;" +
-  "padding-right: 0px !important;" +
+  "padding-left: auto !important;" +
+  "padding-right: auto !important;" +
 "}" +
 
 // New PR split diff
