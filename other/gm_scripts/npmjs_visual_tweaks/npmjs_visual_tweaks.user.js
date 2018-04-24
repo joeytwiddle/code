@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.7
+// @version      0.7.8
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -23,6 +23,8 @@
     // Fill (almost) the whole width of the screen, like Wide-Github does.
     //GM_addStyle('.container { width: 98%; max-width: 100%; }');
     GM_addStyle("#top { max-width: 100%; }");
+    // OK not the entire width.  Stop the width when it starts to look ugly.
+    GM_addStyle("#top { max-width: 1500px; }");
 
     // Set fonts like GitHub
     GM_addStyle('#readme { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Source Sans Pro", "Lucida Grande", sans-serif; }');
