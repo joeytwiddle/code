@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.6
+// @version      0.7.7
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -69,7 +69,7 @@
     GM_addStyle('pre { padding: 1.1rem !important; }');
 
     // Lighter background on code blocks and snippets
-    GM_addStyle('.markdown .highlight, .markdown code { background-color: #f6f8fa; }');
+    GM_addStyle('.vistweaks .markdown .highlight, .vistweaks .markdown code, .vistweaks .markdown pre { background-color: #f6f8fa; }');
 
     // More of a gap after each paragraph?  Wasn't actually needed.  The problem was wrapping due to insufficient width.
     //GM_addStyle('div, .highlight { padding-bottom: 20px; }');
