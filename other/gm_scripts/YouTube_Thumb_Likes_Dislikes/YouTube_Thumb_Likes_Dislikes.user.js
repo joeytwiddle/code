@@ -35,6 +35,7 @@ var addCountsToThumbnail = true;          // Display likes/dislikes next to the
 
 var addLightSaberBarToThumbnail = true;   // The lightsaber is the green/red
                                           // bar, easier than reading numbers!
+                                          // A better alternative: https://openuserjs.org/scripts/lednerg/Youtube_Video_Ratings_Bar_with_Power_Meter
 
 var addVideoDescriptionToTooltip = true;  // The "tooltip" is actually the
                                           // alt/title of a link, which

@@ -8,6 +8,8 @@
 // @grant          none
 // ==/UserScript==
 
+// Don't use this, prodScreenshot.user.js is better!
+
 var bg_color = "#EAEAEA";
 var border_color = "#D5D5D5";
 var font_color = "#000000";

@@ -22,7 +22,7 @@ var attemptSubPixelScrolling = false;
 
 // But at default zoom, sub-pixel scrolling may look a little bit jittery, so this option will enable sub-pixel zooming only when it's needed.
 // (Although personally in Chrome I found sub-pixel zooming looked preferable even at zoom 100%.)
-// This overwrites the value of attemptSubPixelScrolling.
+// This overwrites the value of attemptSubPixelScrolling when scrolling begins.
 var attemptSubPixelScrollingOnlyIfZoomedIn = true;
 
 // The user may perform normal scrolling actions during auto-scroll (e.g. by pressing Up or PageUp or using the scroll bar).  We will detect and ackowledge these (update realy) if we see a difference of more than this many pixels.
