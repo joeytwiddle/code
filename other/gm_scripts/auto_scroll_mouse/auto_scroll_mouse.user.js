@@ -2,17 +2,14 @@
 // version 1.6
 // 2006-10-09
 //
-// ------------------------------
-//
-// Desc: scrolls the page when you move the mouse up and down
-// To install, you need Greasemonkey 0.4 or later.
-//
-// ------------------------------
+// Tweaked by joeytwiddle
 //
 // ==UserScript==
 // @name          Auto Scroll Mouse
 // @namespace     http://www.marcbelmont.com
-// @description   Scrolls the page when you move the mouse up and down
+// @description   No mousewheel?  This script will scrolls the page if you place your mouse near the top or bottom of the window and wiggle it.
+// @version       2.1.2
+// @license       ISC
 // @include       http://*
 // ==/UserScript==
 

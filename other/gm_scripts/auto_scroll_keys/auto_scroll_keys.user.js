@@ -2,7 +2,8 @@
 // @name           Auto scroll keys
 // @namespace      http://userscripts.org/users/44573
 // @version        1.1.3
-// @description    Auto scroll page on Ctrl+Down.  Escape or Space to stop.
+// @license        MIT
+// @description    Read articles hands-free!  Pres Ctrl-Down or Opt-Down to start slowly scrolling the page.  Press again to adjust speed.  Escape or Space to stop.
 // @grant          none
 // @include        *
 // ==/UserScript==
