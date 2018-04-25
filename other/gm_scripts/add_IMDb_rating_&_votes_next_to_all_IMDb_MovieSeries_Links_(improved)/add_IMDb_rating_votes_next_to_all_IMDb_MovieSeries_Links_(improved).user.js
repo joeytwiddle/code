@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
 // @author         StackOverflow community (especially Brock Adams)
-// @version        2015-11-24-7-joeytwiddle
+// @version        2015-11-24-8-joeytwiddle
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
@@ -187,7 +187,7 @@ function prependIMDB_Rating (resp, targetLink) {
     // resltSpan.innerHTML = '<b><font style="border-radius: 5px;padding: 1px;border: #575757 solid 1px; background-color:' + color[colnumber] + ';">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
     // resltSpan.innerHTML = '<b><font style="background-color:' + justrate + '">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
     // I wanted vertical padding 1px but then the element does not fit in the "also liked" area, causing the top border to disappear!  Although reducing the font size to 70% is an alternative.
-    resltSpan.innerHTML = '&nbsp;<font style="font-weight: normal;font-size: 80%;opacity: '+opacity+';border-radius: 3px;padding: 0px 4px;border: #575757 solid 1px; background-color:' + color[colnumber] + ';color: black;">' + '' + ratingTxt + '</font>';
+    resltSpan.innerHTML = '&nbsp;<font style="font-weight: normal;font-size: 80%;opacity: '+opacity+';border-radius: 3px;padding: 0.1em 0.6em;border: rgba(0,0,0,0.1) solid 1px; background-color:' + color[colnumber] + ';color: black;">' + '' + ratingTxt + '</font>';
 
 
     if (isError)
