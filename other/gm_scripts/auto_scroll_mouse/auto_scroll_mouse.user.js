@@ -7,10 +7,11 @@
 // ==UserScript==
 // @name          Auto Scroll Mouse
 // @namespace     http://www.marcbelmont.com
-// @description   No mousewheel?  This script will scrolls the page if you place your mouse near the top or bottom of the window and wiggle it.
-// @version       2.1.2
+// @description   No mousewheel?  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
+// @version       2.1.3
 // @license       ISC
-// @include       http://*
+// @include       http://*/*
+// @include       https://*/*
 // ==/UserScript==
 
 //////////////////////
