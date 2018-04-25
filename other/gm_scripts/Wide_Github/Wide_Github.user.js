@@ -9,7 +9,7 @@
 // @contributor Jason Frey (https://github.com/Fryguy)
 // @contributor Marti Martz (https://github.com/Martii)
 // @license     MIT; https://raw.githubusercontent.com/xthexder/wide-github/master/LICENSE
-// @version     1.2.0-joey3
+// @version     1.2.0-joey4
 // @icon        https://raw.githubusercontent.com/xthexder/wide-github/master/icon.png
 // @homepageURL https://github.com/xthexder/wide-github
 // @supportURL  https://github.com/xthexder/wide-github/issues
@@ -37,6 +37,8 @@ var styleSheet = "" +
   "max-width: 1499px;" +
   "margin-left: auto !important;" +
   "margin-right: auto !important;" +
+  "padding-left: 20px;" +
+  "padding-right: 20px;" +
 "}" +
 ".full-width .container {" +
   "padding-left: auto !important;" +
