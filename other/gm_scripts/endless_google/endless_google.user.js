@@ -3,6 +3,7 @@
 // @description     Load more results automatically and endlessly.
 // @author          tumpio
 // @oujs:author     tumpio
+// @license         MIT
 // @namespace       tumpio@sci.fi
 // @homepageURL     https://openuserjs.org/scripts/tumpio/tumpiosci.fi/Endless_Google
 // @supportURL      https://github.com/tumpio/gmscripts
