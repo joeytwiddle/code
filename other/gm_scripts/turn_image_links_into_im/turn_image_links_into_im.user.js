@@ -2,6 +2,9 @@
 // @name           Turn Image Links into Images
 // @namespace      TILI
 // @description    For any links (<A> tags) on the page which point to an image, show the image!
+// @author         joeytwiddle
+// @license        ISC
+// @grant          none
 // ==/UserScript==
 
 var imageExtensions = [ "png", "jpg", "jpeg", "gif", "bmp" ];
