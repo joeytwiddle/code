@@ -7,8 +7,8 @@
 // ==UserScript==
 // @name          Auto Scroll Mouse
 // @namespace     http://www.marcbelmont.com
-// @description   No mousewheel?  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
-// @version       2.1.3
+// @description   No mousewheel?  No problem!  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
+// @version       2.1.4
 // @license       ISC
 // @include       http://*/*
 // @include       https://*/*
@@ -23,6 +23,7 @@ var SCROLLSTEP = 5; // Scrolling speed
 var ONLYLEFTRIGHT = 1; // Scrolling will happen only when you move left or right in the top or bottom areas. Possible values are 0 | 1
 var ONLYLEFTRIGHT_MOUSESPEED = 1.5; // Mouse speed needed to activate the scrolling
 var ONLYLEFTRIGHT_DONTSCROLL = 100; // if no event for too long, no scrolling
+var DELAY_TIME = 5; // This tries to reduce the number of scroll operations, to reduce load on the browser
 
 //////////////////////
 // Some Code	    //
@@ -61,9 +62,9 @@ function ScrollWindow() {
   var way = end > 0 ? 1 : -1;
   var val = SCROLLSTEP;
   if (ONLYLEFTRIGHT) {
-    if (_go)
+    if (_go) {
       val = Math.pow(Math.abs(_mX - _mXOld), ONLYLEFTRIGHT_MOUSESPEED);
-    else {
+    } else {
       val = 0;
     }
   }
@@ -79,7 +80,10 @@ function maybe(scrollWindow) {
       timer = setTimeout(function(){
         timer = null;
         scrollWindow();
-      },10);
+        _mXOld = _mX;
+        _mYOld = _mY;
+        _mThen = _mNow;
+      }, DELAY_TIME);
     }
   };
 }
@@ -109,9 +113,5 @@ function mousemove(e)
 
   // Scroll the window
   maybeScrollWindow();
-
-  _mXOld = _mX;
-  _mYOld = _mY;
-  _mThen = _mNow;
 }
 
