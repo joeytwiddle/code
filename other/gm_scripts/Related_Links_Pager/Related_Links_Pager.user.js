@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.2.4
+// @version        1.3.0
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
 // @include        https://*/*
@@ -74,6 +74,18 @@ var lineStyle = "solid";
 // var lineStyle = "dashed";
 
 var useLocalStorageWhenPossible = true; // Hide #siblings from URL when we are travelling to a page on the same host.  Pass data by localStorage instead (implemented through fake GM_set).  This replaces the old passPacketByGM.  The only disadvantage is that going *back* to a non-#siblings URL will lose the pager that was previously there.
+
+//// If you add a userscript as an extension, then GM_setValue is present, but it doesn't work (or at least it isn't cross-domain)
+//// We want to detect that, or be told, so we can fallback to using the #siblings hash approach.
+//// We previous used this check, but unfortunately it is also true for Tampermonkey on Chrome, which is undesirable.
+// var installedAsChromeExtension = !!window.navigator.vendor.match(/Google/);
+//// So better if you just configure it manually.
+var installedAsChromeExtension = false;
+
+var does_GM_setValue_work = typeof GM_setValue == 'function' && !installedAsChromeExtension;
+
+// New and delicious feature!  Now works on those pesky singla-page-apps that the kids keep writing.
+var detectPushStateNavigation = true;
 
 var beFrugal = false;   // When forced to use #siblings, only do so on Google search results pages.
 
@@ -212,6 +224,12 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
   }
 }
 if (!grabbedList) {
+  grabListAndMaybeClearIt();
+  // The passPacketByGM approach loses the earlier feature of retaining the pager if we come Back to this page.
+  // Although the #siblings approach does too, if we clear the #siblings hash.
+}
+
+function grabListAndMaybeClearIt() {
   grabbedList = GM_getValue("siblings_data");
   // GM_log("[RLP] Got siblings_data="+grabbedList);
   // I often see this logged twice, and if we cleanse the siblings_data immediately, no pager appears.  This could be caused by google redirection, or perhaps even by an iframe which loads faster than the page.
@@ -224,7 +242,7 @@ if (!grabbedList) {
     }
     clearDataTimer = null;
   },15000);
-  // The passPacketByGM approach loses the earlier feature of retaining the pager if we come Back to this page.
+  return grabbedList;
 }
 
 function onAGoogleSearchPage() {
@@ -450,7 +468,7 @@ function isSuitable(link) {
 
 function canPassPacketByGM(link, siblings) {
   // Yes if we are in Firefox Greasemonkey
-  if (typeof GM_setValue == 'function' && !window.navigator.vendor.match(/Google/)) {
+  if (does_GM_setValue_work) {
     return true;
   }
   // Yes we can use our Fake shim above, if we are in Chrome, and travelling to the same host.
@@ -621,6 +639,11 @@ function createRelatedLinksPager(siblings) {
 
   if (showPageNumberInWindowTitle) {
     document.title = document.title + " (Page "+(currentIndex+1)+" of "+siblings.length+")";
+  }
+
+  var previousPager = document.getElementById('linkGroupPager');
+  if (previousPager) {
+    previousPager.parentNode.removeChild(previousPager);
   }
 
   var pager = document.createElement("div");
@@ -875,6 +898,25 @@ if (highlightLinkGroups) {
 }
 
 
+if (detectPushStateNavigation) {
+  //var pushState = history.pushState;
+  //history.pushState = function () {
+  //    pushState.apply(history, arguments);
+  //    setTimeout(onPushState, 1000);
+  //};
+  window.addEventListener('click', maybeNavigating);
+}
+function maybeNavigating () {
+  var checkSiblings = function () {
+    const newList = grabListAndMaybeClearIt();
+    if (newList) {
+      var siblings = JSON.parse(grabbedList);
+      createRelatedLinksPager(siblings);
+    }
+  };
+  setTimeout(checkSiblings, 1000);
+}
+
 
 }
 
@@ -883,8 +925,3 @@ if (highlightLinkGroups) {
 setTimeout(runRelatedLinksPager, delayBeforeRunning);
 
 
-
-
-if ( document.location.href.match("last.fm/.*page=") ) {
-	GM_addStyle("a:visited { color: darkblue; }")
-}
