@@ -178,25 +178,35 @@ var verbose = false;    // Extra logging for debugging
 // an event listener we add later?)
 
 
-// passPacketByGM is now auto-determined at click time
-/*
-var passPacketByGM = false;
-if (typeof GM_setValue === 'function') {
-  passPacketByGM = true;   // It is safe to disable this if you want the old behaviour
-  // In Chrome though, GM_setValue is not cross-domain, which we need!
-  if (window.navigator.vendor.match(/Google/)) {
-    passPacketByGM = false;
-  }
-  // FBGMAPI check.  We cannot pass by GM if it is domain-restricted.
-  // (TODO: Actually we could, if the target was local too.)
-  if (GM_setValue.restrictedToDomain) {
-    passPacketByGM = false;
-  }
-  // TODO: We may want more specific checks here.  The presence of
-  // GM_setValue does not indicate that it will work cross-domain.  It would be
-  // safer to use the # fallback unless we are *sure* we have a XD GMsV.
+// Library functions
+
+if (!this.GM_addStyle) {
+  this.GM_addStyle = function(css) {
+    var s = document.createElement("style");
+    s.type = 'text/css';
+    s.innerHTML = css;
+    document.getElementsByTagName("head")[0].appendChild(s);
+  };
 }
-*/
+
+function getXPath(node) {
+  if (!node) {
+    return '';
+  }
+  return getXPath(node.parentNode) + '/' + node.nodeName.toLowerCase();
+}
+
+function seekLinkInAncestry(startElem) {
+  var node = startElem;
+  while (node) {
+    if (node.tagName === "A") {
+      return node;
+    }
+    node = node.parentNode;
+  }
+  return startElem;
+}
+
 if (window.navigator.vendor.match(/Google/) || typeof GM_setValue !== 'function') {
   GM_setValue = function(key, val) {
     localStorage["RLP_Fake_GM:" + key] = val;
@@ -219,8 +229,6 @@ if (document.location.hash && document.location.hash.indexOf("siblings=") >= 0) 
 }
 if (!grabbedList) {
   grabListAndMaybeClearIt();
-  // The passPacketByGM approach loses the earlier feature of retaining the pager if we come Back to this page.
-  // Although the #siblings approach does too, if we clear the #siblings hash.
 }
 
 function grabListAndMaybeClearIt() {
@@ -262,26 +270,6 @@ if (document.title.length > 800) {
 }
 
 function runRelatedLinksPager() {
-  // Library functions
-
-  function getXPath(node) {
-    if (!node) {
-      return '';
-    }
-    return getXPath(node.parentNode) + '/' + node.nodeName.toLowerCase();
-  }
-
-  function seekLinkInAncestry(startElem) {
-    var node = startElem;
-    while (node) {
-      if (node.tagName === "A") {
-        return node;
-      }
-      node = node.parentNode;
-    }
-    return startElem;
-  }
-
   // What can I say?  I loooove favicons!
   // BUG: Does not add a favicon for the current page, because the current page
   // is not shown as a link.  This breaks left-alignment of the text!
@@ -324,15 +312,6 @@ function runRelatedLinksPager() {
     }, false);
 
     link.parentNode.insertBefore(img, link);
-  }
-
-  if (!this.GM_addStyle) {
-    this.GM_addStyle = function(css) {
-      var s = document.createElement("style");
-      s.type = 'text/css';
-      s.innerHTML = css;
-      document.getElementsByTagName("head")[0].appendChild(s);
-    };
   }
 
 
@@ -388,14 +367,8 @@ function runRelatedLinksPager() {
       return false;
     }
 
-    /*
-    if (link.href.indexOf("#siblings=")>=0 || link.href.indexOf("&siblings=")>=0) {
-      // This is already a prepared link!  Probably created by the pager.
-      // No need to modify it.
-      return false;
-    }
-    */
-    // The above check doesn't work if we are using passPacketByGM, so:
+    // Is this one of the links inside the pager?
+    // (We could have also checked this by looking for the ancestor container)
     if (link.isRLPPagerLink) {
       return false;
     }
@@ -450,17 +423,6 @@ function runRelatedLinksPager() {
     if (siteWillComplain) {
       return false;
     }
-
-    // Even with forceTravel=false, we still manage to break github's use of history API.
-    // Oh, that's not us.  They have just changed their site this week!  OK then let's keep things how they are for now.
-    /*
-    if (document.location.host === "github.com") {
-      if (link.host === document.location.host) {
-        //GM_log("Skipping github local link: dlh="+document.location.host+" lh="+link.host);
-        return false;
-      }
-    }
-    */
 
     return true;
   }
