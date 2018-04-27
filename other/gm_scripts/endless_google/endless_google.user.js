@@ -13,7 +13,8 @@
 // @include         https://encrypted.google.*
 // @run-at          document-start
 // @grant           GM_xmlhttpRequest
-// @version         0.0.4-joey2
+// @grant           GM_addStyle
+// @version         0.0.4-joey3
 // ==/UserScript==
 
 // TODO: on page refresh:
@@ -150,3 +151,10 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log("egoogle.js initialized");
 });
 console.log("egoogle.js loaded");
+
+// The related searches are a bit jarring because they mix in with the search results.
+// So we give them a light grey background, so are visually distinguishable
+GM_addStyle("#extrares { border: 1px solid #ececec; border-radius: 5px; background: #fafafa; margin-bottom: 24px; });
+// Lets also reduce the rather large top and bottom padding on this box
+GM_addStyle("#brs { margin-bottom: 20px }");
+GM_addStyle("#brs > * { margin-top: 26px }");
