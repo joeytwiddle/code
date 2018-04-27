@@ -79,8 +79,9 @@ var useLocalStorageWhenPossible = true; // Hide #siblings from URL when we are t
 // var installedAsChromeExtension = !!window.navigator.vendor.match(/Google/);
 //// So better if you just configure it manually.
 var installedAsChromeExtension = false;
+var forcePolyfillForGM_setValue = installedAsChromeExtension;
 
-var does_GM_setValue_work = typeof GM_setValue === 'function' && !installedAsChromeExtension;
+var canGM_setValueCrossDomains = typeof GM_setValue === 'function' && !installedAsChromeExtension;
 
 // New and delicious feature!  Now works on those pesky singla-page-apps that the kids keep writing.
 var detectPushStateNavigation = true;
@@ -178,7 +179,7 @@ var verbose = false;    // Extra logging for debugging
 // an event listener we add later?)
 
 
-// Library functions
+// Library functions and polyfills
 
 if (!this.GM_addStyle) {
   this.GM_addStyle = function(css) {
@@ -186,6 +187,15 @@ if (!this.GM_addStyle) {
     s.type = 'text/css';
     s.innerHTML = css;
     document.getElementsByTagName("head")[0].appendChild(s);
+  };
+}
+
+if (typeof GM_setValue !== 'function' || forcePolyfillForGM_setValue) {
+  GM_setValue = function(key, val) {
+    localStorage["RLP_Fake_GM:" + key] = val;
+  };
+  GM_getValue = function(key) {
+    return localStorage["RLP_Fake_GM:" + key];
   };
 }
 
@@ -205,15 +215,6 @@ function seekLinkInAncestry(startElem) {
     node = node.parentNode;
   }
   return startElem;
-}
-
-if (window.navigator.vendor.match(/Google/) || typeof GM_setValue !== 'function') {
-  GM_setValue = function(key, val) {
-    localStorage["RLP_Fake_GM:" + key] = val;
-  };
-  GM_getValue = function(key) {
-    return localStorage["RLP_Fake_GM:" + key];
-  };
 }
 
 
@@ -428,11 +429,11 @@ function runRelatedLinksPager() {
   }
 
   function canPassPacketByGM(link, siblings) {
-    // Yes if we are in Firefox Greasemonkey
-    if (does_GM_setValue_work) {
+    // Yes if we are in Greasemonkey or TamperMonkey
+    if (canGM_setValueCrossDomains) {
       return true;
     }
-    // Yes we can use our Fake shim above, if we are in Chrome, and travelling to the same host.
+    // Yes, if we are travelling to the same host, then we can use the fake localStorage version of GM_setValue
     if (link.host == document.location.host && useLocalStorageWhenPossible) {
       return true;
     }
