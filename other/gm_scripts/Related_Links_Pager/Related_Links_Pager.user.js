@@ -609,9 +609,20 @@ function runRelatedLinksPager() {
 
     pager.id = "linkGroupPager";
     GM_addStyle("#linkGroupPager { " + resetProps + " position: fixed; top: 5%; right: 5%; " +
-      "z-index: 9999999999; background: white; color: black; border: 1px solid black; " +
-      "padding: 5px; font-size: 100%; text-align: center; max-height: 90%; } " +
-      ".linkGroupPagerList { text-align: left; overflow: auto; }"
+      "z-index: 9999999999; background: white; color: black;" +
+      "padding: 0.5em 1em;" +
+      "border: 1px solid #0003; " +
+      "border-radius: 3px;" +
+      "box-shadow: ;" +
+      "font-size: 100%; text-align: center; max-height: 90%; } " +
+      ".linkGroupPagerList { text-align: left; overflow: auto; }" +
+      "#linkGroupPager:hover { box-shadow: 0px 2px 12px 0px rgba(0,0,0,0.1); }" +
+      "#linkGroupPager       { opacity: 0.3; }" +
+      "#linkGroupPager:hover { opacity: 1.0; }" +
+      "#linkGroupPager       { transition: opacity 400ms linear; }" +
+      "#linkGroupPager > *         { opacity: 0.0; }" +
+      "#linkGroupPager:hover > *   { opacity: 1.0; }" +
+      "#linkGroupPager > *         { transition: opacity 400ms linear; }"
     );
 
     function maybeHost(link) {
