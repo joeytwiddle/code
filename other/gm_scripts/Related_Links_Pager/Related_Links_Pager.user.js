@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.2
+// @version        1.3.3
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
 // @include        https://*/*
@@ -486,6 +486,19 @@ function runRelatedLinksPager() {
         highlightList(link, visitingColor);
       }
 
+      // On a single page app there won't be a fresh a page load to trigger rebuilding the pager
+      // Instead we should rebuild the pager explicitly, after a short break
+      if (detectPushStateNavigation) {
+        var checkSiblings = function() {
+          var newList = grabListAndMaybeClearIt();
+          if (newList) {
+            var siblings = JSON.parse(grabbedList);
+            createRelatedLinksPager(siblings);
+          }
+        };
+        setTimeout(checkSiblings, delayBeforeRunning);
+      }
+
       if (canPassPacketByGM(link, siblings)) {
         // GM_log("[RLP] Saving siblings_data");
         if (clearDataTimer) {
@@ -854,26 +867,16 @@ function runRelatedLinksPager() {
   }
 
 
+  /*
   if (detectPushStateNavigation) {
     // From: https://stackoverflow.com/a/41825103/99777
-    //var pushState = history.pushState;
-    //history.pushState = function() {
-    //    pushState.apply(history, arguments);
-    //    setTimeout(onPushState, 1000);
-    //};
-    window.addEventListener('click', maybeNavigating);
-  }
-
-  function maybeNavigating() {
-    var checkSiblings = function() {
-      const newList = grabListAndMaybeClearIt();
-      if (newList) {
-        var siblings = JSON.parse(grabbedList);
-        createRelatedLinksPager(siblings);
-      }
+    var pushState = history.pushState;
+    history.pushState = function() {
+       pushState.apply(history, arguments);
+       setTimeout(onPushState, 1000);
     };
-    setTimeout(checkSiblings, delayBeforeRunning);
   }
+  */
 }
 
 setTimeout(runRelatedLinksPager, delayBeforeRunning);
