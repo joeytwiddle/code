@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.3.6
+// @version        1.4.0
 // @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
@@ -15,11 +15,14 @@ var placeFaviconByUrl      = false;   // The little green link below the article
 var placeFaviconAfter      = false;   // Display after the link instead of before it
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
 var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column
+var iconSize               = 1.2;
 
 // Some alternatives/remixes:
 // - https://github.com/NV/faviconize-google.js (Chrome extension)
 // - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
 // - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
+
+// TODO: The relative positioning of the icon appears a bit off for sub-links of the main result.
 
 // DONE: Provided more options where to place favicon: by the link or by the
 // url, before or after, inside or outside the link.  However in my opinion
@@ -55,6 +58,8 @@ function createFaviconFor (url) {
 	// Use protocol (http/https) of current page, to avoid mixed-content warnings/failures.
 	var protocol = document.location.protocol.replace(/:$/, '');
 	//console.log("[FaviconizeGoogle.user.js] protocol:" ,protocol);
+	// We may fail to access favicons, e.g. if the site only offers http, or due to CORS restrictions.
+	// But it is still worth tryiing, because the fallback (google's s2) offers only low-res icons.
 	var urlsToTry = [
 		'//' + host + '/favicon.ico',
 		'//' + host + '/favicon.png',
@@ -129,8 +134,8 @@ function getElementsByClassName (cN) {
 
 var style = document.createElement('STYLE');
 var padSide = (placeFaviconAfter?'left':'right');
-var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -1.4em; top: 0.06em;' : '';
-style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; width: 1em; height: 1em; padding-bottom: 0.2em; " + extra + "}";
+var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + (1 * iconSize + 0.5) + 'em; top: ' + (0.5 + 0.07 - iconSize/2) + 'em;' : '';
+style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
 
 function updateFavicons () {
