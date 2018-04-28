@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.3.5
+// @version        1.3.6
 // @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
@@ -14,6 +14,7 @@
 var placeFaviconByUrl      = false;   // The little green link below the article title
 var placeFaviconAfter      = false;   // Display after the link instead of before it
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
+var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column
 
 // Some alternatives/remixes:
 // - https://github.com/NV/faviconize-google.js (Chrome extension)
@@ -58,8 +59,8 @@ function createFaviconFor (url) {
 	//img.src = protocol + '://'+host+'/favicon.ico';
 	img.src = '//www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
 	//img.src = '//g.etfv.co/http://" + host; // As suggested by decembre
-	img.width = '16';
-	img.height = '16';
+	//img.width = '16';
+	//img.height = '16';
 	img.className = 'favicon';
 	img.border = 0;
 	img.style.display = 'none';
@@ -106,7 +107,8 @@ function getElementsByClassName (cN) {
 
 var style = document.createElement('STYLE');
 var padSide = (placeFaviconAfter?'left':'right');
-style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; width: 1em; height: 1em; padding-bottom: 0.2em; }";
+var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -1.4em; top: 0.06em;' : '';
+style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; width: 1em; height: 1em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
 
 function updateFavicons () {
