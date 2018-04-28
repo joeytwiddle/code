@@ -350,7 +350,7 @@ function runRelatedLinksPager() {
     var lastLink = null;
     for (var i = 0; i < links.length; i++) {
       var link = links[i];
-      if (groupLinksByClass && link.className != clickedLink.className) {
+      if (groupLinksByClass && link.className !== clickedLink.className) {
         continue;
       }
       var xpath = getGroupSignature(link);
@@ -374,7 +374,7 @@ function runRelatedLinksPager() {
   // target page in a hash package.
 
   function isSuitable(link) {
-    if (link.tagName != "A") {
+    if (link.tagName !== "A") {
       return false;
     }
 
@@ -383,7 +383,7 @@ function runRelatedLinksPager() {
     if (link.isRLPPagerLink) {
       return false;
     }
-    if (link.protocol.indexOf(/*"http") != 0)*/ "javascript:") === 0) {
+    if (link.protocol.indexOf("javascript" + ":") === 0) {
       // We should not add #s to javascript: links but it seems to work ok on ftp:// (FF)
       return false;
     }
@@ -444,7 +444,7 @@ function runRelatedLinksPager() {
       return true;
     }
     // Yes, if we are travelling to the same host, then we can use the fake localStorage version of GM_setValue
-    if (link.host == document.location.host && useLocalStorageWhenPossible) {
+    if (link.host === document.location.host && useLocalStorageWhenPossible) {
       return true;
     }
     return false;
@@ -664,11 +664,7 @@ function runRelatedLinksPager() {
     );
 
     function maybeHost(link) {
-      if (link.host != document.location.host) {
-        return "(" + link.host + ")";
-      } else {
-        return "";
-      }
+      return (link.host !== document.location.host) ? "(" + link.host + ")" : "";
     }
 
     function createLinkFromRecord(selectedRecord, text) {
@@ -703,7 +699,7 @@ function runRelatedLinksPager() {
       } else {
         link.href = selectedRecord[1] + appendChar + 'siblings=' + encodeURIComponent(newSiblingsList);
       }
-      if (text != selectedRecord[0]) {
+      if (text !== selectedRecord[0]) {
         link.title = selectedRecord[0];
       }
       link.title = (link.title ? link.title + ' ' : '') + maybeHost(link);
@@ -802,7 +798,7 @@ function runRelatedLinksPager() {
       if (window.history.replaceState) {
         // Remove the siblings packet if it is found.  Try to preserve anything else in the URL.
         var urlWithoutSiblingsPacket = document.location.href.replace(/(#siblings=.*|[?&]siblings=[^&]*)/, '');
-        if (urlWithoutSiblingsPacket != document.location.href) {
+        if (urlWithoutSiblingsPacket !== document.location.href) {
           window.history.replaceState(null, null, urlWithoutSiblingsPacket);
         }
       } else {
