@@ -59,16 +59,13 @@ var forceTravel = false;              // Attempt to fix loss of #data when click
 var clearDataFromLocation = true;     // Tidies up your location bar URL, but prevents the pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.  Disable this for debugging.
 
 var highlightLinkGroups = true;       // Change the background or border of links in the current group on hover.
-var changeBackgroundNotBorder = true; // If false, draws boxes around related links.  (Then you may want to increase the opacity of the colors below.)
-var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // very light blue
-var highlightColor         = "rgba(130,200,255,0.2)"; // light blue
-// var thisLinkHighlightColor = "rgba(0,255,255,0.01)"; // very faint cyan
-// var highlightColor         = "rgba(0,255,255,0.08)"; // faint cyan
-// var thisLinkHighlightColor = null;
-// var highlightColor         = "rgba(130,230,255,0.3)";
-// var thisLinkHighlightColor = "rgba(0,0,255,0.1)"; // very faint blue
-// var highlightColor         = "rgba(0,0,255,0.2)"; // faint blue
-var visitingColor          = "rgba(220,130,255,0.2)"; // light purple
+// var changeBackgroundNotBorder = true; // If false, draws boxes around related links.  (Then you may want to increase the opacity of the colors below.)
+var thisLinkHighlightStyle = "background-color: rgba(130, 200, 255, 0.1) !important"; // very light blue
+var highlightStyle         = "background-color: rgba(130, 200, 255, 0.2) !important"; // light blue
+// We can try setting a border instead of a background.
+// But There are various reasons why a border might not work.  It doesn't even work well on Google.
+// var highlightStyle         = "border: 1px dashed rgba(130, 200, 255, 0.5) !important";
+// var visitingColor          = "rgba(220,130,255,0.2)"; // light purple
 var lineStyle = "solid";
 // var lineStyle = "dashed";
 
@@ -269,6 +266,15 @@ if (document.title.length === 0 && document.location.href.length > 800) {
 // Let's also fix it, even if it wasn't our fault
 if (document.title.length > 800) {
   document.title = document.title.slice(0, 100) + " ...";
+}
+
+if (highlightLinkGroups) {
+  if (highlightStyle) {
+    GM_addStyle(".RLP-link-in-group { " + highlightStyle + " }");
+  }
+  if (thisLinkHighlightStyle) {
+    GM_addStyle(".RLP-selected-link { " + thisLinkHighlightStyle + " }");
+  }
 }
 
 function runRelatedLinksPager() {
@@ -487,7 +493,7 @@ function runRelatedLinksPager() {
       if (highlightLinkGroups) {
         clearList();
         listOfHighlightedNodes = linksInGroup;
-        highlightList(link, visitingColor);
+        //highlightList(link, visitingColor);
       }
 
       // On a single page app there won't be a fresh a page load to trigger rebuilding the pager
@@ -820,13 +826,14 @@ function runRelatedLinksPager() {
 
     var directions = ["Top", "Bottom", "Left", "Right"];
 
-    function highlightList(link, highlightColor, thisLinkHighlightColor) {
+    function highlightList(link) {
       if (verbose) {
         GM_log("Highlighting " + listOfHighlightedNodes.length + " elements.");
       }
       for (var i = 0; i < listOfHighlightedNodes.length; i++) {
         var elem = listOfHighlightedNodes[i];
         var style = getComputedStyle(elem, null);
+        /*
         if (highlightColor) {
           if (changeBackgroundNotBorder) {
             elem.savedOldBackgroundColor = elem.style.backgroundColor;
@@ -853,12 +860,15 @@ function runRelatedLinksPager() {
             }
           }
         }
+        */
+        elem.classList.add(elem === link ? 'RLP-selected-link' : 'RLP-link-in-group');
       }
     }
 
     function clearList(retainList) {
       for (var i = 0; i < listOfHighlightedNodes.length; i++) {
         var elem = listOfHighlightedNodes[i];
+        /*
         if (changeBackgroundNotBorder) {
           elem.style.backgroundColor = elem.savedOldBackgroundColor;
         } else {
@@ -869,6 +879,8 @@ function runRelatedLinksPager() {
             elem.style["padding" + dir] = elem["savedOldPadding" + dir];
           }
         }
+        */
+        elem.classList.remove('RLP-link-in-group', 'RLP-selected-link');
       }
       listOfHighlightedNodes.length = 0;
     }
@@ -883,7 +895,7 @@ function runRelatedLinksPager() {
           link.title = (link.title ? link.title + " " : "") + "(" + listOfHighlightedNodes.length + " related links)";
         }
         if (listOfHighlightedNodes.length >= minimumGroupSize && listOfHighlightedNodes.length < maximumGroupSize) {
-          highlightList(link, highlightColor, thisLinkHighlightColor);
+          highlightList(link);
         }
       }
     }, true);
