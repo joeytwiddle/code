@@ -493,7 +493,14 @@ function runRelatedLinksPager() {
       // On a single page app there won't be a fresh a page load to trigger rebuilding the pager
       // Instead we should rebuild the pager explicitly, after a short break
       if (detectPushStateNavigation) {
+        var locationBefore = document.location.href;
         var checkSiblings = function() {
+          var locationNow = document.location.href;
+          if (locationNow === locationBefore) {
+            GM_log("[RLP] Not build new pager from last click because no navigation occurred");
+            // We could also clear the list
+            return;
+          }
           var newList = grabListAndMaybeClearIt();
           if (newList) {
             var siblings = JSON.parse(grabbedList);
