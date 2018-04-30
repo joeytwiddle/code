@@ -3,6 +3,8 @@
 // @namespace      FastJSLogger
 // @description    Intercepts console.log calls to display log messages in a div floating on the page.  Tries to be a replacement for normal browser Error Consoles (which can be a little slow to open).
 // @include        *
+// But this script appears to break Facebook somewhat
+// @exclude        *facebook.com/*
 // @version        1.2.8
 // @grant          none
 // ==/UserScript==
