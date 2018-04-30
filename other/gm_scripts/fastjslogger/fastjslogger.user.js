@@ -3,7 +3,7 @@
 // @namespace      FastJSLogger
 // @description    Intercepts console.log calls to display log messages in a div floating on the page.  Tries to be a replacement for normal browser Error Consoles (which can be a little slow to open).
 // @include        *
-// @version        1.2.7
+// @version        1.2.8
 // @grant          none
 // ==/UserScript==
 
@@ -31,7 +31,7 @@
 		autoHide:    true,       // hides some time after displaying, even if you are focused on it!
 		startHidden: true,
 		logTimeouts: false,
-		logEvents:   true,            // Log any activity over the wrapped listeners.
+		logEvents:   false,           // Log any activity over the wrapped listeners.
 		logCommonMouseEvents: false,  // These can be triggered a lot!
 		logChangesToGlobal:   true,   // Logs any new properties which are added to window
 
