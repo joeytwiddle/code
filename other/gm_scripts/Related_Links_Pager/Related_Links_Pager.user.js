@@ -738,7 +738,13 @@ function runRelatedLinksPager() {
     // pageList.style.maxHeight = (window.innerHeight * 0.90 | 0) + "px";
     for (var i = 0; i < siblings.length; i++) {
       pageList.appendChild(document.createElement("br"));
-      pageList.appendChild(document.createTextNode("" + (i + 1) + ". "));
+      var numElem = document.createElement("span");
+      numElem.style.display = 'inline-block';
+      numElem.textContent = String(i + 1) + '.';
+      numElem.style.width = '1.5em';
+      numElem.style.textAlign = 'right';
+      numElem.style.paddingRight = '0.5em';
+      pageList.appendChild(numElem);
       var record = siblings[i];
       var text = record[0] || record[1];   // use address if no title
       var link = createLinkFromRecord(record, text);
