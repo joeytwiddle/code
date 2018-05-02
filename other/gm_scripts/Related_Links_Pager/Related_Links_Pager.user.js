@@ -304,7 +304,7 @@ function runRelatedLinksPager() {
 
     img.title = '' + host;
     img.style.border = '0';
-    img.style.paddingRight = '4px';
+    img.style.marginRight = '4px';
     img.style.width = '1.0em';
     img.style.height = '1.0em';
     // Favicon image elements can be hidden until they have fully loaded
