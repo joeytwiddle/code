@@ -3,11 +3,11 @@
 // @namespace      joeytwiddle
 // @license        MIT
 // @copyright      2014-2017, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.1.1
+// @version        1.1.2
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
-// @grant          none
+// @grant          GM_addStyle
 // ==/UserScript==
 
 // bug: If the notifications list is longer than the page, scroll down to the bottom and then try to click on the white space below the Github document's content.  The event does not fire there!
@@ -23,6 +23,11 @@ var makeBlocksCollapsableOnNotificationsPage = true;
 
 // Disabled by default because it was conflicting with other scripts (https://github.com/joeytwiddle/code/issues/2)
 var makeAllFileAndDiffBlocksCollapsable = false;
+
+// Red dot
+//var notificationDotStyle = 'linear-gradient(hsla(0, 50%, 65%, 1), hsla(0, 50%, 50%, 1))';
+// Green dot
+//var notificationDotStyle = 'linear-gradient(hsla(120, 50%, 65%, 1), hsla(120, 50%, 50%, 1))';
 
 // ==/Options==
 
@@ -329,4 +334,8 @@ if (makeAllFileAndDiffBlocksCollapsable) {
 	setTimeout(function(){
 		makeFileAndDiffBlocksCollapsable(document.body);
 	}, 2000);
+}
+
+if (typeof notificationDotStyle !== 'undefined') {
+    GM_addStyle(".notification-indicator .mail-status.unread { background-image: " + notificationDotStyle + "; }");
 }
