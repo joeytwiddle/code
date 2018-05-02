@@ -276,11 +276,11 @@ function runRelatedLinksPager() {
   // BUG: Does not add a favicon for the current page, because the current page
   // is not shown as a link.  This breaks left-alignment of the text!
   function addFaviconToLinkObviouslyIMeanWhyWouldntYou(link) {
-    if (!link.href) {
-      return;
-    }
+    // if (!link.href) {
+    //   return;
+    // }
 
-    var host = link.href.replace(/^[^\/]*:\/\//, '').replace(/\/.*$/, '');
+    var host = (link.href || document.location.href).replace(/^[^\/]*:\/\//, '').replace(/\/.*$/, '');
     var img = document.createElement('IMG');
     // img.src = 'http://'+host+'/favicon.ico';
 
