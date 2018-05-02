@@ -637,13 +637,17 @@ function runRelatedLinksPager() {
       "#linkGroupPager:hover { box-shadow: 0px 2px 12px 0px rgba(0,0,0,0.1); }" +
       "#linkGroupPager       { opacity: 0.3; }" +
       "#linkGroupPager:hover { opacity: 1.0; }" +
-      "#linkGroupPager       { transition: opacity 400ms linear; }" +
+      "#linkGroupPager       { transition: all 200ms linear 200ms; }" +
+      "#linkGroupPager:hover { transition: all 200ms linear; }" +
       "#linkGroupPager > *         { opacity: 0.0; }" +
       "#linkGroupPager:hover > *   { opacity: 1.0; }" +
-      "#linkGroupPager > *         { transition: opacity 400ms linear; }"
-      + "#linkGroupPager .related-link-row { margin: 0.2em 0; }"
+      "#linkGroupPager > *         { transition: all 200ms linear; }" +
+      "#linkGroupPager:hover > *   { transition: all 200ms linear 200ms; }"
+      + "#linkGroupPager .RLP-title { margin-bottom: 0.2em; }"
+      + "#linkGroupPager .related-link-row { margin: 0.6em 0; }"
       + "#linkGroupPager .related-link-row > * { vertical-align: top; }"
       + "#linkGroupPager .related-link-index { display: inline-block; width: 1.5em; text-align: right; }"
+      + "#linkGroupPager .related-link-index { opacity: 0.2; transform: scale(0.8); }"
     );
 
     function maybeHost(link) {
@@ -704,11 +708,14 @@ function runRelatedLinksPager() {
       return link;
     }
 
+    var titleElem = document.createElement('div');
+    titleElem.className = 'RLP-title';
+
     if (currentIndex > 0) {
       var leftRecord = siblings[currentIndex - 1];
       var leftLink = createLinkFromRecord(leftRecord, "<<");
       leftLink.title = "Previous: " + leftLink.title;
-      pager.appendChild(leftLink);
+      titleElem.appendChild(leftLink);
     }
 
     // var pagerButton = document.createTextNode(" Pager ");
@@ -719,23 +726,25 @@ function runRelatedLinksPager() {
       pageList.style.display = pageList.style.display === 'none' ? '' : 'none';
     }, false);
     pagerButton.style.cursor = 'pointer';
-    pager.appendChild(pagerButton);
+    titleElem.appendChild(pagerButton);
 
     if (currentIndex < siblings.length - 1) {
       var rightRecord = siblings[currentIndex + 1];
       var rightLink = createLinkFromRecord(rightRecord, ">>");
       rightLink.title = "Next: " + rightLink.title;
-      pager.appendChild(rightLink);
+      titleElem.appendChild(rightLink);
     }
 
     var closeButton = document.createElement("span");
     closeButton.textContent = "[X]";
     closeButton.style.cursor = 'pointer';
-    closeButton.style.paddingLeft = '5px';
+    closeButton.style.marginLeft = '1em';
     closeButton.onclick = function() {
       pager.parentNode.removeChild(pager);
     };
-    pager.appendChild(closeButton);
+    titleElem.appendChild(closeButton);
+
+    pager.appendChild(titleElem);
 
     // We could create this lazily, but why not immediately? :P
     var pageList = document.createElement("div");
