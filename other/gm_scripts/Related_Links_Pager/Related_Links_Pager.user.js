@@ -623,6 +623,7 @@ function runRelatedLinksPager() {
 
     pager.id = "linkGroupPager";
     GM_addStyle("#linkGroupPager { " + resetProps + " position: fixed; top: 5%; right: 5%; " +
+      "font-family: sans-serif;" +
       "z-index: 9999999999; background: white; color: black;" +
       "padding: 0.5em 1em;" +
       "border: 1px solid #0003; " +
