@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.4
+// @version        1.3.5
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -293,7 +293,7 @@ function runRelatedLinksPager() {
       if (ext) {
         img.src = protocol + '://' + host + '/favicon.' + ext;
       } else {
-        img.title = "Failed to find favicon for " + host;
+        // img.title = "Failed to find favicon for " + host;
         img.src = protocol + '://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
         // @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
         img.removeEventListener('error', tryExtension, true);
@@ -304,7 +304,6 @@ function runRelatedLinksPager() {
 
     img.title = '' + host;
     img.style.border = '0';
-    img.style.marginRight = '4px';
     img.style.width = '1.0em';
     img.style.height = '1.0em';
     // Favicon image elements can be hidden until they have fully loaded
@@ -313,7 +312,11 @@ function runRelatedLinksPager() {
       img.style.display = '';
     }, false);
 
-    link.parentNode.insertBefore(img, link);
+    var imgHolder = document.createElement('span');
+    imgHolder.style.marginLeft = '0.5em';
+    imgHolder.style.marginRight = '0.5em';
+    imgHolder.appendChild(img);
+    link.parentNode.insertBefore(imgHolder, link);
   }
 
 
@@ -638,6 +641,9 @@ function runRelatedLinksPager() {
       "#linkGroupPager > *         { opacity: 0.0; }" +
       "#linkGroupPager:hover > *   { opacity: 1.0; }" +
       "#linkGroupPager > *         { transition: opacity 400ms linear; }"
+      + "#linkGroupPager .related-link-row { margin: 0.2em 0; }"
+      + "#linkGroupPager .related-link-row > * { vertical-align: top; }"
+      + "#linkGroupPager .related-link-index { display: inline-block; width: 1.5em; text-align: right; }"
     );
 
     function maybeHost(link) {
@@ -738,14 +744,12 @@ function runRelatedLinksPager() {
     // pageList.style.maxWidth = (window.innerWidth * 0.40 | 0) + "px";
     // pageList.style.maxHeight = (window.innerHeight * 0.90 | 0) + "px";
     for (var i = 0; i < siblings.length; i++) {
-      pageList.appendChild(document.createElement("br"));
+      var row = document.createElement('div');
+      row.className = 'related-link-row';
       var numElem = document.createElement("span");
-      numElem.style.display = 'inline-block';
+      numElem.className = 'related-link-index';
       numElem.textContent = String(i + 1) + '.';
-      numElem.style.width = '1.5em';
-      numElem.style.textAlign = 'right';
-      numElem.style.paddingRight = '0.5em';
-      pageList.appendChild(numElem);
+      row.appendChild(numElem);
       var record = siblings[i];
       var text = record[0] || record[1];   // use address if no title
       var link = createLinkFromRecord(record, text);
@@ -758,7 +762,8 @@ function runRelatedLinksPager() {
         span.textContent = link.textContent;
         link = span;
       }
-      pageList.appendChild(link);
+      row.appendChild(link);
+      pageList.appendChild(row);
       addFaviconToLinkObviouslyIMeanWhyWouldntYou(link);
     }
     pageList.style.display = 'none';
