@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.8
+// @version      0.7.9
 // @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -144,6 +144,11 @@
             readmeElement.parentNode.insertBefore(sidebarContainer, readmeElement);
 
             // BUG: At low resolutions, normally the sidebar will break to below the readme.  But with our changes, the sidebar appears above the readme!
+
+            // If an image appears above the fold, and it takes 100% of the width, then it will cause the document to push down below the floating sidebar
+            // For an example of such a page: https://www.npmjs.com/package/passport
+            // Of course this rule will apply to all images, even those later down on the page
+            GM_addStyle(".vistweaks .markdown img { max-width: 66%; }");
         };
 
         checkTheSidebar();
