@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
-// @license        MIT
 // @copyright      2014-2017, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.1.2
+// @version        1.1.3
+// @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
@@ -24,10 +24,16 @@ var makeBlocksCollapsableOnNotificationsPage = true;
 // Disabled by default because it was conflicting with other scripts (https://github.com/joeytwiddle/code/issues/2)
 var makeAllFileAndDiffBlocksCollapsable = false;
 
-// Red dot
-//var notificationDotStyle = 'linear-gradient(hsla(0, 50%, 65%, 1), hsla(0, 50%, 50%, 1))';
-// Green dot
-//var notificationDotStyle = 'linear-gradient(hsla(120, 50%, 65%, 1), hsla(120, 50%, 50%, 1))';
+// Github's blue dot (2017)
+//var notificationDotStyle = 'linear-gradient(hsl(212, 100%, 66%), hsl(212, 100%, 46%))';
+// Github's blue dot (2016)
+//var notificationDotStyle = 'linear-gradient(hsl(214, 50%, 65%), hsl(214, 50%, 50%))';
+// Strong red dot
+//var notificationDotStyle = 'linear-gradient(hsla(0, 80%, 75%, 1), hsla(0, 80%, 50%, 1))';
+// Calm amber dot
+//var notificationDotStyle = 'linear-gradient(hsla(35, 90%, 65%, 1), hsla(35, 90%, 40%, 1))';
+// Gentle green dot
+//var notificationDotStyle = 'linear-gradient(hsla(120, 50%, 65%, 1), hsla(120, 50%, 40%, 1))';
 
 // ==/Options==
 
@@ -196,7 +202,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  + "   height: 0px; "
 	  + "   border-left: "+arrowSize+"px solid transparent; "
 	  + "   border-right: "+arrowSize+"px solid transparent; "
-	  + "   border-bottom: "+arrowSize+"px solid #C3C3C3; "
+	  + "   border-bottom: "+arrowSize+"px solid #d6d8da; "
 	  + "   z-index: 10000001; "
 	  + " } "
 	  + " .notification-indicator.tooltipped.tooltip-hidden:before, .notification-indicator.tooltipped.tooltip-hidden:after { "
