@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.7
+// @version        1.3.8
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -657,6 +657,7 @@ function runRelatedLinksPager() {
       "#linkGroupPager > *         { transition: all 200ms linear; }" +
       "#linkGroupPager:hover > *   { transition: all 200ms linear 200ms; }"
       + "#linkGroupPager .RLP-title { margin: 0.2em 0; }"
+      + "#linkGroupPager .RLP-title > * { margin: 0 0.2em; }"
       + "#linkGroupPager .related-link-row { margin: 0.6em 0; }"
       + "#linkGroupPager .related-link-row > * { vertical-align: top; }"
       + "#linkGroupPager .related-link-index { display: inline-block; width: 1.5em; text-align: right; }"
@@ -703,6 +704,8 @@ function runRelatedLinksPager() {
         link.title = selectedRecord[0];
       }
       link.title = (link.title ? link.title + ' ' : '') + maybeHost(link);
+      // I don't know where, but somewhere lots of whitespace characters are getting introduced
+      link.title = link.title.trim();
       link.onclick = function(evt) {
         if (!keepNavigationHistory) {
           if (evt.ctrlKey || evt.metaKey) {
@@ -722,7 +725,7 @@ function runRelatedLinksPager() {
 
     if (currentIndex > 0) {
       var leftRecord = siblings[currentIndex - 1];
-      var leftLink = createLinkFromRecord(leftRecord, "<<");
+      var leftLink = createLinkFromRecord(leftRecord, "<< prev");
       leftLink.title = "Previous: " + leftLink.title;
       titleElem.appendChild(leftLink);
     }
@@ -739,7 +742,7 @@ function runRelatedLinksPager() {
 
     if (currentIndex < siblings.length - 1) {
       var rightRecord = siblings[currentIndex + 1];
-      var rightLink = createLinkFromRecord(rightRecord, ">>");
+      var rightLink = createLinkFromRecord(rightRecord, "next >>");
       rightLink.title = "Next: " + rightLink.title;
       titleElem.appendChild(rightLink);
     }
@@ -747,7 +750,7 @@ function runRelatedLinksPager() {
     var closeButton = document.createElement("span");
     closeButton.textContent = "[X]";
     closeButton.style.cursor = 'pointer';
-    closeButton.style.marginLeft = '1em';
+    closeButton.style.float = 'right';
     closeButton.onclick = function() {
       pager.parentNode.removeChild(pager);
     };
