@@ -656,7 +656,9 @@ function runRelatedLinksPager() {
       "#linkGroupPager:hover > *   { opacity: 1.0; }" +
       "#linkGroupPager > *         { transition: all 200ms linear; }" +
       "#linkGroupPager:hover > *   { transition: all 200ms linear 200ms; }"
+      // Gap above and below title
       + "#linkGroupPager .RLP-title { margin: 0.2em 0; }"
+      // Gaps between title elements
       + "#linkGroupPager .RLP-title > * { margin: 0 0.2em; }"
       + "#linkGroupPager .related-link-row { margin: 0.6em 0; }"
       + "#linkGroupPager .related-link-row > * { vertical-align: top; }"
@@ -748,9 +750,12 @@ function runRelatedLinksPager() {
     }
 
     var closeButton = document.createElement("span");
-    closeButton.textContent = "[X]";
+    closeButton.innerHTML = "&Cross;";
+    //closeButton.style.fontWeight = "800";
     closeButton.style.cursor = 'pointer';
     closeButton.style.float = 'right';
+    closeButton.style.marginLeft = '0.6em';
+    closeButton.style.transform = 'scale(1.2)';
     closeButton.onclick = function() {
       pager.parentNode.removeChild(pager);
     };
