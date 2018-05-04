@@ -14,7 +14,7 @@
 // @run-at          document-start
 // @grant           GM_xmlhttpRequest
 // @grant           GM_addStyle
-// @version         0.0.4-joey4
+// @version         0.0.4-joey5
 // ==/UserScript==
 
 // TODO: on page refresh:
@@ -154,7 +154,8 @@ console.log("egoogle.js loaded");
 
 // The related searches are a bit jarring because they mix in with the search results.
 // So we give them a light grey background, so are visually distinguishable
-GM_addStyle("#extrares { border: 1px solid #ececec; border-radius: 5px; background: #fafafa; margin-bottom: 24px; }");
+// Trying to produce something similar to the exp-outline class
+GM_addStyle("#extrares { border: 1px solid rgba(0, 0, 0, 0.13); border-radius: 0px; background: rgba(0, 0, 0, 0.02); margin-bottom: 24px; }");
 // Lets also reduce the rather large top and bottom padding on this box
 GM_addStyle("#brs { margin-bottom: 20px }");
 GM_addStyle("#brs > * { margin-top: 26px }");
