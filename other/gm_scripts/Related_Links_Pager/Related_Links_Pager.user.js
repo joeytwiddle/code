@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.8
+// @version        1.3.9
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -348,9 +348,14 @@ function runRelatedLinksPager() {
     var links = document.getElementsByTagName("A");
     var collected = [];
     var lastLink = null;
+    // If the links were already highlighted by hover before the click happens, then we may have added highlighting classes.
+    // But if we have adjusted their classNames then that will break the groupLinksByClass feature!
+    // To work around that, we adjust the className of the clicked link to match those of the other links in the group.
+    // (An alternative might be to keep the list of links in the group cached, rather than rebuilding it.)
+    var classToSeek = clickedLink.className.replace(/\bRLP-selected-link\b/, 'RLP-link-in-group');
     for (var i = 0; i < links.length; i++) {
       var link = links[i];
-      if (groupLinksByClass && link.className !== clickedLink.className) {
+      if (groupLinksByClass && link.className !== classToSeek) {
         continue;
       }
       var xpath = getGroupSignature(link);
