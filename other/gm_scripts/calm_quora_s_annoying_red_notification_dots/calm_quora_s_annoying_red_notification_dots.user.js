@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Calm Quora's annoying red notification dots
 // @namespace    joeytwiddle
-// @version      0.0.4
+// @version      0.0.5
 // @license      MIT
 // @description  The red notifications on Quora are too glaring, appear too frequently, and do not go away easily enough.  Let's make them grey so they aren't such a bother.
 // @author       joeytwiddle
@@ -14,3 +14,8 @@ GM_addStyle('.SiteHeaderBadge, .WriteNavbadge, .red_badge { background: #ddd !im
 
 // Don't show any popups
 GM_addStyle('.Growl { display: none !important; }');
+
+// Just make the whole damn header grey!
+// As requested by Keeni: https://greasyfork.org/en/forum/discussion/37380/x
+// In fact I think I will just apply this to anything I find on the site which is red!
+GM_addStyle('.SiteHeader, .questions_to_answer_icon { filter: saturation(0%); }');
