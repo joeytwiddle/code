@@ -8,6 +8,7 @@
 // @copyright   2013+, xthexder (https://github.com/xthexder)
 // @contributor Jason Frey (https://github.com/Fryguy)
 // @contributor Marti Martz (https://github.com/Martii)
+// @contributor Paul "Joey" Clark (https://github.com/joeytwiddle)
 // @license     MIT; https://raw.githubusercontent.com/xthexder/wide-github/master/LICENSE
 // @version     1.2.0-joey4
 // @icon        https://raw.githubusercontent.com/xthexder/wide-github/master/icon.png
@@ -18,6 +19,10 @@
 //// Added by Joey:
 // @run-at      document-start
 // ==/UserScript==
+
+// @todo I like the 1500px limit for normal usage, but I want to go much wider when doing side-by-side diffs.
+// Options for detection: Guess from the URL, or look for telltale elements in the HTML.
+// Options for live updates: Apply new CSS when a change is detected (slow memory leak), or add a toggling class to the root of the page.
 
 var styleSheet = "" +
 "header .container," +
