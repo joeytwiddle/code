@@ -309,7 +309,9 @@ function runRelatedLinksPager() {
     img.addEventListener('error', tryExtension, true);
     tryExtension();
 
-    img.title = '' + host;
+    // If no icon was found, this will appear next to the missing image icon
+    // Disabled because that's not really desirable!
+    //img.title = '' + host;
     img.style.border = '0';
     img.style.width = '1.0em';
     img.style.height = '1.0em';
