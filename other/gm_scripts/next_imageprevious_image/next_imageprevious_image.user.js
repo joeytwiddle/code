@@ -2,8 +2,8 @@
 // @name Next Image/Previous Image
 // @author arty <me@arty.name>
 // @namespace http://arty.name/
-// @version 2.0.7
-// @description  Quick scroll to next/previous image on a page with n/p buttons (now also looks for canvas and iframe elements)
+// @version 2.1.0
+// @description  Quick scroll to next/previous image on a page with n/p buttons
 // @include *
 // ==/UserScript==
 
@@ -12,15 +12,10 @@
 // 2012/10 - Now sorting positions so out-of-order images do not break the sequence.
 
 (function(){
-  // Original keys: Forward and Reverse
   // var forwardButton  = 102; // F
   // var backwardButton = 114; // R
-  // Current keys: Next and Previous
   var forwardButton  = 110; // N
   var backwardButton = 112; // P
-  // For Vim / Facebook / 9gag lovers
-  // var forwardButton  = 106; // J
-  // var backwardButton = 107; // K
   var leeway = 2; // This is needed if you have zoomed out the page.  (We might try to set scrollTop to 100, but it will only move to 99.)
 
   var positions = [];
@@ -34,10 +29,10 @@
     // We force a rescan of the page's images every time, for dynamic pages.
     positions = [];
     if (positions.length === 0) {
-      //const images = document.images;
-      const images = document.querySelectorAll('image, canvas, iframe');
-      for (var index = 0; index < images.length; index++) {
-        var image = images[index];
+      var selector = 'img' + (document.location.hostname === 'www.dwitter.net' ? ', iframe' : '');
+      var elements = document.querySelectorAll(selector);
+      for (var index = 0; index < elements.length; index++) {
+        var image = elements[index];
         if (image.clientWidth * image.clientHeight < 200*200) continue;
         var ytop = getYOffset(image);
         // Vertically centralise smaller images.
