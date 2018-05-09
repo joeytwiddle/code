@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.10
+// @version        1.3.12
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -299,7 +299,8 @@ function runRelatedLinksPager() {
       if (ext) {
         img.src = protocol + '://' + host + '/favicon.' + ext;
       } else {
-        // img.title = "Failed to find favicon for " + host;
+        // Too big!
+        img.title = '';
         img.src = protocol + '://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
         // @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
         img.removeEventListener('error', tryExtension, true);
@@ -318,9 +319,12 @@ function runRelatedLinksPager() {
       img.style.display = '';
     }, false);
 
-    var imgHolder = document.createElement('span');
+    var imgHolder = document.createElement('div');
     imgHolder.style.marginLeft = '0.5em';
     imgHolder.style.marginRight = '0.5em';
+    imgHolder.style.display = 'inline-block';
+    imgHolder.style.width = '1em';
+    imgHolder.style.height = '1em';
     imgHolder.appendChild(img);
     link.parentNode.insertBefore(imgHolder, link);
   }
