@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.13
+// @version        1.3.14
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -656,7 +656,7 @@ function runRelatedLinksPager() {
       "border: 1px solid #0003; " +
       "border-radius: 3px;" +
       "box-shadow: ;" +
-      "font-size: 100%; text-align: center; max-height: 90%; } " +
+      "font-size: 100%; text-align: center; max-height: 85%; overflow: auto; } " +
       ".linkGroupPagerList { text-align: left; overflow: auto; }" +
       "#linkGroupPager:hover { box-shadow: 0px 2px 12px 0px rgba(0,0,0,0.1); }" +
       "#linkGroupPager       { opacity: 0.3; }" +
