@@ -761,11 +761,18 @@ function runRelatedLinksPager() {
     }
 
     var closeButton = document.createElement("span");
+
+    // Looks good on Linux, but appears offset low on Mac
     //closeButton.innerHTML = "&Cross;";
     //closeButton.style.transform = 'scale(1.2)';
-    closeButton.innerHTML = '&#9587;';
-    closeButton.style.transform = 'scale(0.8)';
-    closeButton.style.fontWeight = '800';
+    // Looks good on Mac, but appears tall and thin on Linux!
+    //closeButton.innerHTML = '&#9587;';
+    //closeButton.style.transform = 'scale(0.8)';
+    //closeButton.style.fontWeight = '800';
+    // Let's try to find something which will be consistent across OSes
+    closeButton.innerHTML = "&times;";
+    closeButton.style.transform = 'scale(2) translate(0, -0.10em)';
+
     closeButton.style.cursor = 'pointer';
     closeButton.style.float = 'right';
     closeButton.style.marginLeft = '0.6em';
