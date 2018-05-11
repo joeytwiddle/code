@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.16
+// @version        1.3.17
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -269,16 +269,63 @@ if (document.title.length > 800) {
   document.title = document.title.slice(0, 100) + " ...";
 }
 
-if (highlightLinkGroups) {
+function addHighlightStyles() {
+  var highlightStyles = "";
+
   if (highlightStyle) {
-    GM_addStyle(".RLP-link-in-group { " + highlightStyle + " }");
+    highlightStyles += ".RLP-link-in-group { " + highlightStyle + " }";
   }
   if (thisLinkHighlightStyle) {
-    GM_addStyle(".RLP-selected-link { " + thisLinkHighlightStyle + " }");
+    highlightStyles += ".RLP-selected-link { " + thisLinkHighlightStyle + " }";
   }
   if (visitingStyle) {
-    GM_addStyle(".RLP-visiting-link { " + visitingStyle + " }");
+    highlightStyles += ".RLP-visiting-link { " + visitingStyle + " }";
   }
+
+  GM_addStyle(highlightStyles);
+}
+
+if (highlightLinkGroups) {
+  addHighlightStyles();
+}
+
+var alreadyAddedPagerStyles = false;
+function addPagerStyles() {
+  if (alreadyAddedPagerStyles) return;
+  alreadyAddedPagerStyles = true;
+
+  // Also in table_of_contents_everywhere.user.js
+  // See also: clearStyle
+  var resetProps = " width: auto; height: auto; max-width: none; max-height: none; ";
+
+  GM_addStyle(
+      "#linkGroupPager { " + resetProps + " position: fixed; top: 5%; right: 5%; "
+    + "font-family: sans-serif;"
+    + "z-index: 9999999999; background: white; color: black;"
+    + "padding: 0.5em 1em;"
+    + "border: 1px solid #0003; "
+    + "border-radius: 3px;"
+    + "box-shadow: ;"
+    + "font-size: 100%; text-align: center; max-height: 85%; overflow: auto; } "
+    + ".linkGroupPagerList { text-align: left; overflow: auto; }"
+    + "#linkGroupPager:hover { box-shadow: 0px 2px 12px 0px rgba(0,0,0,0.1); }"
+    + "#linkGroupPager       { opacity: 0.3; }"
+    + "#linkGroupPager:hover { opacity: 1.0; }"
+    + "#linkGroupPager       { transition: all 200ms linear 200ms; }"
+    + "#linkGroupPager:hover { transition: all 200ms linear; }"
+    + "#linkGroupPager > *         { opacity: 0.0; }"
+    + "#linkGroupPager:hover > *   { opacity: 1.0; }"
+    + "#linkGroupPager > *         { transition: all 200ms linear; }"
+    + "#linkGroupPager:hover > *   { transition: all 200ms linear 200ms; }"
+    // Gap above and below title
+    + "#linkGroupPager .RLP-title { margin: 0.2em 0; }"
+    // Gaps between title elements
+    + "#linkGroupPager .RLP-title > * { margin: 0 0.2em; }"
+    + "#linkGroupPager .related-link-row { margin: 0.6em 0; }"
+    + "#linkGroupPager .related-link-row > * { vertical-align: middle; }"
+    + "#linkGroupPager .related-link-index { display: inline-block; width: 1.5em; text-align: right; }"
+    + "#linkGroupPager .related-link-index { opacity: 0.2; transform: scale(0.8); }"
+  );
 }
 
 function runRelatedLinksPager() {
@@ -648,38 +695,9 @@ function runRelatedLinksPager() {
     // Size of the pager is actually determined by its children.  But we want to
     // remove any size constraints inherited from the page.
 
-    // Also in table_of_contents_everywhere.user.js
-    // See also: clearStyle
-    var resetProps = " width: auto; height: auto; max-width: none; max-height: none; ";
-
     pager.id = "linkGroupPager";
-    GM_addStyle("#linkGroupPager { " + resetProps + " position: fixed; top: 5%; right: 5%; " +
-      "font-family: sans-serif;" +
-      "z-index: 9999999999; background: white; color: black;" +
-      "padding: 0.5em 1em;" +
-      "border: 1px solid #0003; " +
-      "border-radius: 3px;" +
-      "box-shadow: ;" +
-      "font-size: 100%; text-align: center; max-height: 85%; overflow: auto; } " +
-      ".linkGroupPagerList { text-align: left; overflow: auto; }" +
-      "#linkGroupPager:hover { box-shadow: 0px 2px 12px 0px rgba(0,0,0,0.1); }" +
-      "#linkGroupPager       { opacity: 0.3; }" +
-      "#linkGroupPager:hover { opacity: 1.0; }" +
-      "#linkGroupPager       { transition: all 200ms linear 200ms; }" +
-      "#linkGroupPager:hover { transition: all 200ms linear; }" +
-      "#linkGroupPager > *         { opacity: 0.0; }" +
-      "#linkGroupPager:hover > *   { opacity: 1.0; }" +
-      "#linkGroupPager > *         { transition: all 200ms linear; }" +
-      "#linkGroupPager:hover > *   { transition: all 200ms linear 200ms; }"
-      // Gap above and below title
-      + "#linkGroupPager .RLP-title { margin: 0.2em 0; }"
-      // Gaps between title elements
-      + "#linkGroupPager .RLP-title > * { margin: 0 0.2em; }"
-      + "#linkGroupPager .related-link-row { margin: 0.6em 0; }"
-      + "#linkGroupPager .related-link-row > * { vertical-align: middle; }"
-      + "#linkGroupPager .related-link-index { display: inline-block; width: 1.5em; text-align: right; }"
-      + "#linkGroupPager .related-link-index { opacity: 0.2; transform: scale(0.8); }"
-    );
+
+    addPagerStyles();
 
     function maybeHost(link) {
       return (link.host !== document.location.host) ? "(" + link.host + ")" : "";
