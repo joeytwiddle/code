@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.15
+// @version        1.3.16
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -62,11 +62,12 @@ var highlightLinkGroups = true;       // Change the background or border of link
 // var changeBackgroundNotBorder = true; // If false, draws boxes around related links.  (Then you may want to increase the opacity of the colors below.)
 var thisLinkHighlightStyle = "background-color: rgba(130, 200, 255, 0.1) !important"; // very light blue
 var highlightStyle         = "background-color: rgba(130, 200, 255, 0.2) !important"; // light blue
-// We can try setting a border instead of a background.
-// But There are various reasons why a border might not work.  It doesn't even work well on Google.
+var visitingStyle          = "background-color: rgba(220, 130, 225, 0.1) !important"; // light magenta
+
+//// I had initially wanted to set a border instead of a background.
+//// But there are various reasons why a border might not work.  It doesn't even work well on Google.
 // var highlightStyle         = "border: 1px dashed rgba(130, 200, 255, 0.5) !important";
-// var visitingColor          = "rgba(220,130,255,0.2)"; // light purple
-var lineStyle = "solid";
+// var lineStyle = "solid";
 // var lineStyle = "dashed";
 
 var useLocalStorageWhenPossible = true; // Hide #siblings from URL when we are travelling to a page on the same host.  Pass data by localStorage instead (implemented through fake GM_set).  This replaces the old passPacketByGM.  The only disadvantage is that going *back* to a non-#siblings URL will lose the pager that was previously there.
@@ -274,6 +275,9 @@ if (highlightLinkGroups) {
   }
   if (thisLinkHighlightStyle) {
     GM_addStyle(".RLP-selected-link { " + thisLinkHighlightStyle + " }");
+  }
+  if (visitingStyle) {
+    GM_addStyle(".RLP-visiting-link { " + visitingStyle + " }");
   }
 }
 
@@ -503,9 +507,8 @@ function runRelatedLinksPager() {
 
       // I like to clear our highlights before travel, nice feedback to see something changed.
       if (highlightLinkGroups) {
-        clearList();
+        clearList('RLP-visiting-link');
         listOfHighlightedNodes = linksInGroup;
-        //highlightList(link, visitingColor);
       }
 
       // On a single page app there won't be a fresh a page load to trigger rebuilding the pager
@@ -890,7 +893,7 @@ function runRelatedLinksPager() {
       }
     }
 
-    function clearList(retainList) {
+    function clearList(classToAdd) {
       for (var i = 0; i < listOfHighlightedNodes.length; i++) {
         var elem = listOfHighlightedNodes[i];
         /*
@@ -906,6 +909,9 @@ function runRelatedLinksPager() {
         }
         */
         elem.classList.remove('RLP-link-in-group', 'RLP-selected-link');
+        if (classToAdd) {
+          elem.classList.add(classToAdd);
+        }
       }
       listOfHighlightedNodes.length = 0;
     }
