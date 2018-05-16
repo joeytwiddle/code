@@ -10,7 +10,7 @@
 // @contributor Marti Martz (https://github.com/Martii)
 // @contributor Paul "Joey" Clark (https://github.com/joeytwiddle)
 // @license     MIT; https://raw.githubusercontent.com/xthexder/wide-github/master/LICENSE
-// @version     1.2.0-joey5
+// @version     1.2.0-joey6
 // @icon        https://raw.githubusercontent.com/xthexder/wide-github/master/icon.png
 // @homepageURL https://github.com/xthexder/wide-github
 // @supportURL  https://github.com/xthexder/wide-github/issues
@@ -33,6 +33,7 @@ var styleSheet = "" +
   "min-width: 980px;" +
   "max-width: initial;" +
 "}" +
+// This id ensures our CSS is more specific, so it overrides the site's CSS, regardless of which order they are loaded
 "#js-repo-pjax-container .container {" +
   "width: auto !important;" +
   //"margin-left: 20px !important;" +
@@ -44,6 +45,11 @@ var styleSheet = "" +
   "margin-right: auto !important;" +
   "padding-left: 20px;" +
   "padding-right: 20px;" +
+"}" +
+// But our specific rule above should not apply to wide pages
+// (This ensures that pages showing split diffs use all the available width)
+"body.split-diff #js-repo-pjax-container .container, body.split-diff #js-repo-pjax-container .container-lg, body.full-width #js-repo-pjax-container .container, body.full-width #js-repo-pjax-container .container-lg {" +
+  "max-width: 100% !important;" +
 "}" +
 ".full-width .container {" +
   "padding-left: auto !important;" +
