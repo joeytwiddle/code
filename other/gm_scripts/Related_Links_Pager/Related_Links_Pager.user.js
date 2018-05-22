@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.19
+// @version        1.3.20
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -302,7 +302,7 @@ function addPagerStyles() {
 
   // Also in table_of_contents_everywhere.user.js
   // See also: clearStyle
-  var resetProps = " width: auto; height: auto; max-width: none; max-height: none; ";
+  var resetProps = " width: auto; height: auto; max-width: none; max-height: none; font-family: sans-serif; ";
 
   GM_addStyle(
       "#linkGroupPager { " + resetProps + " position: fixed; top: 5%; right: 5%; "
