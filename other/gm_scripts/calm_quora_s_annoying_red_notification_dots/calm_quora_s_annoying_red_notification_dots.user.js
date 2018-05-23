@@ -1,13 +1,21 @@
 // ==UserScript==
 // @name         Calm Quora's annoying red notification dots
 // @namespace    joeytwiddle
-// @version      1.0.2
+// @version      1.0.3
 // @license      MIT
 // @description  The red notifications on Quora are too glaring, appear too frequently, and do not go away easily enough.  Let's make them grey so they aren't such a bother.  Also the popups and the adverts can take a hike.
 // @author       joeytwiddle
 // @match        https://www.quora.com/*
 // @grant        GM_addStyle
 // ==/UserScript==
+
+var makeTheHeaderGray = false;
+
+// I find the answers on Quora sort of blur into each other
+// To address that, this increases the spacing between them
+var increaseSeparationOfAnswers1 = true;
+// And this indents each answer, but leaves the user's profile picture sticking out
+var increaseSeparationOfAnswers2 = true;
 
 // Make the red notification dots grey instead
 GM_addStyle('.SiteHeaderBadge, .WriteNavbadge, .red_badge { background: #ddd !important; background-color: #ddd !important; color: #666 !important; transform: scale(0.8); opacity: 0.5; }');
@@ -17,23 +25,38 @@ GM_addStyle('.Growl { display: none !important; }');
 
 // Just make the whole damn header grey!
 // As requested by Keeni: https://greasyfork.org/en/forum/discussion/37380/x
-// In fact I think I will just apply this to anything I find on the site which is red!
-GM_addStyle('.SiteHeader, .questions_to_answer_icon { filter: saturation(0%); }');
-
-// Instead of answers cramped together with horizontal rules separating them, put some nice big whitespace between each answer
-//GM_addStyle('.NewGridQuestionPage .AnswerBase { border-top: none; padding: 50px 0px 50px; }');
-// Or keep the lines
-// (Although this layout looks a bit weird when an advert is separated from the answer above but snuggled up closely to the answer below)
-GM_addStyle('.NewGridQuestionPage .AnswerBase { padding: 16px 0px 50px; }');
+if (makeTheHeaderGray) {
+    GM_addStyle('.SiteHeader, .questions_to_answer_icon { filter: saturate(0%); }');
+}
 
 // Quora's advertisements appear visually a lot like the answers, so it is easy to read an advert and get confused because it's talking about a completely tangential topic.
 // For some reason, I decided not to remove the adverts completely, but to de-emphasise them and differentiate them.
 // The padding is needed so that the text doesn't appear to close to the edge of the red box.
 // A hint of Quora red:
 //const cssForAdverts = { backgroundColor: 'hsl(3, 25%, 90%)', opacity: 0.3, padding: '1em' };
+// Just a light grey
+const cssForAdverts = { backgroundColor: '#eee', opacity: 0.3, padding: '1em' };
 // No background, just de-emphasise.  The padding is not strictly necessary but it can help to differentiate.
 //const cssForAdverts = { opacity: 0.3, padding: '1em' };
-const cssForAdverts = { opacity: 0.1, padding: '0em' };
-jQuery('.advertiser_endpoint').closest('.outer_content_box').css(cssForAdverts)
+//const cssForAdverts = { opacity: 0.1, padding: '0em' };
+//jQuery('.advertiser_endpoint').closest('.outer_content_box').css(cssForAdverts)
+// jQuery isn't always loaded at this point of time, so let's use DOM instead.
+Array.from(document.querySelectorAll('.advertiser_endpoint')).map(ad => ad.closest('.outer_content_box')).forEach(elem => Object.assign(elem.style, cssForAdverts));
 
-// Curiously, window.jQuery didn't work in TamperMonkey for Chrome.  unsafeWindow.jQuery did, but I don't want the extra @grant
+GM_addStyle('.feed_item_answer_user .user { font-weight: 600; }');
+GM_addStyle('.NameCredential { font-style: italic; font-size: 85%; }');
+
+if (increaseSeparationOfAnswers1) {
+    // Instead of answers cramped together with horizontal rules separating them, put some nice big whitespace between each answer
+    //GM_addStyle('.NewGridQuestionPage .AnswerBase { border-top: none; padding: 50px 0px 50px; }');
+
+    // Or keep the lines close to the top of each answer
+    GM_addStyle('.NewGridQuestionPage .AnswerBase { margin: 40px 0px; }');
+    // This gives the same spacing to the adverts
+    GM_addStyle('.content_area { margin: 40px 0px; }');
+}
+
+if (increaseSeparationOfAnswers2) {
+    GM_addStyle('.NewGridQuestionPage .AnswerBase { padding-left: 45px; }');
+    GM_addStyle('.ContentHeader { margin-left: -47px; }');
+}
