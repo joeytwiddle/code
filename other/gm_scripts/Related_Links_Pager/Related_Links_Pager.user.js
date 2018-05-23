@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.20
+// @version        1.3.21
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -295,17 +295,17 @@ if (highlightLinkGroups) {
   addHighlightStyles();
 }
 
+// Also in table_of_contents_everywhere.user.js (as resetProps)
+// See also: clearStyle
+var resetCSSProps = " width: auto; height: auto; max-width: none; max-height: none; font-family: sans-serif; ";
+
 var alreadyAddedPagerStyles = false;
 function addPagerStyles() {
   if (alreadyAddedPagerStyles) return;
   alreadyAddedPagerStyles = true;
 
-  // Also in table_of_contents_everywhere.user.js
-  // See also: clearStyle
-  var resetProps = " width: auto; height: auto; max-width: none; max-height: none; font-family: sans-serif; ";
-
   GM_addStyle(
-      "#linkGroupPager { " + resetProps + " position: fixed; top: 5%; right: 5%; "
+      "#linkGroupPager { " + resetCSSProps + " position: fixed; top: 5%; right: 5%; "
     + "font-family: sans-serif;"
     + "z-index: 9999999999; background: white; color: black;"
     + "padding: 0.5em 1em;"
@@ -799,6 +799,7 @@ function runRelatedLinksPager() {
     //closeButton.style.fontWeight = '800';
     // Let's try to find something which will be consistent across OSes
     closeButton.innerHTML = "&times;";
+    closeButton.style = resetCSSProps;
     closeButton.style.transform = 'scale(2) translate(0, -0.10em)';
 
     closeButton.style.cursor = 'pointer';
