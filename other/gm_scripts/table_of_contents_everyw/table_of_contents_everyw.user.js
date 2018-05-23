@@ -3,7 +3,7 @@
 // @description    On pages which do not have a Table of Contents, but should do, create one!  (I actually use this as a bookmarklet, so I can load it onto the current page only when I want it.)
 // @downstreamURL  http://userscripts.org/scripts/source/123255.user.js
 // @license        ISC
-// @version        1.0.3
+// @version        1.0.4
 // @include        http://*/*
 // @include        https://*/*
 // @include        file://*
@@ -15,6 +15,7 @@ var maximumItems = 800;  // Don't display a TOC for more than this number of ent
 var delayBeforeRunning = 1600;
 var showAnchors = true;
 var pushAnchorsToBottom = true;   // They can look messy interspersed amongst TOC tree
+var startRolledUp = false;
 
 // 2015-05-12  Improved shadow styling
 // 2015-01-02  Improved styling
@@ -227,7 +228,7 @@ function addHideButtonTo(toc, tocInner) {
 	rollupButton.onclick = toggleRollUp;
 	rollupButton.id = "togglelink";
 	toc.appendChild(rollupButton);
-	if (GM_getValue("TOCE_rolledUp",false)) {
+	if (startRolledUp || GM_getValue("TOCE_rolledUp",false)) {
 		toggleRollUp();
 	}
 }
