@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Calm Quora's annoying red notification dots
 // @namespace    joeytwiddle
-// @version      1.0.1
+// @version      1.0.2
 // @license      MIT
 // @description  The red notifications on Quora are too glaring, appear too frequently, and do not go away easily enough.  Let's make them grey so they aren't such a bother.  Also the popups and the adverts can take a hike.
 // @author       joeytwiddle
@@ -19,6 +19,12 @@ GM_addStyle('.Growl { display: none !important; }');
 // As requested by Keeni: https://greasyfork.org/en/forum/discussion/37380/x
 // In fact I think I will just apply this to anything I find on the site which is red!
 GM_addStyle('.SiteHeader, .questions_to_answer_icon { filter: saturation(0%); }');
+
+// Instead of answers cramped together with horizontal rules separating them, put some nice big whitespace between each answer
+//GM_addStyle('.NewGridQuestionPage .AnswerBase { border-top: none; padding: 50px 0px 50px; }');
+// Or keep the lines
+// (Although this layout looks a bit weird when an advert is separated from the answer above but snuggled up closely to the answer below)
+GM_addStyle('.NewGridQuestionPage .AnswerBase { padding: 16px 0px 50px; }');
 
 // Quora's advertisements appear visually a lot like the answers, so it is easy to read an advert and get confused because it's talking about a completely tangential topic.
 // For some reason, I decided not to remove the adverts completely, but to de-emphasise them and differentiate them.
