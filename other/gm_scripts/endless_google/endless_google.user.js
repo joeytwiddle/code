@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name            Endless Google
+// @name            Endless Google [fork]
 // @description     Load more results automatically and endlessly.
 // @author          tumpio
 // @oujs:author     tumpio
@@ -14,7 +14,7 @@
 // @run-at          document-start
 // @grant           GM_xmlhttpRequest
 // @grant           GM_addStyle
-// @version         0.0.4-joey5
+// @version         0.0.4-joey6
 // ==/UserScript==
 
 // TODO: on page refresh:
