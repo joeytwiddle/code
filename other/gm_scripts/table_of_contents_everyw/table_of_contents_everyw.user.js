@@ -6,6 +6,7 @@
 // @version        1.0.3
 // @include        http://*/*
 // @include        https://*/*
+// @include        file://*
 // @grant          none
 // ==/UserScript==
 
