@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.21
+// @version        1.3.22
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -327,6 +327,8 @@ function addPagerStyles() {
     + "#linkGroupPager .RLP-title { margin: 0.2em 0; }"
     // Gaps between title elements
     + "#linkGroupPager .RLP-title > * { margin: 0 0.2em; }"
+    + "#linkGroupPager .RLP-rollup-button { cursor: pointer; }"
+    + "#linkGroupPager .RLP-rollup-button:hover { text-decoration: underline; }"
     + "#linkGroupPager .related-link-row { margin: 0.6em 0; }"
     + "#linkGroupPager .related-link-row > * { vertical-align: middle; }"
     + "#linkGroupPager .related-link-index { display: inline-block; width: 1.5em; text-align: right; }"
@@ -775,10 +777,10 @@ function runRelatedLinksPager() {
     var pagerButton = document.createElement("span");
     // pagerButton.textContent = " Pager ";
     pagerButton.textContent = " Page " + (currentIndex + 1) + " of " + siblings.length + " ";
+    pagerButton.className = 'RLP-rollup-button';
     pagerButton.addEventListener("click", function(evt) {
       pageList.style.display = pageList.style.display === 'none' ? '' : 'none';
     }, false);
-    pagerButton.style.cursor = 'pointer';
     titleElem.appendChild(pagerButton);
 
     if (currentIndex < siblings.length - 1) {
