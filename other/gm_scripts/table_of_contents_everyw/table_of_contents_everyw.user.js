@@ -3,7 +3,7 @@
 // @description    On pages which do not have a Table of Contents, but should do, create one!  (I actually use this as a bookmarklet, so I can load it onto the current page only when I want it.)
 // @downstreamURL  http://userscripts.org/scripts/source/123255.user.js
 // @license        ISC
-// @version        1.0.4
+// @version        1.0.5
 // @include        http://*/*
 // @include        https://*/*
 // @include        file://*
@@ -16,6 +16,7 @@ var delayBeforeRunning = 1600;
 var showAnchors = true;
 var pushAnchorsToBottom = true;   // They can look messy interspersed amongst TOC tree
 var startRolledUp = false;
+var runInIframes = false;
 
 // 2015-05-12  Improved shadow styling
 // 2015-01-02  Improved styling
@@ -34,6 +35,11 @@ var startRolledUp = false;
 
 // TODO CONSIDER: TOC hijacking _whitelist_ to avoid creeping fixes for per-site issues.  Different problems are appearing on a small proportion of websites when we try to consume/hijack their existing TOC.  It would be better to create our own *separate* TOC as standard, and only hijack *known* friendly TOCs such as WikiMedia's / Wikia's.
 // (We might offer a tiny button "Try to Use Page TOC" allowing us to test hijack before adding the site to the whitelist.)
+
+// Do not run in iframes
+if (self !== window.top && !runInIframes) {
+  return;
+}
 
 setTimeout(function(){
 
