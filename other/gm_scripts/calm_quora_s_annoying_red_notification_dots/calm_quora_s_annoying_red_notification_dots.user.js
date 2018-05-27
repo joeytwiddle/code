@@ -34,12 +34,12 @@ if (makeTheHeaderGray) {
 // For some reason, I decided not to remove the adverts completely, but to de-emphasise them and differentiate them.
 // The padding is needed so that the text doesn't appear to close to the edge of the red box.
 // A hint of Quora red:
-//const cssForAdverts = { backgroundColor: 'hsl(3, 25%, 90%)', opacity: 0.3, padding: '1em' };
+//var cssForAdverts = { backgroundColor: 'hsl(3, 25%, 90%)', opacity: 0.3, padding: '1em' };
 // Just a light grey
-const cssForAdverts = { backgroundColor: '#eee', opacity: 0.3, padding: '1em' };
+var cssForAdverts = { backgroundColor: '#eee', opacity: 0.3, padding: '1em' };
 // No background, just de-emphasise.  The padding is not strictly necessary but it can help to differentiate.
-//const cssForAdverts = { opacity: 0.3, padding: '1em' };
-//const cssForAdverts = { opacity: 0.1, padding: '0em' };
+//var cssForAdverts = { opacity: 0.3, padding: '1em' };
+//var cssForAdverts = { opacity: 0.1, padding: '0em' };
 //jQuery('.advertiser_endpoint').closest('.outer_content_box').css(cssForAdverts)
 // jQuery isn't always loaded at this point of time, so let's use DOM instead.
 Array.from(document.querySelectorAll('.advertiser_endpoint')).map(ad => ad.closest('.outer_content_box')).forEach(elem => Object.assign(elem.style, cssForAdverts));
