@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Calm Quora's annoying red notification dots
 // @namespace    joeytwiddle
-// @version      1.0.4
+// @version      1.0.5
 // @license      MIT
 // @description  The red notifications on Quora are too glaring, appear too frequently, and do not go away easily enough.  Let's make them grey so they aren't such a bother.  Also the popups and the adverts can take a hike.
 // @author       joeytwiddle
@@ -9,6 +9,8 @@
 // @grant        GM_addStyle
 // @run-at       document-start
 // ==/UserScript==
+
+var openLinksInThisWindow = true;
 
 var makeTheHeaderGray = false;
 
@@ -60,4 +62,13 @@ if (increaseSeparationOfAnswers1) {
 if (increaseSeparationOfAnswers2) {
     GM_addStyle('.Answer { padding-left: 45px; }');
     GM_addStyle('.ContentHeader { margin-left: -47px; }');
+}
+
+if (openLinksInThisWindow) {
+    document.body.addEventListener('click', function (evt) {
+        var link = evt.target.closest('a');
+        if (link && link.getAttribute('target') === '_blank') {
+            link.setAttribute('target', '');
+        }
+    });
 }
