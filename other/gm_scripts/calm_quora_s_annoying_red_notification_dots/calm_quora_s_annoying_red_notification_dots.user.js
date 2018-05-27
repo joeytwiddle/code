@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Calm Quora's annoying red notification dots
 // @namespace    joeytwiddle
-// @version      1.0.3
+// @version      1.0.4
 // @license      MIT
 // @description  The red notifications on Quora are too glaring, appear too frequently, and do not go away easily enough.  Let's make them grey so they aren't such a bother.  Also the popups and the adverts can take a hike.
 // @author       joeytwiddle
 // @match        https://www.quora.com/*
 // @grant        GM_addStyle
+// @run-at       document-start
 // ==/UserScript==
 
 var makeTheHeaderGray = false;
@@ -18,7 +19,7 @@ var increaseSeparationOfAnswers1 = true;
 var increaseSeparationOfAnswers2 = true;
 
 // Make the red notification dots grey instead
-GM_addStyle('.SiteHeaderBadge, .WriteNavbadge, .red_badge { background: #ddd !important; background-color: #ddd !important; color: #666 !important; transform: scale(0.8); opacity: 0.5; }');
+GM_addStyle('.SiteHeaderBadge, .WriteNavbadge, .red_badge { background: #ddd !important; background-color: #ddd !important; color: #444 !important; transform: scale(0.8); opacity: 0.5; }');
 
 // Don't show any popups
 GM_addStyle('.Growl { display: none !important; }');
@@ -44,7 +45,7 @@ const cssForAdverts = { backgroundColor: '#eee', opacity: 0.3, padding: '1em' };
 Array.from(document.querySelectorAll('.advertiser_endpoint')).map(ad => ad.closest('.outer_content_box')).forEach(elem => Object.assign(elem.style, cssForAdverts));
 
 GM_addStyle('.feed_item_answer_user .user { font-weight: 600; }');
-GM_addStyle('.NameCredential { font-style: italic; font-size: 85%; }');
+GM_addStyle('.NameCredential, .IdentityCredential, .UserCredential { font-style: italic; font-size: 85%; }');
 
 if (increaseSeparationOfAnswers1) {
     // Instead of answers cramped together with horizontal rules separating them, put some nice big whitespace between each answer
@@ -57,6 +58,6 @@ if (increaseSeparationOfAnswers1) {
 }
 
 if (increaseSeparationOfAnswers2) {
-    GM_addStyle('.NewGridQuestionPage .AnswerBase { padding-left: 45px; }');
+    GM_addStyle('.Answer { padding-left: 45px; }');
     GM_addStyle('.ContentHeader { margin-left: -47px; }');
 }
