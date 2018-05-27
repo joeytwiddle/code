@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Calm Quora's annoying red notification dots
 // @namespace    joeytwiddle
-// @version      1.0.6
+// @version      1.0.7
 // @license      MIT
 // @description  The red notifications on Quora are too glaring, appear too frequently, and do not go away easily enough.  Let's make them grey so they aren't such a bother.  Also the popups and the adverts can take a hike.
 // @author       joeytwiddle
@@ -52,7 +52,7 @@ if (deemphasiseAds) {
         // A hint of Quora red:
         //var cssForAdverts = { backgroundColor: 'hsl(3, 25%, 90%)', opacity: 0.3, padding: '1em' };
         // Just a light grey
-        var cssForAdverts = { backgroundColor: '#eee', opacity: 0.3, padding: '1em' };
+        var cssForAdverts = { backgroundColor: '#f2f2f2', opacity: 0.5, padding: '1em', border: '1px solid #bbb' };
         // No background, just de-emphasise.  The padding is not strictly necessary but it can help to differentiate.
         //var cssForAdverts = { opacity: 0.3, padding: '1em' };
         //var cssForAdverts = { opacity: 0.1, padding: '0em' };
