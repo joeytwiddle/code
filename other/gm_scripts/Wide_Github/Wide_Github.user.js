@@ -10,7 +10,7 @@
 // @contributor Marti Martz (https://github.com/Martii)
 // @contributor Paul "Joey" Clark (https://github.com/joeytwiddle)
 // @license     MIT; https://raw.githubusercontent.com/xthexder/wide-github/master/LICENSE
-// @version     1.2.0-joey6
+// @version     1.2.0-joey7
 // @icon        https://raw.githubusercontent.com/xthexder/wide-github/master/icon.png
 // @homepageURL https://github.com/xthexder/wide-github
 // @supportURL  https://github.com/xthexder/wide-github/issues
@@ -67,9 +67,9 @@ var styleSheet = "" +
   "padding-left: 220px;" +
   "width: 100% !important;" +
 "}" +
-// On PRs there is a pretty vertical line that runs through all the commits
-// But the rule above pushes it out to the left, so we need to push it back into place
-".discussion-timeline::before {" +
+// On PRs and issues there is a pretty vertical line that runs through all the commits and references.
+// But the rule above pushes it out to the left, so we need to push it back into place.
+"#js-repo-pjax-container .repository-content .discussion-timeline::before {" +
   "margin-left: 220px;" +
 "}" +
 ".repository-content .discussion-sidebar {" +
