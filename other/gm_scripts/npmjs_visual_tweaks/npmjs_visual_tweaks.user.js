@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.9
-// @description  Styles npmjs.com README pages similarly to GitHub's (font, size, colors, but not syntax highlighting), and makes the content wider
+// @version      0.7.10
+// @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
 // @license      MIT
@@ -15,6 +15,7 @@
 (function() {
     'use strict';
 
+    // This allows the README to expand to the full width below the info sidebar
     const floatTheSidebar = true;
 
     // I want to scale down the fonts and everything else a bit.  This was an easy way to do that.
@@ -127,6 +128,12 @@
             mainLeftPanel.classList.remove('w-two-thirds-ns');
             mainLeftPanel.classList.remove('mr3-ns');
 
+            // If there is nothing forcing the main pane to fill the width, then it won't.
+            // That looks odd, because the floated sidebar will now not appear next to the right edge.
+            // Example (a page without an image): https://www.npmjs.com/package/eslint-plugin-styled-components
+            // So we force the main content to fill the available width.
+            mainLeftPanel.style.width = '100%';
+
             const sidebarContainer = document.createElement('div');
             sidebarContainer.className = 'visual-tweaks-userscript-sidebar-container';
             sidebarContainer.style.float = 'right';
@@ -147,7 +154,9 @@
 
             // If an image appears above the fold, and it takes 100% of the width, then it will cause the document to push down below the floating sidebar
             // For an example of such a page: https://www.npmjs.com/package/passport
+            // To fix it, we set a max width on images
             // Of course this rule will apply to all images, even those later down on the page
+            // npmjs have now set their own max, so we can remove this
             GM_addStyle(".vistweaks .markdown img { max-width: 66%; }");
         };
 
