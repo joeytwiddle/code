@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.24
+// @version        1.3.25
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -64,7 +64,7 @@ var highlightLinkGroups = true;       // Change the background or border of link
 //var highlightStyle         = "background-color: rgba(130, 200, 255, 0.2) !important"; // light blue
 //var visitingStyle          = "background-color: rgba(220, 130, 225, 0.1) !important"; // light magenta
 var thisLinkHighlightStyle = false; // "text-decoration: underline !important";
-var highlightStyle         = "text-decoration: dotted underline !important";
+var highlightStyle         = "text-decoration: dashed underline !important";
 var visitingStyle          = "color: #606 !important";
 
 //// I had initially wanted to set a border instead of a background.
