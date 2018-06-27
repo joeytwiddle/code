@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.10
+// @version      0.7.11
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -147,6 +147,8 @@
             GM_addStyle(".markdown { padding-right: 0; }");
             // Clear the existing margin.  Leave a small margin for the shadow.
             GM_addStyle(".mr3-ns { margin-right: 4px; }");
+            // Give the info card equal padding at the top and bottom
+            GM_addStyle(".package__rightSidebar___9dMXo { padding-top: 1em !important; padding-bottom: 1em !important; }");
             //readmeElement.appendChild(sidebarElement);
             readmeElement.parentNode.insertBefore(sidebarContainer, readmeElement);
 
@@ -162,6 +164,7 @@
 
         checkTheSidebar();
 
+        // Keep checking, in case we go to a new page
         new MutationObserver(mutations => checkTheSidebar()).observe(document.body, { childList: true, subtree: true });
     }
 })();
