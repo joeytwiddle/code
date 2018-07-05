@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.11
+// @version      0.7.12
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -125,14 +125,15 @@
                 return;
             }
 
-            mainLeftPanel.classList.remove('w-two-thirds-ns');
-            mainLeftPanel.classList.remove('mr3-ns');
+            mainLeftPanel.classList.remove('w-two-thirds-l');
+            //mainLeftPanel.querySelector('section').classList.remove('mr3-ns');
 
             // If there is nothing forcing the main pane to fill the width, then it won't.
             // That looks odd, because the floated sidebar will now not appear next to the right edge.
             // Example (a page without an image): https://www.npmjs.com/package/eslint-plugin-styled-components
             // So we force the main content to fill the available width.
             mainLeftPanel.style.width = '100%';
+            mainLeftPanel.style.maxWidth = '100%';
 
             const sidebarContainer = document.createElement('div');
             sidebarContainer.className = 'visual-tweaks-userscript-sidebar-container';
@@ -141,8 +142,8 @@
             sidebarContainer.style.paddingLeft = '3em';
             sidebarContainer.style.paddingBottom = '3em';
             // Move the width from the sidebar to the container
-            sidebarElement.classList.remove('w-third-ns');
-            sidebarContainer.classList.add('w-third-ns');
+            sidebarElement.classList.remove('w-third-l');
+            sidebarContainer.classList.add('w-third-l');
             sidebarContainer.appendChild(sidebarElement);
             GM_addStyle(".markdown { padding-right: 0; }");
             // Clear the existing margin.  Leave a small margin for the shadow.
