@@ -35,7 +35,7 @@
     //GM_addStyle('pre, code, kbd, samp { font-family: monospace; }');
     // I don't know why, but "monospace" shrinks the font considerably on my Linux, whilst "monospace,monospace" does not.
     // Also "monospace,monospace" is what the site itself adopted on 2018/3/22.  This rule will just ensure it stays this way!
-    GM_addStyle('pre, code, kbd, samp { font-family: monospace,monospace; }');
+    GM_addStyle('.vistweaks .readme__readme___tmT33 pre, .vistweaks .readme__readme___tmT33 code, .vistweaks .readme__readme___tmT33 kbd, .vistweaks .readme__readme___tmT33 samp { font-family: monospace,monospace; }');
 
     // Set font sizes like GitHub
     // A snippet of code appearing within a paragraph
