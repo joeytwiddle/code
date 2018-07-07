@@ -3,6 +3,7 @@
 // @namespace      SET
 // @description    Minor visual tweas to StackExchange
 // @version        1.0.3
+// @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://superuser.com/*
 // @include        https://serverfault.com/*
