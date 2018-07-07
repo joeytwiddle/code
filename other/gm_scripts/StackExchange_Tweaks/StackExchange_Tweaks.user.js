@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name           StackExchange Tweaks
 // @namespace      SET
-// @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages)
-// @version        1.0.4
+// @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
+// @version        1.0.5
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://superuser.com/*
