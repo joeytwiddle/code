@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitLab Tweaks
 // @namespace    GLT
-// @version      0.0.4
+// @version      0.0.5
 // @description  Improve visual design of GitLab, to reduce visual and cognitive strain, and increase zen mindfulness
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -14,10 +14,12 @@
 (function() {
   'use strict';
 
-  // Other fonts I considered: sans-serif, sans, Arial, Noto Sans, Open Sans
-  const customFont = 'Open Sans';
+  // Other fonts I considered: sans-serif, sans, Arial, "Noto Sans", "Open Sans"
+  const customFont = `"Open Sans", Arial, sans-serif`;
 
-  // Some whitespace around the central content, to enhance zen state
+  const customMonospaceFont = `"Lucida Sans Typewriter", "Lucida Console", monospace`;
+
+  // Some whitespace margins beside the central content, to enhance zen state
   const padTheCentralColumn = true;
 
   const padTheHeader = true;
@@ -41,12 +43,24 @@
   // That allows us to add our CSS early, but still have it override the site's CSS.
 
   if (typeof customFont !== 'undefined' && customFont) {
+    // The website's recommended fonts were: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
     GM_addStyle(`
       body {
-        font-family: "${customFont}" !important;
+        font-family: ${customFont} !important;
       }
     `);
-    // The website's recommended fonts were: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
+  }
+
+  if (typeof customMonospaceFont !== 'undefined' && customMonospaceFont) {
+    // The website's recommended monospace fonts were: "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", "andale mono", "lucida console", monospace
+    GM_addStyle(`
+      .monospace, .commit-sha, .gfm-commit, .gfm-commit_range, .ref-name, .git-revision-dropdown .dropdown-content ul li a, .mr-state-widget .label-branch, .git-revision-dropdown-toggle, .commit-sha-group .label-monospace, .file-editor .file-title, .file-editor .editor-file-name, .ci-table .api, .git-clone-holder .form-control, .git-clone-holder .search form, .search .git-clone-holder form,
+      pre, tt, code, kbd, samp,
+      .md code,
+      ul.notes>li .note-body .note-text code {
+        font-family: ${customMonospaceFont} !important;
+      }
+    `);
   }
 
   if (padTheCentralColumn) {
@@ -111,6 +125,7 @@
     GM_addStyle(`
       body *::-webkit-scrollbar {
         width: 8px;
+        height: 8px;
         background: #eee;
       }
 
