@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.13
+// @version      0.7.14
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -21,11 +21,23 @@
     // I want to scale down the fonts and everything else a bit.  This was an easy way to do that.
     //GM_addStyle('.container { transform: scale(0.92); transform-origin: 50% 0; }');
 
-    // Fill (almost) the whole width of the screen, like Wide-Github does.
+    // The default behaviour is to max out at 1200px, but I am happy for the README to grow a little bit larger.  (Same with my Wide-Github)
     //GM_addStyle('.container { width: 98%; max-width: 100%; }');
-    GM_addStyle(".vistweaks #top { max-width: 100%; }");
-    // OK not the entire width.  Stop the width when it starts to look ugly.
-    GM_addStyle(".vistweaks #top { max-width: 1500px; }");
+    // .package__root___22JkW
+    GM_addStyle(`
+        /* Override the default, to expand fully (with a small margin) */
+        .vistweaks #top {
+            min-width: 100%;
+            max-width: 100%;
+        }
+        /* But max out at 1500 */
+        @media screen and (min-width: 1500px) {
+            .vistweaks #top {
+                min-width: 1500px;
+                max-width: 1500px;
+            }
+        }
+    `);
 
     // Set fonts like GitHub
     GM_addStyle('.vistweaks #readme { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Source Sans Pro", "Lucida Grande", sans-serif; }');
