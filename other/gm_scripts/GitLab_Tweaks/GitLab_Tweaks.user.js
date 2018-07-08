@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitLab Tweaks
 // @namespace    GLT
-// @version      0.0.3
+// @version      0.0.4
 // @description  Improve visual design of GitLab, to reduce visual and cognitive strain, and increase zen mindfulness
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -13,6 +13,9 @@
 
 (function() {
   'use strict';
+
+  // Other fonts I considered: sans-serif, sans, Arial, Noto Sans, Open Sans
+  const customFont = 'Open Sans';
 
   // Some whitespace around the central content, to enhance zen state
   const padTheCentralColumn = true;
@@ -36,6 +39,15 @@
   // Notes:
   // We put `body` at the start of every selector to increase its specificity.
   // That allows us to add our CSS early, but still have it override the site's CSS.
+
+  if (typeof customFont !== 'undefined' && customFont) {
+    GM_addStyle(`
+      body {
+        font-family: "${customFont}" !important;
+      }
+    `);
+    // The website's recommended fonts were: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
+  }
 
   if (padTheCentralColumn) {
     GM_addStyle(`
