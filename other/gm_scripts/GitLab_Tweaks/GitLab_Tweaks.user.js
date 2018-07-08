@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitLab Tweaks
 // @namespace    GLT
-// @version      0.0.2
+// @version      0.0.3
 // @description  Improve visual design of GitLab, to reduce visual and cognitive strain, and increase zen mindfulness
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -19,7 +19,11 @@
 
   const padTheHeader = true;
 
-  const padTheContentBlocks = true;
+  // Use only one of these, not both.
+  // This keeps the grey line separators, but adds some space above and below them (border-bottom)
+  const paddingAroundContentBlockSeparators = true;
+  // This removes the grey line separators, by turning them into larger transparent separators
+  const paddingInsteadOfContentBlockSeparators = false;
 
   // Don't let the textarea grow too tall.  (If it does, it's likely the submit button will be pushed offscreen!)
   const limitHeightOfTextarea = true;
@@ -55,8 +59,16 @@
     `);
   }
 
-  // Instead of adding whitespace, we can take the existing grey lines, and turn them into whitespace by making them thicker and transparent
-  if (padTheContentBlocks) {
+  if (paddingAroundContentBlockSeparators) {
+    GM_addStyle(`
+      body .content-block {
+        margin-bottom: 25px !important;
+        padding-bottom: 25px !important;
+      }
+    `);
+  }
+
+  if (paddingInsteadOfContentBlockSeparators) {
     GM_addStyle(`
       body .content-block {
         border-bottom: 20px solid transparent;
