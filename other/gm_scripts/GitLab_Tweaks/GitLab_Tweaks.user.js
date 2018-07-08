@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GitLab Tweaks
 // @namespace    GLT
-// @version      0.0.1
-// @description  Improve visual design of GitLab, to reduce visual and cognitive strain
+// @version      0.0.2
+// @description  Improve visual design of GitLab, to reduce visual and cognitive strain, and increase zen mindfulness
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
 // @license      MIT
@@ -17,6 +17,10 @@
   // Some whitespace around the central content, to enhance zen state
   const padTheCentralColumn = true;
 
+  const padTheHeader = true;
+
+  const padTheContentBlocks = true;
+
   // Don't let the textarea grow too tall.  (If it does, it's likely the submit button will be pushed offscreen!)
   const limitHeightOfTextarea = true;
 
@@ -25,20 +29,44 @@
   const smallScrollbars = true;
 
 
+  // Notes:
+  // We put `body` at the start of every selector to increase its specificity.
+  // That allows us to add our CSS early, but still have it override the site's CSS.
+
   if (padTheCentralColumn) {
     GM_addStyle(`
-      .vistweaks .content-wrapper .container-fluid {
+      body .content-wrapper .container-fluid {
         padding: 0 40px;
       }
-      .vistweaks .alert-wrapper {
+      body .alert-wrapper {
         padding-top: 10px;
+      }
+    `);
+  }
+
+  if (padTheHeader) {
+    GM_addStyle(`
+      body .breadcrumbs-container {
+        padding-bottom: 30px;
+      }
+      body .detail-page-header {
+        margin-bottom: 14px;
+      }
+    `);
+  }
+
+  // Instead of adding whitespace, we can take the existing grey lines, and turn them into whitespace by making them thicker and transparent
+  if (padTheContentBlocks) {
+    GM_addStyle(`
+      body .content-block {
+        border-bottom: 20px solid transparent;
       }
     `);
   }
 
   if (limitHeightOfTextarea) {
     GM_addStyle(`
-      .vistweaks textarea.js-gfm-input {
+      body textarea.js-gfm-input {
         max-height: 60vh !important;
         max-height: calc(100vh - 400px) !important;
       }
@@ -47,27 +75,28 @@
 
   if (showScrollbarOnIssueSidebar) {
     GM_addStyle(`
-      .vistweaks .right-sidebar .issuable-sidebar {
+      body .right-sidebar .issuable-sidebar {
         width: calc(100% - 2px);
       }
     `);
   }
 
   if (smallScrollbars) {
-    // Remove 'body *' if you want these to apply to the outermost page scrollbar too
+    // The body here is used to avoid modifying the outermost page scrollbar.
+    // Remove 'body *' if you want these to apply to the page scrollbar too.
     GM_addStyle(`
-      body.vistweaks *::-webkit-scrollbar {
+      body *::-webkit-scrollbar {
         width: 8px;
         background: #eee;
       }
 
-      body.vistweaks *::-webkit-scrollbar-thumb {
+      body *::-webkit-scrollbar-thumb {
         background: #ccc;
         border-radius: 10px;
       }
 
       /*
-      body.vistweaks *::-webkit-scrollbar-track {
+      body *::-webkit-scrollbar-track {
         box-shadow: inset 0 0 3px white;
         border-radius: 10px;
       }
@@ -75,10 +104,10 @@
     `);
   }
 
-  // DOMNodeInserted might trigger sooner than DOMContentLoaded (as soon as the <body> appears, without waiting for the rest of the document)
-  const addVistweaks = () => {
+  /*
+  // This is good for increasing specificity, but it gets added too late, causing a relayout.
+  document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('vistweaks');
-    document.removeEventListener('DOMNodeInserted', addVistweaks);
-  };
-  document.addEventListener('DOMNodeInserted', addVistweaks);
+  });
+  */
 })();
