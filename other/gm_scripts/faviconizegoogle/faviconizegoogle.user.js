@@ -17,38 +17,17 @@ var placeFaviconInsideLink = false;   // Makes the favicon clickable but may als
 var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column (not on startpage)
 var iconSize               = 1.2;
 
+// With thanks to:
+// - NV
+// - darkred
+// - SirCumference
+
 // Some alternatives/remixes:
 // - https://github.com/NV/faviconize-google.js (Chrome extension)
 // - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
 // - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
 
 // TODO: The relative positioning of the icon appears a bit off for sub-links of the main result.
-
-// DONE: Provided more options where to place favicon: by the link or by the
-// url, before or after, inside or outside the link.  However in my opinion
-// they all suck except the default. ;)
-
-// Broken images would be messy, but Firefox seems to hide them after a while
-// anyway.  We do still see the gap from the image's padding though!
-// It might be desirable to check each image actually exists/loads, or remove it.
-// Is that possible, without making an http request ourselves?
-
-// Third-party host URL detection is implemented leniently, and accordingly
-// hostname extraction implemented aggressively, which results in favicons
-// being given to unexpected things like bookmarklets which contain a site url.
-
-/*
-function filterListBy (l,c) {
-	var ret = new Array();
-	for (var i=0;i<l.length;i++) {
-		var it = l[i];
-		if (c(it)) {
-			ret[ret.length] = it;
-		}
-	}
-	return ret;
-}
-*/
 
 if (document.location.host.match(/\bstartpage\b/)) {
   // This feature doesn't work on startpage!
