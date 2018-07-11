@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.0
+// @version        1.4.1
 // @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
@@ -14,7 +14,7 @@
 var placeFaviconByUrl      = false;   // The little green link below the article title
 var placeFaviconAfter      = false;   // Display after the link instead of before it
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
-var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column
+var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column (not on startpage)
 var iconSize               = 1.2;
 
 // Some alternatives/remixes:
@@ -49,6 +49,11 @@ function filterListBy (l,c) {
 	return ret;
 }
 */
+
+if (document.location.host.match(/\bstartpage\b/)) {
+  // This feature doesn't work on startpage!
+  placeFaviconOffTheLeft = false;
+}
 
 function createFaviconFor (url) {
 	var host = url.replace(/^[^/]*:\/\//, '').replace(/\/.*$/, '');
@@ -167,7 +172,8 @@ function updateFavicons () {
 		}
 		link.setAttribute("data-faviconized", "yes");
 		var img = createFaviconFor(targetUrl);
-		var targetNode = (placeFaviconByUrl ? link.parentNode.parentNode.getElementsByTagName('cite')[0] : link);
+		// <cite> is for google, .url is for startpage
+		var targetNode = (placeFaviconByUrl && link.parentNode.parentNode.querySelector('cite, .url') || link);
 		if (placeFaviconInsideLink) {
 			if (placeFaviconAfter) {
 				targetNode.appendChild(img);
