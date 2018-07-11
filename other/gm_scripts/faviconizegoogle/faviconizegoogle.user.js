@@ -61,14 +61,14 @@ function createFaviconFor (url) {
 		// return null;
 	// }
 	// Use protocol (http/https) of current page, to avoid mixed-content warnings/failures.
-	var protocol = document.location.protocol.replace(/:$/, '');
+	//var protocol = document.location.protocol.replace(/:$/, '');
 	//console.log("[FaviconizeGoogle.user.js] protocol:" ,protocol);
 	// We may fail to access favicons, e.g. if the site only offers http, or due to CORS restrictions.
 	// But it is still worth tryiing, because the fallback (google's s2) offers only low-res icons.
 	var urlsToTry = [
 		'//' + host + '/favicon.ico',
 		'//' + host + '/favicon.png',
-		'//www.google.com/s2/favicons?domain=' + host
+		'//www.google.com/s2/favicons?domain=' + host,
 	];
 	// Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
 	var img = document.createElement('IMG');
@@ -133,14 +133,10 @@ function getGoogleResultsLinks () {
 	return links;
 }
 
-function getElementsByClassName (cN) {
-	return getElementsByTagNameAndClassName("*",cN);
-}
-
 var style = document.createElement('STYLE');
-var padSide = (placeFaviconAfter?'left':'right');
-var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + (1 * iconSize + 0.5) + 'em; top: ' + (0.5 + 0.07 - iconSize/2) + 'em;' : '';
-style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
+var padSide = (placeFaviconAfter ? 'left' : 'right');
+var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + (1 * iconSize + 0.5) + 'em; top: ' + (0.5 + 0.07 - iconSize / 2) + 'em;' : '';
+style.innerHTML = ".favicon { padding-" + padSide + ": 4px; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
 
 function updateFavicons () {
@@ -161,7 +157,7 @@ function updateFavicons () {
 		// }
 		var targetUrl = link.getAttribute('data-href') || link.href;
 		//// Skip relative and same-host links:
-		if (targetUrl.match(/^[/]/) || targetUrl.match("://"+document.location.host)) {
+		if (targetUrl.match(/^[/]/) || targetUrl.match("://" + document.location.host)) {
 			continue;
 		}
 		//console.log("[faviconizegoogle.user.js] link.getAttribute(data-faviconized):" ,link.getAttribute("data-faviconized"));
@@ -178,13 +174,13 @@ function updateFavicons () {
 			if (placeFaviconAfter) {
 				targetNode.appendChild(img);
 			} else {
-				targetNode.insertBefore(img,targetNode.firstChild);
+				targetNode.insertBefore(img, targetNode.firstChild);
 			}
 		} else {
 			if (placeFaviconAfter) {
-				targetNode.parentNode.insertBefore(img,targetNode.nextSibling);
+				targetNode.parentNode.insertBefore(img, targetNode.nextSibling);
 			} else {
-				targetNode.parentNode.insertBefore(img,targetNode);
+				targetNode.parentNode.insertBefore(img, targetNode);
 			}
 		}
 	}
