@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitLab Tweaks
 // @namespace    GLT
-// @version      0.0.5
+// @version      0.0.6
 // @description  Improve visual design of GitLab, to reduce visual and cognitive strain, and increase zen mindfulness
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -14,12 +14,14 @@
 (function() {
   'use strict';
 
+  const generalFixes = true;
+
   // Other fonts I considered: sans-serif, sans, Arial, "Noto Sans", "Open Sans"
-  const customFont = `"Open Sans", Arial, sans-serif`;
+  const customFont = '"Open Sans", Arial, sans-serif';
 
-  const customMonospaceFont = `"Lucida Sans Typewriter", "Lucida Console", monospace`;
+  const customMonospaceFont = '"Lucida Sans Typewriter", "Lucida Console", monospace';
 
-  // Some whitespace margins beside the central content, to enhance zen state
+  // Some whitespace around the central content, to enhance zen state
   const padTheCentralColumn = true;
 
   const padTheHeader = true;
@@ -40,7 +42,17 @@
 
   // Notes:
   // We put `body` at the start of every selector to increase its specificity.
-  // That allows us to add our CSS early, but still have it override the site's CSS.
+  // That allows our CSS to override the site's CSS, even if we add ours early (which is desirable to avoid relayout).
+
+  if (generalFixes) {
+    // If the labels are just the right length, some of the "Request to merge ..." text will touch the "Open in Web IDE" button.
+    // We force a little gap on the right-hand side.
+    GM_addStyle(`
+      body .normal {
+        padding-right: 8px;
+      }
+    `);
+  }
 
   if (typeof customFont !== 'undefined' && customFont) {
     // The website's recommended fonts were: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
@@ -66,16 +78,16 @@
   if (padTheCentralColumn) {
     GM_addStyle(`
       body .content-wrapper .container-fluid {
-        padding: 0 40px;
-      }
-      body .alert-wrapper {
-        padding-top: 10px;
+        padding: 0 30px;
       }
     `);
   }
 
   if (padTheHeader) {
     GM_addStyle(`
+      body .alert-wrapper {
+        padding-top: 10px;
+      }
       body .breadcrumbs-container {
         padding-bottom: 30px;
       }
@@ -125,7 +137,6 @@
     GM_addStyle(`
       body *::-webkit-scrollbar {
         width: 8px;
-        height: 8px;
         background: #eee;
       }
 
