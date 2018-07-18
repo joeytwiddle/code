@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.14
+// @version      0.7.15
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -230,7 +230,9 @@
             GM_addStyle(".vistweaks .markdown img { max-width: 66%; }");
         };
 
-        checkTheSidebar();
+        // On Firefox, this causes two sidebars to appear!
+        // Presumably because it runs again below
+        //checkTheSidebar();
 
         // Keep checking, in case we go to a new page
         new MutationObserver(mutations => checkTheSidebar()).observe(document.body, { childList: true, subtree: true });
