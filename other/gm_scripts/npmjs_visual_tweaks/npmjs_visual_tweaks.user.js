@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.16
+// @version      0.7.17
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -180,6 +180,10 @@
 
     // Indent lists
     GM_addStyle(".vistweaks .markdown ul, .vistweaks .markdown ol { padding-left: 2em; }");
+
+    // Bugfix: strong changes the text colour, but that sucks if the strong is inside a link.
+    // Using `a *` instead of `a strong` just in case there are other problems like this.
+    GM_addStyle(`.vistweaks ${readmePrefix} a * { color: inherit; }`);
 
     if (floatTheSidebar) {
         var checkTheSidebar = function () {
