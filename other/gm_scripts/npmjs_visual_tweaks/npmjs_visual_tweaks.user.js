@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.17
+// @version      0.7.18
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -104,6 +104,10 @@
             /* font-weight: 800; */
             /* Using the Github mandated font is a better fix */
             font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+        /* Remove the hard-coded link sizing */
+        .vistweaks ${readmePrefix} ul li a {
+            font-size: inherit;
         }
     `);
     // A snippet of code appearing within a paragraph
