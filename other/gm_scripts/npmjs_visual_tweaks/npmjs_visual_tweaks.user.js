@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.15
+// @version      0.7.16
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -17,6 +17,10 @@
 
     // This allows the README to expand to the full width below the info sidebar
     const floatTheSidebar = true;
+
+    //const readmePrefix = '.readme__readme___tmT33';
+    //const readmePrefix = '.markdown__markdown___3yof6';
+    const readmePrefix = '#readme';
 
     // I want to scale down the fonts and everything else a bit.  This was an easy way to do that.
     //GM_addStyle('.container { transform: scale(0.92); transform-origin: 50% 0; }');
@@ -47,54 +51,54 @@
     //GM_addStyle('pre, code, kbd, samp { font-family: monospace; }');
     // I don't know why, but "monospace" shrinks the font considerably on my Linux, whilst "monospace,monospace" does not.
     // Also "monospace,monospace" is what the site itself adopted on 2018/3/22.  This rule will just ensure it stays this way!
-    GM_addStyle('.vistweaks .readme__readme___tmT33 pre, .vistweaks .readme__readme___tmT33 code, .vistweaks .readme__readme___tmT33 kbd, .vistweaks .readme__readme___tmT33 samp { font-family: monospace,monospace; }');
+    GM_addStyle(`.vistweaks ${readmePrefix} pre, .vistweaks ${readmePrefix} code, .vistweaks ${readmePrefix} kbd, .vistweaks ${readmePrefix} samp { font-family: monospace,monospace; }`);
 
     // Set font sizes like GitHub
-    GM_addStyle('.vistweaks .readme__readme___tmT33 p { font-size: 16px; line-height: 1m5; }');
+    GM_addStyle(`.vistweaks ${readmePrefix} p { font-size: 16px; line-height: 1m5; }`);
     GM_addStyle(`
         /*
         @media screen and (min-width: 30em) {
-          .vistweaks .readme__readme___tmT33 {
+          .vistweaks ${readmePrefix} {
             font-size: 0.8rem;
           }
         }
         */
-        .vistweaks .readme__readme___tmT33 h1 {
+        .vistweaks ${readmePrefix} h1 {
             padding-bottom: 0.3em;
             font-size: 2em;
             border-bottom: 1px solid #eaecef
         }
-        .vistweaks .readme__readme___tmT33 h2 {
+        .vistweaks ${readmePrefix} h2 {
             padding-bottom: 0.3em;
             font-size: 1.5em;
             border-bottom: 1px solid #eaecef
         }
-        .vistweaks .readme__readme___tmT33 h3 {
+        .vistweaks ${readmePrefix} h3 {
             font-size: 1.25em
         }
-        .vistweaks .readme__readme___tmT33 h4 {
+        .vistweaks ${readmePrefix} h4 {
             font-size: 1em
         }
-        .vistweaks .readme__readme___tmT33 h5 {
+        .vistweaks ${readmePrefix} h5 {
             font-size: 0.875em
         }
-        .vistweaks .readme__readme___tmT33 h6 {
+        .vistweaks ${readmePrefix} h6 {
             font-size: 0.85em;
             color: #6a737d
         }
         /* Code blocks inside a header do not shrink */
-        .vistweaks .readme__readme___tmT33 h1 tt,
-        .vistweaks .readme__readme___tmT33 h1 code,
-        .vistweaks .readme__readme___tmT33 h2 tt,
-        .vistweaks .readme__readme___tmT33 h2 code,
-        .vistweaks .readme__readme___tmT33 h3 tt,
-        .vistweaks .readme__readme___tmT33 h3 code,
-        .vistweaks .readme__readme___tmT33 h4 tt,
-        .vistweaks .readme__readme___tmT33 h4 code,
-        .vistweaks .readme__readme___tmT33 h5 tt,
-        .vistweaks .readme__readme___tmT33 h5 code,
-        .vistweaks .readme__readme___tmT33 h6 tt,
-        .vistweaks .readme__readme___tmT33 h6 code {
+        .vistweaks ${readmePrefix} h1 tt,
+        .vistweaks ${readmePrefix} h1 code,
+        .vistweaks ${readmePrefix} h2 tt,
+        .vistweaks ${readmePrefix} h2 code,
+        .vistweaks ${readmePrefix} h3 tt,
+        .vistweaks ${readmePrefix} h3 code,
+        .vistweaks ${readmePrefix} h4 tt,
+        .vistweaks ${readmePrefix} h4 code,
+        .vistweaks ${readmePrefix} h5 tt,
+        .vistweaks ${readmePrefix} h5 code,
+        .vistweaks ${readmePrefix} h6 tt,
+        .vistweaks ${readmePrefix} h6 code {
             font-size: inherit;
             /* This is a fix because 600 is not thick enough for the monospace font we introduced */
             /* font-weight: 800; */
@@ -104,11 +108,11 @@
     `);
     // A snippet of code appearing within a paragraph
     // A line of code on its own
-    GM_addStyle('.vistweaks .readme__readme___tmT33 pre { line-height: 1.5; }');
-    GM_addStyle('.vistweaks .readme__readme___tmT33 code { line-height: 1.5; }');
-    GM_addStyle('.vistweaks .readme__readme___tmT33 pre { font-size: 85%; }');
-    GM_addStyle('.vistweaks .readme__readme___tmT33 code { font-size: 85%; }');
-    GM_addStyle('.vistweaks .readme__readme___tmT33 pre code { font-size: inherit; }');
+    GM_addStyle(`.vistweaks ${readmePrefix} pre { line-height: 1.5; }`);
+    GM_addStyle(`.vistweaks ${readmePrefix} code { line-height: 1.5; }`);
+    GM_addStyle(`.vistweaks ${readmePrefix} pre { font-size: 85%; }`);
+    GM_addStyle(`.vistweaks ${readmePrefix} code { font-size: 85%; }`);
+    GM_addStyle(`.vistweaks ${readmePrefix} pre code { font-size: inherit; }`);
     // A block of code
     //GM_addStyle('.vistweaks pre { font-size: 82%; line-height: 1.4; }');
 
