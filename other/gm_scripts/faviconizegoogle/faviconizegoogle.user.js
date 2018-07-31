@@ -5,8 +5,8 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.1
-// @include        /https?:\/\/((www\.)?|encrypted\.|news\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
+// @version        1.4.2
+// @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
 // ==/UserScript==
@@ -27,11 +27,33 @@ var iconSize               = 1.2;
 // - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
 // - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
 
+// 2018-07-31 Dropped support for news.google.com, because it is now linking to local URLs, instead of to external websites.
+
 // TODO: The relative positioning of the icon appears a bit off for sub-links of the main result.
 
+// DONE: Provided more options where to place favicon: by the link or by the
+// url, before or after, inside or outside the link.  However in my opinion
+// they all suck except the default. ;)
+
+// Broken images would be messy, but Firefox seems to hide them after a while
+// anyway.  We do still see the gap from the image's padding though!
+// It might be desirable to check each image actually exists/loads, or remove it.
+// Is that possible, without making an http request ourselves?
+
+// Third-party host URL detection is implemented leniently, and accordingly
+// hostname extraction implemented aggressively, which results in favicons
+// being given to unexpected things like bookmarklets which contain a site url.
+
 if (document.location.host.match(/\bstartpage\b/)) {
-  // This feature doesn't work on startpage!
-  placeFaviconOffTheLeft = false;
+	// This feature doesn't work on startpage!
+	placeFaviconOffTheLeft = false;
+}
+
+if (document.location.search.match(/&tbm=nws/)) {
+	// This feature doesn't work on Google News search
+	placeFaviconOffTheLeft = false;
+	// The layout is a bit too cramped for large favicons
+	iconSize = 0.9;
 }
 
 function createFaviconFor (url) {
@@ -96,18 +118,27 @@ function getGoogleResultsLinks () {
 	// For Google search
 	// a.l
 	// a.fl are small one-line sub-results.  Search "squeak" and see the Wikipedia result.
-	// a._vQb._mnc are images which appear next to articles on the News tab
-	var links = document.querySelectorAll('.g a:not(.fl):not(._vQb):not(._mnc)');
+	// a.B0IOdd are lists of images which appear underneath a section on the News tab (inside .card-section)
+	var links = document.querySelectorAll('.g a:not(.fl):not(.B0IOdd)');
 
 	// For news.google.com
 	if (links.length === 0) {
-		links = document.querySelectorAll('a.article:not(.esc-thumbnail-link)');
+		//links = document.querySelectorAll('a.article:not(.esc-thumbnail-link)');
+		links = document.querySelectorAll('article > a');
 	}
 
 	// For startpage.com
 	if (links.length === 0) {
 		links = document.querySelectorAll('.clk > a');
 	}
+
+	// Remove any links which contain only one image
+	links = [...links].filter(link => {
+		if (link.childNodes.length === 1 && link.childNodes[0].tagName === 'IMG') {
+			return false;
+		}
+		return true;
+	});
 
 	return links;
 }
