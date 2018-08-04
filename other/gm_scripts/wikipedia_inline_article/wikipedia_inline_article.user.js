@@ -2,13 +2,15 @@
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.15
+// @version       1.2.16
 //// http:
+// @include       http://*wiki*
 // @include       http://wikipedia.org/*
 // @include       http://*.wikipedia.org/*
 // @include       http://wiktionary.org/*
 // @include       http://*.wiktionary.org/*
 //// https:
+// @include       https://*wiki*
 // @include       https://wikipedia.org/*
 // @include       https://*.wikipedia.org/*
 // @include       https://wiktionary.org/*
@@ -180,7 +182,7 @@ function inlineViewClickHandler(event) {
 	if(openWindow) {
 		openWindow.parentNode.removeChild(openWindow);
 	} else {
-		inlineWindow = newInlineWindow(event, href, link, windowID);
+		inlineWindow = createNewInlineWindow(event, href, link, windowID);
 	}
 	
 	event.preventDefault();
@@ -188,7 +190,7 @@ function inlineViewClickHandler(event) {
 }
 */
 
-function newInlineWindow(event, href, link, windowID){
+function createNewInlineWindow(event, href, link, windowID){
 	// Close all previous inline windows...
 	//closeInlineWindows();
 	
@@ -220,7 +222,7 @@ function newInlineWindow(event, href, link, windowID){
 	// But then clientHeight produces 0.
 	// Fortunately we can use jQuery to find the height.
 	elementHeight = elementHeight || $(link).height();
-	GM_log("elementHeight="+elementHeight);
+	//GM_log("elementHeight="+elementHeight);
 
 	GM_addStyle(".inline-window #coordinates { position: initial; }");
 
@@ -264,6 +266,14 @@ function newInlineWindow(event, href, link, windowID){
 	var cssBoxWidth = Math.round((windowWidth - (windowPadding+windowBorderSize)*2)/document.body.clientWidth*100);
 	var cssBoxHeight = windowHeight - (windowPadding+windowBorderSize*2);
 
+	// Some sites (especially Wikia) set a custom background colour.
+	// Let's try to copy the colour that the site is using, otherwise fall back to white.
+	var backgroundElement = document.querySelector('.WikiaPageBackground') || link;
+	var backgroundColor = getComputedStyle(backgroundElement).backgroundColor;
+	if (backgroundColor === 'rgba(0, 0, 0, 0)') {
+		backgroundColor = 'white';
+	}
+
 	container.innerHTML = '<div style="' +
 		'position: absolute; '+
 		// We can position with top/left.
@@ -276,16 +286,24 @@ function newInlineWindow(event, href, link, windowID){
 		'padding: ' + Math.round((windowPadding-windowButtonHeight)/2) +'px ' + windowPadding + 'px ' + windowPadding + 'px; ' +
 		'width: ' + cssBoxWidth + '%; ' +
 		'height: '+ cssBoxHeight + 'px; ' +
-		'background-color: #FFFFE0; '+
-		'border: ' + windowBorderSize + 'px solid #E0E0E0; '+
-		'-moz-border-radius: 5px; '+
+		//'background-color: #FFFFE0; '+
+		//'border: ' + windowBorderSize + 'px solid #E0E0E0; '+
+		'background: ' + backgroundColor + '; '+
+		'border: ' + windowBorderSize + 'px solid #0004; '+
+		//'border-radius: 5px; '+
+		//'box-shadow: 0 4px 16px 0 #0004; '+
+		// Attempt to match Wikipedia's own popups
+		//'box-shadow: 0 16px 50px 0 #00000028; '+
+		// Match what Wikipedia is using for its own .mwe-popups
+		'box-shadow: 0 30px 90px -20px rgba(0,0,0,0.3); '+
 		'z-index: 999; '+
 		//'opacity: 0.95; '+
 		'font-size: ' + windowFontSize + 'pt; '+
 		'">'+
 			'<div style="'+
 				'float: right; '+
-				'background-color: #DDD; '+
+				//'background-color: #DDD; '+
+				//'background-color: #0003; '+
 				'margin: 0 3px ' + Math.round((windowPadding-windowButtonHeight)/2) +'px; '+
 				'padding: 0 3px; '+
 				'-moz-border-radius: 2px; '+
@@ -296,7 +314,8 @@ function newInlineWindow(event, href, link, windowID){
 			'"><a href="#" onClick="innerWindow = this.parentNode.parentNode.parentNode; innerWindow.parentNode.removeChild(innerWindow); return false;" style="text-decoration: none;">close</a></div>'+
 			'<div style="'+
 				'float: right; '+
-				'background-color: #DDD; '+
+				//'background-color: #DDD; '+
+				//'background-color: #0003; '+
 				'margin: 0 3px ' + Math.round((windowPadding-windowButtonHeight)/2) +'px; '+
 				'padding: 0 3px; '+
 				'-moz-border-radius: 2px; '+
@@ -306,8 +325,9 @@ function newInlineWindow(event, href, link, windowID){
 				'font-weight: bold'+
 			'"><a href="' + href + '" style="text-decoration: none;">go to full article</a></div>'+
 			'<div id="innerWindowCont-' + windowID + '" style="'+
-				'border: 1px dashed black; '+
-				'background: white; '+
+				//'border: 1px dashed #0006; '+
+				'border: 1px solid #0002; '+
+				//'background: ' + backgroundColor + '; '+
 				'padding: ' + windowTextPadding + 'px; '+
 				'overflow: auto; '+
 				'clear: both; '+
@@ -554,7 +574,7 @@ function hoverDetected() {
 	if(openWindow) {
 		// openWindow.parentNode.removeChild(openWindow);
 	} else {
-		inlineWindow = newInlineWindow(null, hoverTarget.pathname, hoverTarget, windowID);
+		createNewInlineWindow(null, hoverTarget.pathname, hoverTarget, windowID);
 	}
 }
 document.body.addEventListener("mouseover",onMouseOver,true);
