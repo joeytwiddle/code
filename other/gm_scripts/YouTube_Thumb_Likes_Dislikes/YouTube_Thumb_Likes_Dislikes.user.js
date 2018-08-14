@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.0.8
+// @version        1.1.0
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -27,7 +27,7 @@
 
 // == Configuration == //
 
-var addCountsToTooltip = false;           // Shows likes/dislikes when
+var addCountsToTooltip = true;            // Shows likes/dislikes when
                                           // (re-)hovering a thumbail/link.
 
 var addCountsToThumbnail = true;          // Display likes/dislikes next to the
@@ -102,7 +102,7 @@ function findClosestLinkElem(orig) {
 }
 
 // Display likes/dislikes on links to other videos
-function lookupLikesDislikes(link) {
+function lookupLikesDislikes(link, target) {
 	if (link && !link.doneLikesDislikes) {
 		link.doneLikesDislikes = true;
 
@@ -127,20 +127,31 @@ function lookupLikesDislikes(link) {
 
 				// CONSIDER: We might want to add our extra elements to .stat.view-count or .yt-lockup-meta-info (on channel pages) or perhaps a clone of that element.
 
-				if (infoElem) {
+				if (infoElem || true) {
 
 					// Old:
-					var infoText = infoElem.textContent.trim();
+					var infoText = infoElem ? infoElem.textContent.trim() : 'infoElem not found';
 
 					// New:
-					var newLikedButton = infoElem.querySelector(".like-button-renderer-like-button-unclicked");
+					var newLikedButton = infoElem && infoElem.querySelector(".like-button-renderer-like-button-unclicked");
 					if (newLikedButton) {
 						var newDislikedButton = infoElem.querySelector(".like-button-renderer-dislike-button-unclicked");
 						infoText = newLikedButton.textContent + " likes, " + newDislikedButton.textContent + " dislikes.";
 					}
 
+					// New (2018):
+					const likeDislikeButtons = document.querySelectorAll('#info-contents #top-level-buttons ytd-toggle-button-renderer yt-formatted-string');
+					if (likeDislikeButtons.length === 2) {
+						const [likes, dislikes] = Array.from(likeDislikeButtons).map(elem => elem.textContent);
+						infoText = likes + " likes, " + dislikes + " dislikes";
+					}
+
 					if (addCountsToTooltip) {
-						elemWithTitle.title += " ("+infoText+")";
+						elemWithTitle.title += ' (' + infoText + ')';
+						// Sometimes the hovered element is a span with a title.  In that case, we should update its title too.
+						if (target && target.title) {
+							target.title += ' (' + infoText + ')';
+						}
 					}
 
 					if (addCountsToThumbnail) {
@@ -187,19 +198,21 @@ function lookupLikesDislikes(link) {
 				if (addVideoDescriptionToTooltip) {
 					// Uncaught TypeError: Object #<HTMLDivElement> has no method 'getElementById'
 					// var descrElem = lePage.getElementById("watch-description-text");
-					var descrElem = fakeGetElementById(lePage, "watch-description-text");
+					var descrElem = fakeGetElementById(lePage, "watch-description-text") || document.querySelector('#description');
 					if (descrElem) {
 						elemWithTitle.title += " ::: " + descrElem.textContent.trim();
 					}
 
 					// I also want to add the date to the thumbnail stats
-					var uploadedDateSrcElem = lePage.getElementsByClassName('watch-time-text')[0];
+					var uploadedDateSrcElem = lePage.getElementsByClassName('watch-time-text')[0] || { textContent: 'watch-time-text not found' };
 					var uploadedDateText = uploadedDateSrcElem.textContent;
 					uploadedDateText = uploadedDateText.replace(/^(Uploaded|Published) on /, 'on ');
 					var uploadedDateNewElem = document.createElement("span");
 					uploadedDateNewElem.textContent = " " + uploadedDateText;
 					var targetElem = link.getElementsByClassName("attribution")[0];
-					targetElem.appendChild(uploadedDateNewElem);
+					if (targetElem) {
+						targetElem.appendChild(uploadedDateNewElem);
+					}
 				}
 
 			}
@@ -251,7 +264,7 @@ function watchForHover(evt) {
 		clearTimeout(hoverTimer);
 		hoveredElem = link;
 		hoverTimer = setTimeout(function(){
-			lookupLikesDislikes(hoveredElem);
+			lookupLikesDislikes(hoveredElem, target);
 			hoveredElem = null;
 			hoverTimer = null;
 		}, 1000);
