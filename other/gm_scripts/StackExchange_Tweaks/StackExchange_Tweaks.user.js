@@ -2,7 +2,7 @@
 // @name           StackExchange Tweaks
 // @namespace      SET
 // @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
-// @version        1.0.5
+// @version        1.0.6
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://superuser.com/*
@@ -24,5 +24,5 @@ if (profileElementInner) {
 
 // Hide the sidebar when we are on question pages (to reduce visual noise)
 if (document.location.pathname.match(/^\/(q|questions)\//)) {
-    GM_addStyle('#left-sidebar { display: none; }');
+    GM_addStyle('#left-sidebar { display: none; }   #content { border-left: none; }');
 }
