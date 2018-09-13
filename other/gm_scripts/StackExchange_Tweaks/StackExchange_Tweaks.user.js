@@ -8,6 +8,7 @@
 // @include        https://superuser.com/*
 // @include        https://serverfault.com/*
 // @include        https://*.stackexchange.com/*
+// @include        https://askubuntu.com/*
 // @grant          GM_addStyle
 // ==/UserScript==
 
@@ -41,6 +42,9 @@ if (swapProfileAndButtons) {
 
 if (hideSidebarOnQuestionPages) {
     if (document.location.pathname.match(/^\/(q|questions)\//)) {
-        GM_addStyle('#left-sidebar { display: none; }   #content { border-left: none; }');
+        GM_addStyle('#left-sidebar { display: none; }');
+        if (document.location.hostname === 'stackoverflow.com') {
+            GM_addStyle('#content { border-left: none; }');
+        }
     }
 }
