@@ -15,7 +15,7 @@ var placeFaviconByUrl      = false;   // The little green link below the article
 var placeFaviconAfter      = false;   // Display after the link instead of before it
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
 var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column (not on startpage)
-var iconSize               = 1.2;
+var iconSize               = 2;
 
 // With thanks to:
 // - NV
@@ -145,8 +145,8 @@ function getGoogleResultsLinks () {
 
 var style = document.createElement('STYLE');
 var padSide = (placeFaviconAfter ? 'left' : 'right');
-var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + (1 * iconSize + 0.5) + 'em; top: ' + (0.5 + 0.07 - iconSize / 2) + 'em;' : '';
-style.innerHTML = ".favicon { padding-" + padSide + ": 4px; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
+var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + (1.2 * iconSize + 0.5) + 'em; top: ' + (0.5 + 0.07 - iconSize / 3.6) + 'em;' : '';
+style.innerHTML = ".favicon { padding-" + padSide + ": " + (iconSize / 2) + "em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
 
 function updateFavicons () {
