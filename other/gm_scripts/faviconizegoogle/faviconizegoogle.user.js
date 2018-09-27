@@ -16,6 +16,7 @@ var placeFaviconAfter      = false;   // Display after the link instead of befor
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
 var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column (not on startpage)
 var iconSize               = 2;
+var centraliseIconVertically = iconSize <= 2;   // For larger icon sizes, we top-align with the text
 
 // With thanks to:
 // - NV
@@ -145,7 +146,11 @@ function getGoogleResultsLinks () {
 
 var style = document.createElement('STYLE');
 var padSide = (placeFaviconAfter ? 'left' : 'right');
-var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + (1.2 * iconSize + 0.5) + 'em; top: ' + (0.5 + 0.07 - iconSize / 3.6) + 'em;' : '';
+var leftPadding = 1.2 * iconSize + 0.5;
+// We can try to centralise the icon with the text
+// Or we can top-align the icon with the text (better for larger icon sizes)
+var topPadding = centraliseIconVertically ? 0.5 + 0.07 - iconSize / 2 : 0;
+var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + leftPadding + 'em; top: ' + topPadding + 'em;' : '';
 style.innerHTML = ".favicon { padding-" + padSide + ": " + (iconSize / 2) + "em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
 
