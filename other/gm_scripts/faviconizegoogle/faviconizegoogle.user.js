@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.2
+// @version        1.4.3
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
@@ -15,8 +15,8 @@ var placeFaviconByUrl      = false;   // The little green link below the article
 var placeFaviconAfter      = false;   // Display after the link instead of before it
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
 var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column (not on startpage)
-var iconSize               = 2;
-var centraliseIconVertically = iconSize <= 2;   // For larger icon sizes, we top-align with the text
+var iconSize               = 1.2;
+var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we center-align with the text, for larger we top-align
 
 // With thanks to:
 // - NV
