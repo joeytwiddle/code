@@ -1,21 +1,17 @@
 // ==UserScript==
 // @name          Google's Old Favicon
 // @description   Brings back the old Google favicon
-// @version       2.17
+// @version       2.18
 // @author        !user
 // @include       https://www.google.tld/*
 // @include       https://google.tld/*
 // ==/UserScript==
 
-// This doesn't work on the Google Search pages (which is where we want it to work)
-// Although if you widen the includes, it does work on lots of other Google services (where we don't want it!)
-
 // Select the icon you want to use
-// 0:  Old 'G'
+// 0: Old 'G'
 // 1: Blue 'g'
 // 2: Multi-color 'g'
 const EDITION = 0;
-// BUG: Neither 1 or 2 work in my Chrome!  Although 1 was supplied with this script.
 
 var head = document.getElementsByTagName('head')[0];
 var icon = document.createElement('link');
