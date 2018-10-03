@@ -2,7 +2,7 @@
 // @name           StackExchange Tweaks
 // @namespace      SET
 // @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
-// @version        1.0.7
+// @version        1.0.8
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://superuser.com/*
@@ -43,7 +43,7 @@ if (swapProfileAndButtons) {
 if (hideSidebarOnQuestionPages) {
     if (document.location.pathname.match(/^\/(q|questions)\//)) {
         GM_addStyle('#left-sidebar { display: none; }');
-        if (document.location.hostname === 'stackoverflow.com') {
+        if (document.location.hostname.match(/^(stackoverflow.com|politics.stackexchange.com)$/)) {
             GM_addStyle('#content { border-left: none; }');
         }
     }
