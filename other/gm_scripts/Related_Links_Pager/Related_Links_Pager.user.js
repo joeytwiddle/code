@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.26
+// @version        1.3.27
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -20,7 +20,6 @@
 // @grant          GM_setValue
 // @grant          GM_getValue
 // ==/UserScript==
-
 
 // Google redirection can block #siblings from being carried to the target page.  If that happens, this script may help: http://userscripts.org/scripts/show/121261#Straight_Google
 
@@ -284,14 +283,17 @@ if (document.title.length > 800) {
 function addHighlightStyles() {
   var highlightStyles = "";
 
+  // For some reason Google recently decided to put <h3>s inside all their links.
+  // In order for our styles to appear on those link titles, I am now selecting those <h3>s too.
+  // (This might double up the background color styles.  If anyone is still using those, we could try to find a better solution.)
   if (highlightStyle) {
-    highlightStyles += ".RLP-link-in-group { " + highlightStyle + " }";
+    highlightStyles += ".RLP-link-in-group, .RLP-link-in-group > h3 { " + highlightStyle + " }";
   }
   if (thisLinkHighlightStyle) {
-    highlightStyles += ".RLP-selected-link { " + thisLinkHighlightStyle + " }";
+    highlightStyles += ".RLP-selected-link, .RLP-selected-link > h3 { " + thisLinkHighlightStyle + " }";
   }
   if (visitingStyle) {
-    highlightStyles += ".RLP-visiting-link { " + visitingStyle + " }";
+    highlightStyles += ".RLP-visiting-link, .RLP-visiting-link > h3 { " + visitingStyle + " }";
   }
 
   GM_addStyle(highlightStyles);
