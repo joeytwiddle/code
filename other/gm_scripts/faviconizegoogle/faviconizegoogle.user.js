@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.3
+// @version        1.4.4
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
@@ -178,7 +178,7 @@ function updateFavicons () {
 		//console.log("[faviconizegoogle.user.js] link.getAttribute(data-faviconized):" ,link.getAttribute("data-faviconized"));
 		if (link.getAttribute("data-faviconized")) {
 			// Already faviconized
-			console.log("[faviconizegoogle.user.js] Skipping");
+			//console.log("[faviconizegoogle.user.js] Skipping");
 			continue;
 		}
 		link.setAttribute("data-faviconized", "yes");
