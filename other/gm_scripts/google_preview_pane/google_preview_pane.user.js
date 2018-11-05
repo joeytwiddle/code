@@ -20,6 +20,10 @@
 
 // Modern browser security policies restrict loading http resources on an https page (even in an iframe).  But in Chrome you can workaround this issue (taking the risk on-board) by clicking the silver shield on the right of the location bar.
 
+// Some sites, if they detected they were running inside an iframe, would trigger a top-level browser navigation to the site, to break out of the iframe.  I guess they are still doing that...
+// It might be possible to prevent that, using a beforeunload event handler.  See this for example: https://github.com/xem/miniSplitScreen/blob/gh-pages/split2.html
+// Although there is a more fundamental problem now, which is that Google's CSP will prevent populating iframes from third party domains.
+
 // Notes on the patterns:
 //
 // Google hosts might include "www.google.co.uk" and "google.com"
