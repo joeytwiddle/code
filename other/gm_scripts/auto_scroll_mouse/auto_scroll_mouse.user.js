@@ -8,25 +8,33 @@
 // @name          Auto Scroll Mouse
 // @namespace     http://www.marcbelmont.com
 // @description   No mousewheel?  No problem!  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
-// @version       2.1.4
+// @version       2.1.5
 // @license       ISC
 // @include       http://*/*
 // @include       https://*/*
 // ==/UserScript==
 
+// TODO: Do not scroll after a mousedown (so it won't interfere when dragging/selecting)
+
 //////////////////////
-// Constants	    //
+// Constants        //
 //////////////////////
+
+// Which key should be held to enable scrolling.  Possible values are 0 | 1
+// Enable more than one to require a combination be held.
+var ONLY_WHEN_HOLDING_SHIFT = 0;
+var ONLY_WHEN_HOLDING_CTRL = 0;
+var ONLY_WHEN_HOLDING_ALT = 0;
 
 var NOSCROLL_PERCENT = 50; // Area in the middle of the page where there won't be scrolling
 var SCROLLSTEP = 5; // Scrolling speed
 var ONLYLEFTRIGHT = 1; // Scrolling will happen only when you move left or right in the top or bottom areas. Possible values are 0 | 1
-var ONLYLEFTRIGHT_MOUSESPEED = 1.5; // Mouse speed needed to activate the scrolling
+var ONLYLEFTRIGHT_MOUSESPEED = 1.5; // Acceleration
 var ONLYLEFTRIGHT_DONTSCROLL = 100; // if no event for too long, no scrolling
 var DELAY_TIME = 5; // This tries to reduce the number of scroll operations, to reduce load on the browser
 
 //////////////////////
-// Some Code	    //
+// Some Code        //
 //////////////////////
 
 var _mX = 0;
@@ -110,6 +118,10 @@ function mousemove(e)
   // if no event for too long, no scrolling
   if (_mNow - _mThen > ONLYLEFTRIGHT_DONTSCROLL)
     _go = 0;
+
+  if (ONLY_WHEN_HOLDING_SHIFT && !e.shiftKey) return;
+  if (ONLY_WHEN_HOLDING_CTRL && !e.ctrlKey) return;
+  if (ONLY_WHEN_HOLDING_ALT && !e.altKey) return;
 
   // Scroll the window
   maybeScrollWindow();
