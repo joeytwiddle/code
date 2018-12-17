@@ -2,7 +2,7 @@
 // @name           URLs Need Titles
 // @namespace      UNT
 // @description    When you paste a URL to a friend, it is useful if it contains the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs!
-// @version        1.3.2
+// @version        1.3.3
 // @include        http://*/*
 // @include        https://*/*
 // @grant          none
@@ -99,9 +99,17 @@ var rules = [
     },
 
     {
+        changeUrl: true,
+        changeTitle: true,
         hostMatch: "codepen.io",
         pathMatch: "/..*", /* Not the front page */
-        getTitle: function(){ return document.title.replace(/ - CodePen$/,''); }
+        getTitle: function(){
+            // They stopped putting " - CodePen" at the end of their titles.  We shall put it back, to aid bookmarking.
+            if (!document.title.match(/CodePen$/)) {
+                document.title = document.title + ' - CodePen';
+            }
+            return document.title.replace(/ - CodePen$/,'');
+        }
     },
 
     {
