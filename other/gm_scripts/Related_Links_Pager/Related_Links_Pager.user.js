@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.27
+// @version        1.3.28
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -39,9 +39,6 @@ var delayBeforeRunning = 2000;
 var minimumGroupSize   = 2;
 var maximumGroupSize   = 250;         // Some webservers restrict long URLs, responding with "Bad Request".
 var groupLinksByClass  = true;
-if (document.location.href.match(/google.*(search|q=)/)) {
-  groupLinksByClass = false;          // Most Google results have class "l" but any previously visited have "l vst".
-}
 // CONSIDER TODO: A better compromise for all sites might be groupLinksWhichShareAtLeastOneClass.  This would reject links which do not share any classes with the focused link.
 
 var showGroupCountInLinkTitle = true;    // Updates hovered links' titles to show number of siblings.
@@ -94,6 +91,13 @@ var beFrugal = false;   // When forced to use #siblings, only do so on Google se
 
 var verbose = false;    // Extra logging for debugging
 
+var isGoogleSearchResultsPage = !!document.location.href.match(/google.*(search|q=)/);
+
+if (isGoogleSearchResultsPage) {
+  groupLinksByClass = false;          // Most Google results have class "l" but any previously visited have "l vst".
+}
+
+var ensureFirstGoogleResultIsRelated = isGoogleSearchResultsPage;
 
 // == CHANGELOG ==
 // 2012-10-27 Added passPacketByGM for all browsers except Chrome.
@@ -212,6 +216,13 @@ if (typeof GM_setValue !== 'function' || forcePolyfillForGM_setValue) {
 function getXPath(node) {
   if (!node) {
     return '';
+  }
+  if (ensureFirstGoogleResultIsRelated) {
+    // Sometimes google will put all the results inside a .srg div, except for the first one.
+    // To ensure the first link appears related to the other links, we ignore the .srg element.
+    if (node.className === 'srg') {
+      return getXPath(node.parentNode);
+    }
   }
   return getXPath(node.parentNode) + '/' + node.nodeName.toLowerCase();
 }
