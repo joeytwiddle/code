@@ -8,15 +8,17 @@
 // @name            Fade In and Out
 // @namespace       http://userscripts.org/users/12
 // @description     Adds fade out effect when the page is unloaded
-// @version         3.0
+// @version         3.1
 // @author          LouCypher
 // @license         WTFPL http://www.wtfpl.net/
 // @homepageURL     https://userscripts.org/scripts/show/135732
 // @resource        license https://raw.github.com/LouCypher/userscripts/master/licenses/WTFPL/LICENSE.txt
 // @include         *
-// @run-at          document-start
 // @grant           GM_addStyle
 // ==/UserScript==
+
+// On Firefox, with @run-at document-start, the scripts starts running but does not complete!
+//// @run-at          document-start
 
 // Modified by joeytwiddle
 
@@ -24,20 +26,24 @@ var in_animation = "\
   from {\
     opacity: 0;\
     transform: translateY(200px) /*translateX(10px)*/;\
+    -moz-transform: translateY(200px) /*translateX(10px)*/;\
   }\
   to {\
     opacity: 1;\
     transform: translateY(0px);\
+    -moz-transform: translateY(0px);\
   }";
 
 var out_animation = "\
   from {\
     opacity: 1;\
     transform: translateY(0px);\
+    -moz-transform: translateY(0px);\
   }\
   to {\
     opacity: 0;\
     transform: translateY(400px) /*translateX(-60px)*/;\
+    -moz-transform: translateY(400px) /*translateX(-60px)*/;\
   }";
 
 function doFadeIn(){

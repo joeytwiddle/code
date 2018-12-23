@@ -12,6 +12,9 @@
 // ==/UserScript==
 // Special Thanks to Brock Adams for this script: http://stackoverflow.com/questions/23974801/gm-xmlhttprequest-data-is-being-placed-in-the-wrong-places/23992742
 
+// @todo Do not send cookies along with GM_xmlhttpRequest, so that IMDB won't cache our "recently viewed"
+//       (Use fetch instead of GM_xmlhttpRequest?)
+
 var maxLinksAtATime     = 100; //-- pages can have 100's of links to fetch. Don't spam server or browser.
 var fetchedLinkCnt      = 0;
 var skipEpisodes        = true; //-- I only want to see ratings for movies or TV shows, not TV episodes
