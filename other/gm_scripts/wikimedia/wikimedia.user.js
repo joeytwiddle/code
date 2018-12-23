@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name          Wikimedia+ for Chrome (localStorage)
+// @name          Wikimedia Page History in Sidebar
 // @description   Add History box at wikimedia's leftmost column
-// @version        1.1.1
+// @version       1.2.1
 // @downstreamURL http://userscripts.org/scripts/source/124389.user.js
 // @include       http://*.wikipedia.org/*
 // @include       http://*.wikimedia.org/wiki/*
@@ -12,7 +12,13 @@
 // ==/UserScript==
 
 /*
- * Original Wikimedia+: http://userscripts.org/scripts/show/7877
+ * Originally called Wikimedia+: http://userscripts.org/scripts/show/7877
+ *
+ * 2018-03-04  Use scrollbar for history.
+ *
+ * 2018-03-03  Renamed script.
+ *             Stop adjusting CSS for sidebar.
+ *             Do not store special pages in history.
  *
  * 2012-03-09  Click "More..." for longer stored history (numToRemember/numToShow)
  *
@@ -21,7 +27,7 @@
  *
 */
 
-var numToRemember = 100;
+var numToRemember = 500;
 var numToShow = 10;
 var minHoursForBreak = 4;
 var alwaysUseLocalStorage = true;   // I find this preferable because it acts per-site rather than global.
@@ -152,11 +158,23 @@ setTimeout(function()
    var newHistoryItem = normalizeUrl(document.location);
    // Fix for when running alongside Joey's Reclaim CPU
    titleStr = titleStr.replace(/^[*#+.?] /,'');
+
+   // We only store normal pages (articles).
+   // We skip all special pages, e.g. article history, revision differences, edit pages, printable pages..
+   // Except for search result pages.  We keep those.
+   var skipStoring = !!document.location.search;
+   if (document.location.search.indexOf('?search=') >= 0) {
+      titleStr = "Search: " + titleStr;
+      skipStoring = false;
+   }
+
    var hist = read();
    // console.log("[Wikimedia+] Got "+hist.length+" recent entries.");
-   if(document.location.search.indexOf("&action=edit") < 0 && document.location.search.indexOf("&printable=yes") < 0)
+   if(!skipStoring)
       hist = addHist(newHistoryItem, titleStr, new Date().getTime(), hist);
    store(hist);
+
+   // Render history and add it to sidebar
    function myEscape(str) {
       return str.replace('"','&quot;','g').replace('<','&lt;','g').replace('>','&gt;','g');
    }
@@ -174,12 +192,21 @@ setTimeout(function()
       }
    }
    s += '</ul></div>';
-   var indentLaterLines = 'padding-left: 1.5em; text-indent: -1.5em;';
+
+   //var indentLaterLines = 'padding-left: 1.5em; text-indent: -1.5em;';
    // Note that MediaWiki sites (but not Wikipedia) augument this rule with: .portal ul { font-size: 95%; }
-   var reduceSidebarFontSize = '/*div#mw-panel div.portal div.body ul li { font-size: 0.7em; }*/';
+   //var reduceSidebarFontSize = 'div#mw-panel div.portal div.body ul li { font-size: 0.7em; }';
    //reduceSidebarFontSize += ' .portal ul { font-size: 100%; }';
+   // BUG: This breaks the sidebar on rationalwiki.org
    // The following .body rule applies to the whole sidebar, so none of the above is needed.
-   s += '<style type="text/css"> .body { font-size: 0.85em; } div.body li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } '+reduceSidebarFontSize+' </style>';
+   //s += '<style type="text/css"> .body { font-size: 0.85em; } div.body li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } '+reduceSidebarFontSize+' </style>';
+
+   var softenOurHRSeparators = '#p-history hr { margin-left: 1em; margin-right: 1em; opacity: 0.2; }';
+   //var outdentPortalHeadings2018 = '.portal > h3 { margin-left: 0 !important; } .portal > .body { margin-left: 0 !important; } .portal > .body > * { margin-left: 0.5em !important; }';
+   //var emphasiseGapsBetweenPortals = 'div#mw-panel div.portal h3 { margin-top: 1.5em; font-weight: bold; }';
+   var useScrollbarForHistory = 'div#mw-panel div.portal div.body ul { max-height: 90vh; overflow: auto; }';
+   s += '<style type="text/css">' + softenOurHRSeparators + useScrollbarForHistory + '</style>';
+
    var e = document.createElement ("div");
    e.innerHTML = s;
    e.id = "p-history";
@@ -196,14 +223,15 @@ setTimeout(function()
       */
 
       if (hist.length > numToShow) {
-         var openMore = document.createElement("div");
+         var openMore = document.createElement("li");
+         openMore.style = "text-align: center";
          var openMoreLink = document.createElement("a");
          openMoreLink.textContent = "More...";
          openMoreLink.href = "#";
          openMore.appendChild(openMoreLink);
          var targetUL = e.getElementsByTagName("ul")[0];
          targetUL.appendChild(openMore);
-         openMore.onclick = function(evt) {
+         openMoreLink.onclick = function(evt) {
             targetUL.removeChild(openMore);
             var fragment = document.createDocumentFragment();
             for (var i=numToShow;i<hist.length;i++) {
@@ -257,5 +285,3 @@ setTimeout(function()
    AppendCategoryTreeToSidebar();
 
 },delayBeforeRunning);
-
-
