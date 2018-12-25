@@ -2,17 +2,21 @@
 // @name          Auto Scroll Mouse
 // @namespace     http://www.marcbelmont.com
 // @description   No mousewheel?  No problem!  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
-// @version       2.1.6
+// @version       2.1.7
 // @license       ISC
 // @include       http://*/*
 // @include       https://*/*
 // @grant         GM_addStyle
+// @run-at        document-start
 // ==/UserScript==
 
 // Originally "Auto Scroll!" by Marc Belmont on userscripts.org
 // Tweaked by joeytwiddle
 
-// TODO: Do not scroll after a mousedown (so it won't interfere when dragging/selecting)
+// TODO: Do not scroll after/during a mousedown (so it won't interfere when dragging/selecting)
+// BUG: Does not trigger when mouse is over an iframe (window does not receive the mousemove event)
+//      We could solve this by listening for mousemove events on the region divs instead of on the document.
+//      But that could be more disruptive, as it prevents events from reaching the window like they normally would.
 
 //////////////////////
 // Constants        //
@@ -30,7 +34,7 @@ var ONLYLEFTRIGHT = 1; // Scrolling will happen only when you move left or right
 var ONLYLEFTRIGHT_MOUSESPEED = 1.5; // Acceleration
 var ONLYLEFTRIGHT_DONTSCROLL = 100; // if no event for too long, no scrolling
 var DELAY_TIME = 5; // This tries to reduce the number of scroll operations, to reduce load on the browser
-var SHOWREGIONS = 1;
+var SHOW_ACTIVE_REGION = 1;
 
 //////////////////////
 // Some Code        //
@@ -78,7 +82,7 @@ function ScrollWindow() {
   if (val != 0) {
     window.scrollTo(window.pageXOffset, window.pageYOffset + val*way);
   }
-  if (ONLYLEFTRIGHT && SHOWREGIONS && val != 0) {
+  if (ONLYLEFTRIGHT && SHOW_ACTIVE_REGION && val != 0) {
     if (end > 0) {
       regionUI.showBottomRegion();
     } else {
@@ -138,7 +142,7 @@ var regionUI = (function() {
   var bottomRegion = null;
 
   function ensureRegionsExist() {
-    if (!topRegion) {
+    if (!bottomRegion) {
       topRegion = document.createElement('div');
       topRegion.className = 'ASM_region';
       topRegion.style.top = 0;
@@ -157,23 +161,25 @@ var regionUI = (function() {
           z-index: 99999999;
           background: #09c4;
           pointer-events: none;
-          transition: opacity 1s;
+          transition: opacity 1s 0.5s;
           opacity: 0;
         }
-        .ASM_region.show {
+        .ASM_region.ASM_show {
           display: block;
-          transition: opacity 0s;
+          transition: opacity 0.5s; /* See the setTimeout below */
           opacity: 1;
         }
       `);
     }
   }
 
-  // TODO: It would be good if the remove timeout could be cancelled by a subsequent move
-  // But ideally this would be on a per-region basis, otherwide scrolling on the other region would keep the first region permanently visible!
   function showRegion(regionElement) {
-    regionElement.classList.add('show');
-    setTimeout(() => regionElement.classList.remove('show'), 1000);
+    regionElement.classList.add('ASM_show');
+    //regionElement.offsetWidth;
+    // We need to wait long enough for the new state to fade in before we remove the class.
+    setTimeout(() => {
+      regionElement.classList.remove('ASM_show');
+    }, 500);
   }
 
   function showTopRegion() {
@@ -187,7 +193,15 @@ var regionUI = (function() {
   }
 
   return {
+    ensureRegionsExist: ensureRegionsExist,
     showTopRegion: showTopRegion,
     showBottomRegion: showBottomRegion,
   };
 }());
+
+if (SHOW_ACTIVE_REGION) {
+  // It's good to create them at the start, otherwise the first animation won't fade in (because the region will be given the 'ASM_show' class on the same tick that it was created).
+  document.addEventListener('DOMContentLoaded', function() {
+    regionUI.ensureRegionsExist();
+  });
+}
