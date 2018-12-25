@@ -1,18 +1,16 @@
-// Marc Belmont presents : Auto Scroll!
-// version 1.6
-// 2006-10-09
-//
-// Tweaked by joeytwiddle
-//
 // ==UserScript==
 // @name          Auto Scroll Mouse
 // @namespace     http://www.marcbelmont.com
 // @description   No mousewheel?  No problem!  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
-// @version       2.1.5
+// @version       2.1.6
 // @license       ISC
 // @include       http://*/*
 // @include       https://*/*
+// @grant         GM_addStyle
 // ==/UserScript==
+
+// Originally "Auto Scroll!" by Marc Belmont on userscripts.org
+// Tweaked by joeytwiddle
 
 // TODO: Do not scroll after a mousedown (so it won't interfere when dragging/selecting)
 
@@ -26,12 +24,13 @@ var ONLY_WHEN_HOLDING_SHIFT = 0;
 var ONLY_WHEN_HOLDING_CTRL = 0;
 var ONLY_WHEN_HOLDING_ALT = 0;
 
-var NOSCROLL_PERCENT = 50; // Area in the middle of the page where there won't be scrolling
+var NOSCROLL_PERCENT = 80; // Area in the middle of the page where there won't be scrolling
 var SCROLLSTEP = 5; // Scrolling speed
 var ONLYLEFTRIGHT = 1; // Scrolling will happen only when you move left or right in the top or bottom areas. Possible values are 0 | 1
 var ONLYLEFTRIGHT_MOUSESPEED = 1.5; // Acceleration
 var ONLYLEFTRIGHT_DONTSCROLL = 100; // if no event for too long, no scrolling
 var DELAY_TIME = 5; // This tries to reduce the number of scroll operations, to reduce load on the browser
+var SHOWREGIONS = 1;
 
 //////////////////////
 // Some Code        //
@@ -79,6 +78,13 @@ function ScrollWindow() {
   if (val != 0) {
     window.scrollTo(window.pageXOffset, window.pageYOffset + val*way);
   }
+  if (ONLYLEFTRIGHT && SHOWREGIONS && val != 0) {
+    if (end > 0) {
+      regionUI.showBottomRegion();
+    } else {
+      regionUI.showTopRegion();
+    }
+  }
 }
 
 function maybe(scrollWindow) {
@@ -104,7 +110,7 @@ function mousemove(e)
 {
   // get mouse pos and the date
   if (!e)
-    var e = window.event || window.Event;
+    e = window.event || window.Event;
   if('undefined'!=typeof e.pageX) {
     _mX = e.pageX;
     _mY = e.pageY;
@@ -127,3 +133,61 @@ function mousemove(e)
   maybeScrollWindow();
 }
 
+var regionUI = (function() {
+  var topRegion = null;
+  var bottomRegion = null;
+
+  function ensureRegionsExist() {
+    if (!topRegion) {
+      topRegion = document.createElement('div');
+      topRegion.className = 'ASM_region';
+      topRegion.style.top = 0;
+      topRegion.style.width = '100%';
+      topRegion.style.height = (100 - NOSCROLL_PERCENT) / 2 + '%';
+      document.body.appendChild(topRegion);
+      bottomRegion = document.createElement('div');
+      bottomRegion.className = 'ASM_region';
+      bottomRegion.style.bottom = 0;
+      bottomRegion.style.width = '100%';
+      bottomRegion.style.height = (100 - NOSCROLL_PERCENT) / 2 + '%';
+      document.body.appendChild(bottomRegion);
+      GM_addStyle(`
+        .ASM_region {
+          position: fixed;
+          z-index: 99999999;
+          background: #09c4;
+          pointer-events: none;
+          transition: opacity 1s;
+          opacity: 0;
+        }
+        .ASM_region.show {
+          display: block;
+          transition: opacity 0s;
+          opacity: 1;
+        }
+      `);
+    }
+  }
+
+  // TODO: It would be good if the remove timeout could be cancelled by a subsequent move
+  // But ideally this would be on a per-region basis, otherwide scrolling on the other region would keep the first region permanently visible!
+  function showRegion(regionElement) {
+    regionElement.classList.add('show');
+    setTimeout(() => regionElement.classList.remove('show'), 1000);
+  }
+
+  function showTopRegion() {
+    ensureRegionsExist();
+    showRegion(topRegion);
+  }
+
+  function showBottomRegion() {
+    ensureRegionsExist();
+    showRegion(bottomRegion);
+  }
+
+  return {
+    showTopRegion: showTopRegion,
+    showBottomRegion: showBottomRegion,
+  };
+}());
