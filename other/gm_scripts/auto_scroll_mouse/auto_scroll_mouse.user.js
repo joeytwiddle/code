@@ -2,7 +2,7 @@
 // @name          Auto Scroll Mouse
 // @namespace     http://www.marcbelmont.com
 // @description   No mousewheel?  No problem!  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
-// @version       2.1.7
+// @version       2.1.8
 // @license       ISC
 // @include       http://*/*
 // @include       https://*/*
@@ -138,6 +138,8 @@ function mousemove(e)
 }
 
 var regionUI = (function() {
+  var FADE_IN_DURATION = 500;
+
   var topRegion = null;
   var bottomRegion = null;
 
@@ -161,12 +163,12 @@ var regionUI = (function() {
           z-index: 99999999;
           background: #09c4;
           pointer-events: none;
-          transition: opacity 1s 0.5s;
+          transition: opacity 1s 0.3s;
           opacity: 0;
         }
         .ASM_region.ASM_show {
           display: block;
-          transition: opacity 0.5s; /* See the setTimeout below */
+          transition: opacity ${FADE_IN_DURATION}ms;
           opacity: 1;
         }
       `);
@@ -179,7 +181,7 @@ var regionUI = (function() {
     // We need to wait long enough for the new state to fade in before we remove the class.
     setTimeout(() => {
       regionElement.classList.remove('ASM_show');
-    }, 500);
+    }, FADE_IN_DURATION);
   }
 
   function showTopRegion() {
