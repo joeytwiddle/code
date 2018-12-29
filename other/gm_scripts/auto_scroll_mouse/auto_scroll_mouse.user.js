@@ -2,7 +2,7 @@
 // @name          Auto Scroll Mouse
 // @namespace     http://www.marcbelmont.com
 // @description   No mousewheel?  No problem!  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
-// @version       2.1.8
+// @version       2.1.9
 // @license       ISC
 // @include       http://*/*
 // @include       https://*/*
@@ -53,6 +53,7 @@ function ScrollWindow() {
   // don't scroll if we're in the middle of the page
   var end = ((_mY - window.pageYOffset) - window.innerHeight/2);
   if (Math.abs(end) < window.innerHeight*NOSCROLL_PERCENT/200) {
+    regionUI.hideRegions();
     return;
   }
   /* var down = (_mY - window.pageYOffset) / window.innerHeight;
@@ -61,9 +62,9 @@ function ScrollWindow() {
   } */
 
   // if ONLYLEFTRIGHT is on, scroll only when you move left or right,
-  if (ONLYLEFTRIGHT && (Math.abs(_mY - _mYOld) > 2)) {
-    return;
-  }
+  //if (ONLYLEFTRIGHT && (Math.abs(_mY - _mYOld) > 2)) {
+  //  return;
+  //}
   // if you want scrolling, mouse have to go start moving slowly
   if (Math.abs(_mY - _mYOld) < 7 && Math.abs(_mX - _mXOld) < 7)
     _go = 1;
@@ -82,7 +83,7 @@ function ScrollWindow() {
   if (val != 0) {
     window.scrollTo(window.pageXOffset, window.pageYOffset + val*way);
   }
-  if (ONLYLEFTRIGHT && SHOW_ACTIVE_REGION && val != 0) {
+  if (ONLYLEFTRIGHT && SHOW_ACTIVE_REGION /*&& val != 0*/) {
     if (end > 0) {
       regionUI.showBottomRegion();
     } else {
@@ -138,7 +139,7 @@ function mousemove(e)
 }
 
 var regionUI = (function() {
-  var FADE_IN_DURATION = 500;
+  var FADE_IN_DURATION = 300;
 
   var topRegion = null;
   var bottomRegion = null;
@@ -163,7 +164,7 @@ var regionUI = (function() {
           z-index: 99999999;
           background: #09c4;
           pointer-events: none;
-          transition: opacity 1s 0.3s;
+          transition: opacity 0.3s 0s;
           opacity: 0;
         }
         .ASM_region.ASM_show {
@@ -179,9 +180,9 @@ var regionUI = (function() {
     regionElement.classList.add('ASM_show');
     //regionElement.offsetWidth;
     // We need to wait long enough for the new state to fade in before we remove the class.
-    setTimeout(() => {
-      regionElement.classList.remove('ASM_show');
-    }, FADE_IN_DURATION);
+    //setTimeout(() => {
+    //  regionElement.classList.remove('ASM_show');
+    //}, FADE_IN_DURATION);
   }
 
   function showTopRegion() {
@@ -194,10 +195,16 @@ var regionUI = (function() {
     showRegion(bottomRegion);
   }
 
+  function hideRegions() {
+    topRegion.classList.remove('ASM_show');
+    bottomRegion.classList.remove('ASM_show');
+  }
+
   return {
     ensureRegionsExist: ensureRegionsExist,
     showTopRegion: showTopRegion,
     showBottomRegion: showBottomRegion,
+    hideRegions: hideRegions,
   };
 }());
 
