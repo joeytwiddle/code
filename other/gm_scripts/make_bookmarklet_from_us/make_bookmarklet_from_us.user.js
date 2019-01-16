@@ -15,7 +15,7 @@
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // @exclude        http://neuralyte.org/~joey/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // @grant          none
-// @version        1.2.5
+// @version        1.2.6
 // ==/UserScript==
 
 // BUG: We had (i%32) in a userscript (DLT) but when this was turned into a bookmarklet and dragged into Chrome, the debugger showed it had become (i2), causing the script to error with "i2 is not defined".  Changing the code to (i % 32) worked around the problem.
@@ -38,6 +38,9 @@ var preventCachingOfInstallScripts = inGoogleChrome;
 // BUG: Chrome sometimes installs a new instance of an extension for each click, rather than overwriting (upgrading) the old.  However disabling preventBrowserFromCachingBookmarklets does not fix that.  It may have been the name "Wikimedia+"?
 
 var addGreasemonkeyLibToBookmarklets = true;
+
+// If enabled, as well as *.user.js files, it will also offer bookmarklets for *.js files
+var activateOnAllJavascriptFiles = false;
 
 // DONE: All bookmarklets optionally preload the Fallback GMAPI.
 // DONE: All bookmarklets optionally load in non-caching fashion (for changing scripts).
@@ -118,7 +121,9 @@ function buildLiveBookmarklet(link) {
 	newLink.title = newLink.href;
 
 	var newContainer = document.createElement("div");
-	// newContainer.style.whiteSpace = 'nowrap';
+	// Act like a span, do not wrap onto separate lines
+	// Removed because it was problematic on some sites (which?)
+	//newContainer.style.whiteSpace = 'nowrap';
 	newContainer.appendChild(document.createTextNode("(Live Bookmarklet: "));
 	newContainer.appendChild(newLink);
 	var extraString = ( neverCache || includeGMCompat ? neverCache && includeGMCompat ? " (no-caching, with GM fallbacks)" : neverCache ? " (no-caching)" : " (with GM fallbacks)" : "" );
@@ -671,8 +676,17 @@ for (var i=links.length;i--;) {
 		continue;
 	}
 
+	var regexp = activateOnAllJavascriptFiles ? /\.js$/ : /\.user\.js/;
+
 	// If we see a direct link to a user script, create buttons for it.
-	if (link.href.match(/\.js$/)) { // \.user\.js
+	if (link.href.match(regexp)) {
+
+		if (link.hostname === 'github.com' && !link.href.match(/[/]raw[/]/)) {
+			// Ignore links to github.com/foo/bar/blob/master/script.js
+			// Accept links to github.com/foo/bar/raw/master/script.js
+			continue;
+		}
+
 		var where = link;
 		function insert(newElem) {
 			where.parentNode.insertBefore(newElem,where.nextSibling);
