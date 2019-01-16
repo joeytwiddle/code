@@ -15,7 +15,7 @@
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // @exclude        http://neuralyte.org/~joey/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // @grant          none
-// @version        1.2.6
+// @version        1.2.7
 // ==/UserScript==
 
 // BUG: We had (i%32) in a userscript (DLT) but when this was turned into a bookmarklet and dragged into Chrome, the debugger showed it had become (i2), causing the script to error with "i2 is not defined".  Changing the code to (i % 32) worked around the problem.
@@ -68,13 +68,13 @@ if (includeGMCompat) {
 	defaultScripts.push("//neuralyte.org/~joey/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
 }
 
-function buildLiveBookmarklet(link) {
+function buildLiveBookmarklet(url) {
 	var neverCache = preventBrowserFromCachingBookmarklets;
 
 	var scriptsToLoad = defaultScripts.slice(0);
 
 	// The bookmarklet should load scripts using the same protocol as the page.  Otherwise browsers may give error messages about "mixed content", and refuse to load the script.
-	var url = link.href.replace(/^http[s]*:/, "//");
+	url = url.replace(/^http[s]*:[/][/]/, "//");
 	scriptsToLoad.push(url);
 
 	var neverCacheStr = ( neverCache ? "+'?dummy='+new Date().getTime()" : "" );
@@ -105,7 +105,7 @@ function buildLiveBookmarklet(link) {
 	toRun += "loadNext();\n";
 	toRun += "})(); (void 0);";
 
-	var name = getNameFromFilename(link.href);
+	var name = getNameFromFilename(url);
 	/*
 	if (neverCache) {
 		name = name + " (NoCache)";
@@ -247,10 +247,10 @@ function getSourceFor(url) {
 }
 
 /* To avoid a multitude of premature network requests, the bookmarklet is not actually "compiled" until mouseover. */
-function buildStaticBookmarklet(link) {
+function buildStaticBookmarklet(url) {
 
 	var newLink = document.createElement("a");
-	newLink.textContent = getNameFromFilename(link.href);
+	newLink.textContent = getNameFromFilename(url);
 
 	var newContainer = document.createElement("div");
 	// newContainer.style.whiteSpace = 'nowrap';
@@ -267,7 +267,7 @@ function buildStaticBookmarklet(link) {
 	// link.parentNode.insertBefore(newContainer,link.nextSibling);
 
 	// The href may change before we fire (e.g. if dummy is appended) so we make a copy.
-	var href = link.href;
+	var href = url;
 
 	// setTimeout(function(){
 	// ,2000 * staticsRequested);
@@ -409,8 +409,8 @@ function addQuickInstall(link) {
 	link.parentNode.insertBefore(newContainer,br);
 	link.style.color = 'black';
 	link.style.fontWeight = 'bold';
-	newContainer.appendChild(buildLiveBookmarklet(newLink));
-	newContainer.appendChild(buildStaticBookmarklet(newLink));
+	newContainer.appendChild(buildLiveBookmarklet(newLink.href));
+	newContainer.appendChild(buildStaticBookmarklet(newLink.href));
 	newContainer.appendChild(buildLiveUserscript(newLink));
 	popupSourceOnHover(newLink);
 	// Do this after the other two builders have used the .href
@@ -540,13 +540,13 @@ function loadSourceViewer(url, newLink, evt) {
 
 }
 
-function buildSourceViewer(link) {
+function buildSourceViewer(url) {
 	var newLink = document.createElement("A");
 	// newLink.href = '#';
 	newLink.textContent = "Source";
 
 	newLink.addEventListener('click',function(e) {
-		loadSourceViewer(link.href,newLink,e);
+		loadSourceViewer(url, newLink, e);
 	},false);
 
 	// TODO: Problem with .user.js files and Chrome:
@@ -680,11 +680,19 @@ for (var i=links.length;i--;) {
 
 	// If we see a direct link to a user script, create buttons for it.
 	if (link.href.match(regexp)) {
+		var url = link.href;
 
+		/*
 		if (link.hostname === 'github.com' && !link.href.match(/[/]raw[/]/)) {
 			// Ignore links to github.com/foo/bar/blob/master/script.js
 			// Accept links to github.com/foo/bar/raw/master/script.js
 			continue;
+		}
+		*/
+
+		// Turn github /blob/ links into /raw/ links
+		if (link.hostname === 'github.com' && !link.href.match(/[/]raw[/]/)) {
+			url = url.replace(/[/]blob[/]/, '/raw/');
 		}
 
 		var where = link;
@@ -692,10 +700,10 @@ for (var i=links.length;i--;) {
 			where.parentNode.insertBefore(newElem,where.nextSibling);
 			where = newElem;
 		}
-		insert(buildLiveBookmarklet(link));
-		insert(buildStaticBookmarklet(link));
+		insert(buildLiveBookmarklet(url));
+		insert(buildStaticBookmarklet(url));
 		insert(buildLiveUserscript(link));
-		insert(buildSourceViewer(link));
+		insert(buildSourceViewer(url));
 	}
 
 	// If the current page looks like a Greasemonkey Userscript Folder, then
