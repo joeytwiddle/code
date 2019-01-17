@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      0.7.18
+// @version      1.0.0
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
-// @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
+// @copyright    2018-2019, Paul "Joey" Clark (http://neuralyte.org/~joey)
 // @license      MIT
 // @match        https://www.npmjs.com/*
 // @grant        GM_addStyle
@@ -17,6 +17,9 @@
 
     // This allows the README to expand to the full width below the info sidebar
     const floatTheSidebar = true;
+    const allowWiderContent = true;
+    const useOldGithubColors = false;
+    const makeLinksBlue = true;
 
     //const readmePrefix = '.readme__readme___tmT33';
     //const readmePrefix = '.markdown__markdown___3yof6';
@@ -25,23 +28,25 @@
     // I want to scale down the fonts and everything else a bit.  This was an easy way to do that.
     //GM_addStyle('.container { transform: scale(0.92); transform-origin: 50% 0; }');
 
-    // The default behaviour is to max out at 1200px, but I am happy for the README to grow a little bit larger.  (Same with my Wide-Github)
-    //GM_addStyle('.container { width: 98%; max-width: 100%; }');
-    // .package__root___22JkW
-    GM_addStyle(`
-        /* Override the default, to expand fully (with a small margin) */
-        .vistweaks #top {
-            min-width: 100%;
-            max-width: 100%;
-        }
-        /* But max out at 1500 */
-        @media screen and (min-width: 1500px) {
+    if (allowWiderContent) {
+        // The default behaviour is to max out at 1200px, but I am happy for the README to grow a little bit larger.  (Same with my Wide-Github)
+        //GM_addStyle('.container { width: 98%; max-width: 100%; }');
+        // .package__root___22JkW
+        GM_addStyle(`
+            /* Override the default, to expand fully (with a small margin) */
             .vistweaks #top {
-                min-width: 1500px;
-                max-width: 1500px;
+                min-width: 100%;
+                max-width: 100%;
             }
-        }
-    `);
+            /* But max out at 1500 */
+            @media screen and (min-width: 1500px) {
+                .vistweaks #top {
+                    min-width: 1500px;
+                    max-width: 1500px;
+                }
+            }
+        `);
+    }
 
     // Set fonts like GitHub
     GM_addStyle('.vistweaks #readme { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Source Sans Pro", "Lucida Grande", sans-serif; }');
@@ -120,15 +125,15 @@
     // A block of code
     //GM_addStyle('.vistweaks pre { font-size: 82%; line-height: 1.4; }');
 
-    // Darker text
-    if (navigator.userAgent.match(/Mac OS X/)) {
-        // Weirdly, on Mac, the font strokes on npmjs.com appear slightly thinner than those on Github, for a reason I cannot understand.  To compensate, I use a darker color.
-        GM_addStyle('.vistweaks .markdown p, .vistweaks .markdown li { color: #111; }');
-    } else {
-        // Github 2016 (my preference)
-        GM_addStyle('.vistweaks .markdown p, .vistweaks .markdown li { color: #333; }');
-        // Github 2017
-        //GM_addStyle('.markdown p, .markdown li { color: #24292e; }');
+    // Darker text, and blue links instead of red links
+    // Weirdly, on Mac, the font strokes on npmjs.com appear thinner than those on Github, for a reason I cannot understand.
+    // To compensate, I use a darker color for text, and for links, I also shift the hue towards purple.  Far out!
+    const onMac = !!navigator.userAgent.match(/Mac OS X/);
+    const textColor = useOldGithubColors ? onMac ? '#111' : '#333' : onMac ? 'hsl(210, 12%, 5%)' : '#24292e';
+    const linkColor = useOldGithubColors ? onMac ? 'hsl(214, 77%, 32%)' : 'rgb(64, 120, 192)' : onMac ? 'hsl(222, 100%, 37%)' : '#0366d6';
+    GM_addStyle(`.vistweaks .markdown p, .vistweaks .markdown li { color: ${textColor}; }`);
+    if (makeLinksBlue) {
+        GM_addStyle(`.vistweaks ${readmePrefix} a, .vistweaks ${readmePrefix} ul li a { color: ${linkColor}; }`);
     }
 
     // The boxes around inline code snippets
