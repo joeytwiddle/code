@@ -40,7 +40,7 @@ var makeAllFileAndDiffBlocksCollapsable = false;
 var mainNotificationsPath = "/notifications";
 
 var notificationButtonLink = $("header a.notification-indicator[href]");
-var notificationButtonContainer = notificationButtonLink.closest("li");
+var notificationButtonContainer = notificationButtonLink.closest(".Header-item");
 var closeClickTargets = $("body, header a.notification-indicator[href]");
 
 var notificationsDropdown = null;
