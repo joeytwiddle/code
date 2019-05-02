@@ -2,7 +2,7 @@
 // @name           StackExchange Tweaks
 // @namespace      SET
 // @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
-// @version        1.0.10
+// @version        1.0.11
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://superuser.com/*
@@ -26,6 +26,10 @@ var swapProfileAndButtons = true;
 //
 var hideSidebarOnQuestionPages = true;
 
+// If you don't like things to be 3D when they don't need to be
+//
+var noShadows = true;
+
 // ==/Options==
 
 if (swapProfileAndButtons) {
@@ -47,4 +51,9 @@ if (hideSidebarOnQuestionPages) {
             GM_addStyle('#content { border-left: none; }');
         }
     }
+}
+
+if (noShadows) {
+    // The "Featured on Meta" box on the right, above "Related" and "Hot Network Questions"
+    GM_addStyle('.s-sidebarwidget { box-shadow: none; }');
 }
