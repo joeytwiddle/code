@@ -44,6 +44,8 @@ var addVideoDescriptionToTooltip = true;  // The "tooltip" is actually the
 var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails on the page.
                            // Normally it waits for a mouseover before doing a lookup.
 
+var logging = false;       // Useful when debugging
+
 
 
 // BUG: Hover detection is very poor.  It appears to only trigger when we move the mouse over the description text or uploader's name, but not when we hover over the actual link title!
@@ -56,6 +58,13 @@ var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails
 
 function findLinkAbove(elem) {
 	while (elem && typeof elem.tagName === 'string' && elem.tagName.toUpperCase() !== "A") {
+		elem = elem.parentNode;
+	}
+	return elem;
+}
+
+function findParentWithTag(elem, tag) {
+	while (elem && typeof elem.tagName === 'string' && elem.tagName.toUpperCase() !== tag.toUpperCase()) {
 		elem = elem.parentNode;
 	}
 	return elem;
@@ -101,14 +110,33 @@ function findClosestLinkElem(orig) {
 	return orig;
 }
 
+function log() {
+	if (logging) {
+		console.log.apply(console, arguments);
+	}
+}
+
 // Display likes/dislikes on links to other videos
-function lookupLikesDislikes(link, target) {
-	if (link && !link.doneLikesDislikes) {
-		link.doneLikesDislikes = true;
+// Note: link might not be a link!  It is actually the element that was hovered.
+function lookupLikesDislikes(link) {
+	// Find suitable element for adding new metadata text blocks
+	const parent = findParentWithTag(link, 'ytd-compact-video-renderer');
+	const metaDataContainer = parent && (parent.querySelector('#metadata') || parent.querySelector('.metadata a'));
+	// Find suitable element for adding tooltip info
+	//const elemWithTitle = metaDataContainer || findClosestLinkElem(link);
+	const elemWithTitle = (parent && parent.querySelector('#video-title')) || findClosestLinkElem(link);
+	log('elemWithTitle:', elemWithTitle);
+	// On sidebar thumbnails this tends to be the containing <A> rather
+	// than the <span> holding the video title, which is what I usually
+	// mouseover!  However on YT's front page it does find the title.
+
+	if (metaDataContainer && !metaDataContainer.doneLikesDislikes) {
+		metaDataContainer.doneLikesDislikes = true;
 
 		function gotTargetPage(response) {
 			var content = response.responseText;
-			//GM_log("GOT CONTENT LENGTH: "+content.length);
+			log('content.length:', content.length);
+			//log('content:', content);
 			if (content) {
 				var lePage = document.createElement("div");
 				lePage.innerHTML = content;
@@ -117,52 +145,47 @@ function lookupLikesDislikes(link, target) {
 				var infoElem = lePage.getElementsByClassName("watch-likes-dislikes")[0];
 				infoElem = infoElem || lePage.getElementsByClassName("video-extras-likes-dislikes")[0]; // Oct 2012
 				infoElem = infoElem || lePage.getElementsByClassName("like-button-renderer")[0]; // Oct 2015
-				//console.log("GOT INFOELEM: "+infoElem);
+				//infoElem = infoElem || lePage.getElementsByClassName("like-bar")[0]; // 2019 but not present in loaded HTML
+				infoElem = infoElem || lePage.getElementsByClassName("video-extras-sparkbars")[0]; // 2019
+				log("infoElem:", infoElem);
 
-				// Find suitable element for adding tooltip info.
-				var elemWithTitle = findClosestLinkElem(link);
-				// On sidebar thumbnails this tends to be the containing <A> rather
-				// than the <span> holding the video title, which is what I usually
-				// mouseover!  However on YT's front page it does find the title.
+				// Old:
+				var infoText = infoElem ? infoElem.textContent.trim() : '[no infoElem]';
 
-				// CONSIDER: We might want to add our extra elements to .stat.view-count or .yt-lockup-meta-info (on channel pages) or perhaps a clone of that element.
+				// New:
+				let likesString;
+				let dislikesString;
+				if (infoElem) {
+					var newLikedButton = infoElem.querySelector(".like-button-renderer-like-button-unclicked, .like-button-renderer-like-button");
+					var newDislikedButton = infoElem.querySelector(".like-button-renderer-dislike-button-unclicked, .like-button-renderer-dislike-button");
+					likesString = newLikedButton && newLikedButton.textContent;
+					dislikesString = newDislikedButton && newDislikedButton.textContent;
+				} else {
+					likesString = (content.match(/{"iconType":"LIKE"}[^ ]*{"label":"([0-9,]+) likes"}/) || [])[1];
+					dislikesString = (content.match(/{"iconType":"DISLIKE"}[^ ]*{"label":"([0-9,]+) dislikes"}/) || [])[1];
+				}
 
-				if (infoElem || true) {
-
-					// Old:
-					var infoText = infoElem ? infoElem.textContent.trim() : 'infoElem not found';
-
-					// New:
-					var newLikedButton = infoElem && infoElem.querySelector(".like-button-renderer-like-button-unclicked");
-					if (newLikedButton) {
-						var newDislikedButton = infoElem.querySelector(".like-button-renderer-dislike-button-unclicked");
-						infoText = newLikedButton.textContent + " likes, " + newDislikedButton.textContent + " dislikes.";
-					}
-
-					// New (2018):
-					const likeDislikeButtons = document.querySelectorAll('#info-contents #top-level-buttons ytd-toggle-button-renderer yt-formatted-string');
-					if (likeDislikeButtons.length === 2) {
-						const [likes, dislikes] = Array.from(likeDislikeButtons).map(elem => elem.textContent);
-						infoText = likes + " likes, " + dislikes + " dislikes";
-					}
+				if (likesString && dislikesString) {
+					const likesCount = Number(likesString.replace(/,/g, ''));
+					const dislikesCount = Number(dislikesString.replace(/,/g, ''));
+					const percentage = Math.round(100 * likesCount / (likesCount + dislikesCount));
+					infoText = `${likesCount} likes, ${dislikesCount} dislikes (${percentage}%)`;
 
 					if (addCountsToTooltip) {
-						elemWithTitle.title += ' (' + infoText + ')';
-						// Sometimes the hovered element is a span with a title.  In that case, we should update its title too.
-						if (target && target.title) {
-							target.title += ' (' + infoText + ')';
-						}
+						elemWithTitle.title += " ("+infoText+")";
 					}
 
 					if (addCountsToThumbnail) {
 						var span = document.createElement("div");
 						span.className = "stat";
-						// On channel pages, the stat rule does not apply, so we apply it ourselves:
-						span.style.fontSize = '11px';
+						span.style.fontSize = '1.3rem';
+						span.style.color = 'var(--ytd-metadata-line-color, var(--yt-spec-text-secondary))';
 						span.appendChild(document.createTextNode(infoText));
-						link.appendChild(span);
+						//log('link:', link);
+						metaDataContainer.appendChild(span);
 					}
-
+				} else {
+					log('Could not determine likes + dislikes');
 				}
 
 				if (addLightSaberBarToThumbnail) {
@@ -198,18 +221,22 @@ function lookupLikesDislikes(link, target) {
 				if (addVideoDescriptionToTooltip) {
 					// Uncaught TypeError: Object #<HTMLDivElement> has no method 'getElementById'
 					// var descrElem = lePage.getElementById("watch-description-text");
-					var descrElem = fakeGetElementById(lePage, "watch-description-text") || document.querySelector('#description');
-					if (descrElem) {
-						elemWithTitle.title += " ::: " + descrElem.textContent.trim();
+					var descrElem = fakeGetElementById(lePage, "watch-description-text")
+						|| fakeGetElementById(lePage, "description"); // 2019
+					const description = descrElem ? descrElem.textContent : (content.match(/"shortDescription":"(([^"\\]|\\.)*)"/) || [])[1];
+					if (description && description.trim()) {
+						elemWithTitle.title += " ::: " + description.trim();
 					}
 
 					// I also want to add the date to the thumbnail stats
-					var uploadedDateSrcElem = lePage.getElementsByClassName('watch-time-text')[0] || { textContent: 'watch-time-text not found' };
-					var uploadedDateText = uploadedDateSrcElem.textContent;
+					var uploadedDateSrcElem = lePage.getElementsByClassName('watch-time-text')[0];
+					var uploadedDateText = uploadedDateSrcElem ? uploadedDateSrcElem.textContent : '';
 					uploadedDateText = uploadedDateText.replace(/^(Uploaded|Published) on /, 'on ');
 					var uploadedDateNewElem = document.createElement("span");
 					uploadedDateNewElem.textContent = " " + uploadedDateText;
-					var targetElem = link.getElementsByClassName("attribution")[0];
+					//var targetElem = link.getElementsByClassName("attribution")[0];
+					var targetElem = link;
+					//log('targetElem:', targetElem);
 					if (targetElem) {
 						targetElem.appendChild(uploadedDateNewElem);
 					}
@@ -218,7 +245,7 @@ function lookupLikesDislikes(link, target) {
 			}
 		}
 
-		//console.log("Requesting: "+link.href);
+		//log("Requesting:", link.href);
 		GM_xmlhttpRequest({
 			method: "GET",
 			url: link.href,
@@ -264,7 +291,7 @@ function watchForHover(evt) {
 		clearTimeout(hoverTimer);
 		hoveredElem = link;
 		hoverTimer = setTimeout(function(){
-			lookupLikesDislikes(hoveredElem, target);
+			lookupLikesDislikes(hoveredElem);
 			hoveredElem = null;
 			hoverTimer = null;
 		}, 1000);
