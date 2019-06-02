@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.1.0
+// @version        1.1.1
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -169,7 +169,7 @@ function lookupLikesDislikes(link) {
 					const likesCount = Number(likesString.replace(/,/g, ''));
 					const dislikesCount = Number(dislikesString.replace(/,/g, ''));
 					const percentage = Math.round(100 * likesCount / (likesCount + dislikesCount));
-					infoText = `${likesCount} likes, ${dislikesCount} dislikes (${percentage}%)`;
+					infoText = `${likesCount.toLocaleString()} likes, ${dislikesCount.toLocaleString()} dislikes (${percentage}%)`;
 
 					if (addCountsToTooltip) {
 						elemWithTitle.title += " ("+infoText+")";
@@ -181,8 +181,29 @@ function lookupLikesDislikes(link) {
 						span.style.fontSize = '1.3rem';
 						span.style.color = 'var(--ytd-metadata-line-color, var(--yt-spec-text-secondary))';
 						span.appendChild(document.createTextNode(infoText));
+
+						span.title = 'Click to annotate all recommendations';
+						span.style.cursor = 'pointer';
+						span.onclick = startSpamming;
+
 						//log('link:', link);
 						metaDataContainer.appendChild(span);
+
+						const myBar = document.createElement('div');
+						myBar.style.marginTop = '0.3em';
+						//myBar.style.width = '17em';
+						//myBar.style.height = '0.4em';
+						myBar.style.width = '168px';
+						myBar.style.height = '4px';
+						const myLikesBar = document.createElement('div');
+						myLikesBar.style.width = `${percentage}%`;
+						myLikesBar.style.height = '100%';
+						//myBar.style.backgroundColor = 'var(--yt-spec-icon-disabled)';
+						//myLikesBar.style.backgroundColor = 'var(--yt-spec-icon-inactive)';
+						myBar.style.backgroundColor = '#c00';
+						myLikesBar.style.backgroundColor = '#090';
+						myBar.appendChild(myLikesBar);
+						metaDataContainer.appendChild(myBar);
 					}
 				} else {
 					log('Could not determine likes + dislikes');
@@ -272,7 +293,7 @@ var hoverTimer = null;
 // Including self
 function hasAncestor(node, seekNode) {
 	while (node != null) {
-		if (node == seekNode) {
+		if (node === seekNode) {
 			return true;
 		}
 		node = node.parentNode;
@@ -290,7 +311,7 @@ function watchForHover(evt) {
 	if (isSuitableLink(link)) {
 		clearTimeout(hoverTimer);
 		hoveredElem = link;
-		hoverTimer = setTimeout(function(){
+		hoverTimer = setTimeout(function() {
 			lookupLikesDislikes(hoveredElem);
 			hoveredElem = null;
 			hoverTimer = null;
@@ -305,8 +326,11 @@ function watchForHover(evt) {
 
 document.body.addEventListener("mousemove", watchForHover, false);
 
-
-if (spamYouTube) {
+function startSpamming(evt) {
+	if (evt) {
+		evt.preventDefault();
+		evt.stopPropagation();
+	}
 	function queueLink(link, when) {
 		GM_log("In "+(when/1000|0)+" seconds I will do "+link);
 		setTimeout(function(){
@@ -320,10 +344,14 @@ if (spamYouTube) {
 		var link = ls[i];
 		if (link.href != lastUrlDone && isSuitableLink(link)) {
 			num++;
-			queueLink(link, 1000 * Math.pow(1.2 + 1.2*num, 1.7) );
+			queueLink(link, 200 * Math.pow(1.2 + 1.2 * num, 1.7));
 			lastUrlDone = link.href;
 		}
 	}
+}
+
+if (spamYouTube) {
+	startSpamming();
 }
 
 // TODO:
