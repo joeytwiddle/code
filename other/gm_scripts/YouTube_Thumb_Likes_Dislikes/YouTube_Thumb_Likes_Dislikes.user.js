@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.1.1
+// @version        1.1.2
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -133,7 +133,15 @@ function lookupLikesDislikes(link) {
 	if (metaDataContainer && !metaDataContainer.doneLikesDislikes) {
 		metaDataContainer.doneLikesDislikes = true;
 
+		const fetchingElem = document.createElement('div');
+		fetchingElem.textContent = 'Fetching...';
+		fetchingElem.style.fontSize = '1.3rem';
+		fetchingElem.style.color = 'var(--ytd-metadata-line-color, var(--yt-spec-text-secondary))';
+		metaDataContainer.appendChild(fetchingElem);
+
 		function gotTargetPage(response) {
+			metaDataContainer.removeChild(fetchingElem);
+
 			var content = response.responseText;
 			log('content.length:', content.length);
 			//log('content:', content);
@@ -244,7 +252,11 @@ function lookupLikesDislikes(link) {
 					// var descrElem = lePage.getElementById("watch-description-text");
 					var descrElem = fakeGetElementById(lePage, "watch-description-text")
 						|| fakeGetElementById(lePage, "description"); // 2019
-					const description = descrElem ? descrElem.textContent : (content.match(/"shortDescription":"(([^"\\]|\\.)*)"/) || [])[1];
+					const description = descrElem
+						? descrElem.textContent
+						//: (content.match(/"shortDescription":"(([^"\\]|\\.)*)"/) || [''])[1].replace(/\\n/g, '\n');
+						//: (content.match(/"shortDescription":"(([^"\\]|\\.)*)"/) || [''])[1].replace(/\\n/g, ' :: ').slice(0, 999);
+						: JSON.parse((content.match(/"shortDescription":("([^"\\]|\\.)*")/) || ['""'])[1]).replace(/\n/g, ' :: ').slice(0, 999);
 					if (description && description.trim()) {
 						elemWithTitle.title += " ::: " + description.trim();
 					}
@@ -332,19 +344,19 @@ function startSpamming(evt) {
 		evt.stopPropagation();
 	}
 	function queueLink(link, when) {
-		GM_log("In "+(when/1000|0)+" seconds I will do "+link);
-		setTimeout(function(){
+		GM_log("In " + (when / 1000 | 0) + " seconds I will do " + link);
+		setTimeout(function() {
 			lookupLikesDislikes(link);
 		}, when);
 	}
 	var ls = document.getElementsByTagName("A");
 	var lastUrlDone = "";
 	var num = 0;
-	for (var i=0;i<ls.length;i++) {
+	for (var i = 0; i < ls.length; i++) {
 		var link = ls[i];
-		if (link.href != lastUrlDone && isSuitableLink(link)) {
+		if (link.href !== lastUrlDone && isSuitableLink(link)) {
 			num++;
-			queueLink(link, 200 * Math.pow(1.2 + 1.2 * num, 1.7));
+			queueLink(link, 200 * Math.pow(1.2 + 1.2 * num, 1.5));
 			lastUrlDone = link.href;
 		}
 	}
@@ -360,4 +372,5 @@ if (spamYouTube) {
 
 // BUG TODO: Not all information is appearing on Feed pages, guess it's
 // appending to the wrong place.
+
 
