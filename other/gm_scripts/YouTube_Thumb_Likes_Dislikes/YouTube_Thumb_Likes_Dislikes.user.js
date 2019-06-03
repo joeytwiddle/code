@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.1.2
+// @version        1.1.3
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -64,10 +64,13 @@ function findLinkAbove(elem) {
 }
 
 function findParentWithTag(elem, tag) {
-	while (elem && typeof elem.tagName === 'string' && elem.tagName.toUpperCase() !== tag.toUpperCase()) {
+	while (elem) {
+		if (elem && typeof elem.tagName === 'string' && elem.tagName.toUpperCase() === tag.toUpperCase()) {
+			return elem;
+		}
 		elem = elem.parentNode;
 	}
-	return elem;
+	return null;
 }
 
 function isSuitableLink(elem) {
@@ -78,7 +81,7 @@ function isSuitableLink(elem) {
 		&& link.tagName.toUpperCase() === "A"
 		&& link.pathname.indexOf("/watch") >= 0
 		// But not if it's the same page:
-		&& link.href.replace(/#.*/,'') !== document.location.href.replace(/#.*/,'')
+		&& link.href.replace(/#.*/, '') !== document.location.href.replace(/#.*/, '')
 	);
 }
 
@@ -120,22 +123,26 @@ function log() {
 // Note: link might not be a link!  It is actually the element that was hovered.
 function lookupLikesDislikes(link) {
 	// Find suitable element for adding new metadata text blocks
-	const parent = findParentWithTag(link, 'ytd-compact-video-renderer');
+	const parent = findParentWithTag(link, 'ytd-compact-video-renderer') || findParentWithTag(link, 'ytd-video-renderer');
 	const metaDataContainer = parent && (parent.querySelector('#metadata') || parent.querySelector('.metadata a'));
 	// Find suitable element for adding tooltip info
 	//const elemWithTitle = metaDataContainer || findClosestLinkElem(link);
 	const elemWithTitle = (parent && parent.querySelector('#video-title')) || findClosestLinkElem(link);
-	log('elemWithTitle:', elemWithTitle);
 	// On sidebar thumbnails this tends to be the containing <A> rather
 	// than the <span> holding the video title, which is what I usually
 	// mouseover!  However on YT's front page it does find the title.
+
+	if (!metaDataContainer) {
+		log('No metaDataContainer found for:', link);
+	}
 
 	if (metaDataContainer && !metaDataContainer.doneLikesDislikes) {
 		metaDataContainer.doneLikesDislikes = true;
 
 		const fetchingElem = document.createElement('div');
 		fetchingElem.textContent = 'Fetching...';
-		fetchingElem.style.fontSize = '1.3rem';
+		//fetchingElem.style.fontSize = '1.3rem';
+		fetchingElem.style.fontSize = '1.2rem';
 		fetchingElem.style.color = 'var(--ytd-metadata-line-color, var(--yt-spec-text-secondary))';
 		metaDataContainer.appendChild(fetchingElem);
 
@@ -184,6 +191,8 @@ function lookupLikesDislikes(link) {
 					}
 
 					if (addCountsToThumbnail) {
+						var myBox = document.createElement('div');
+
 						var span = document.createElement("div");
 						span.className = "stat";
 						span.style.fontSize = '1.3rem';
@@ -195,23 +204,27 @@ function lookupLikesDislikes(link) {
 						span.onclick = startSpamming;
 
 						//log('link:', link);
-						metaDataContainer.appendChild(span);
+						myBox.appendChild(span);
 
-						const myBar = document.createElement('div');
-						myBar.style.marginTop = '0.3em';
-						//myBar.style.width = '17em';
-						//myBar.style.height = '0.4em';
-						myBar.style.width = '168px';
-						myBar.style.height = '4px';
-						const myLikesBar = document.createElement('div');
-						myLikesBar.style.width = `${percentage}%`;
-						myLikesBar.style.height = '100%';
-						//myBar.style.backgroundColor = 'var(--yt-spec-icon-disabled)';
-						//myLikesBar.style.backgroundColor = 'var(--yt-spec-icon-inactive)';
-						myBar.style.backgroundColor = '#c00';
-						myLikesBar.style.backgroundColor = '#090';
-						myBar.appendChild(myLikesBar);
-						metaDataContainer.appendChild(myBar);
+						if (addLightSaberBarToThumbnail) {
+							const myBar = document.createElement('div');
+							myBar.style.marginTop = '0.3em';
+							//myBar.style.width = '17em';
+							//myBar.style.height = '0.4em';
+							myBar.style.width = '168px';
+							myBar.style.height = '4px';
+							const myLikesBar = document.createElement('div');
+							myLikesBar.style.width = `${percentage}%`;
+							myLikesBar.style.height = '100%';
+							//myBar.style.backgroundColor = 'var(--yt-spec-icon-disabled)';
+							//myLikesBar.style.backgroundColor = 'var(--yt-spec-icon-inactive)';
+							myBar.style.backgroundColor = '#c00';
+							myLikesBar.style.backgroundColor = '#090';
+							myBar.appendChild(myLikesBar);
+							myBox.appendChild(myBar);
+						}
+
+						metaDataContainer.appendChild(myBox);
 					}
 				} else {
 					log('Could not determine likes + dislikes');
@@ -278,7 +291,7 @@ function lookupLikesDislikes(link) {
 			}
 		}
 
-		//log("Requesting:", link.href);
+		log("Requesting:", link.href);
 		GM_xmlhttpRequest({
 			method: "GET",
 			url: link.href,
@@ -344,7 +357,7 @@ function startSpamming(evt) {
 		evt.stopPropagation();
 	}
 	function queueLink(link, when) {
-		GM_log("In " + (when / 1000 | 0) + " seconds I will do " + link);
+		log("In " + (when / 1000 | 0) + " seconds I will check " + link);
 		setTimeout(function() {
 			lookupLikesDislikes(link);
 		}, when);
