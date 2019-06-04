@@ -7,3 +7,7 @@ That page also lets you load the scripts as bookmarklets instead of userscripts.
 You can also find a selection of them online at [OpenUserJS](https://openuserjs.org/users/joeytwiddle/scripts) or on [GreasyFork](https://greasyfork.org/en/users/8615-joeytwiddle).
 
 Finally, this is where they are kept on [Github](https://github.com/joeytwiddle/code/tree/master/other/gm_scripts).  You can provide feedback or pull requests here.
+
+# Should I write that userscript?
+
+https://xkcd.com/1205/#Is_It_Worth_the_Time?
