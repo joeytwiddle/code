@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.1.4
+// @version        1.1.5
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -123,7 +123,7 @@ function log() {
 // Note: link might not be a link!  It is actually the element that was hovered.
 function lookupLikesDislikes(link) {
 	// Find suitable element for adding new metadata text blocks
-	const parent = findParentWithTag(link, 'ytd-compact-video-renderer') || findParentWithTag(link, 'ytd-video-renderer');
+	const parent = findParentWithTag(link, 'ytd-compact-video-renderer') || findParentWithTag(link, 'ytd-video-renderer') || findParentWithTag(link, 'ytd-grid-video-renderer');
 	const metaDataContainer = parent && (parent.querySelector('#metadata') || parent.querySelector('.metadata a'));
 	// Find suitable element for adding tooltip info
 	//const elemWithTitle = metaDataContainer || findClosestLinkElem(link);
