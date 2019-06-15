@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.1.3
+// @version        1.1.4
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -152,6 +152,7 @@ function lookupLikesDislikes(link) {
 			var content = response.responseText;
 			log('content.length:', content.length);
 			//log('content:', content);
+
 			if (content) {
 				var lePage = document.createElement("div");
 				lePage.innerHTML = content;
@@ -191,23 +192,35 @@ function lookupLikesDislikes(link) {
 					}
 
 					if (addCountsToThumbnail) {
-						var myBox = document.createElement('div');
+						const separator = metaDataContainer.querySelector('#separator');
 
-						var span = document.createElement("div");
+						const myBox = document.createElement('div');
+
+						if (separator) {
+							myBox.appendChild(separator.cloneNode(true));
+						}
+
+						const span = document.createElement('span');
 						span.className = "stat";
 						span.style.fontSize = '1.3rem';
 						span.style.color = 'var(--ytd-metadata-line-color, var(--yt-spec-text-secondary))';
 						span.appendChild(document.createTextNode(infoText));
-
 						span.title = 'Click to annotate all recommendations';
 						span.style.cursor = 'pointer';
 						span.onclick = startSpamming;
-
-						//log('link:', link);
 						myBox.appendChild(span);
 
+						metaDataContainer.appendChild(myBox);
+
 						if (addLightSaberBarToThumbnail) {
+							if (separator) {
+								myBox.appendChild(separator.cloneNode(true));
+							}
+
+							const myBox2 = document.createElement('div');
+
 							const myBar = document.createElement('div');
+							myBar.style.display = 'inline-block';
 							myBar.style.marginTop = '0.3em';
 							//myBar.style.width = '17em';
 							//myBar.style.height = '0.4em';
@@ -221,10 +234,10 @@ function lookupLikesDislikes(link) {
 							myBar.style.backgroundColor = '#c00';
 							myLikesBar.style.backgroundColor = '#090';
 							myBar.appendChild(myLikesBar);
-							myBox.appendChild(myBar);
-						}
 
-						metaDataContainer.appendChild(myBox);
+							myBox2.appendChild(myBar);
+							metaDataContainer.appendChild(myBox2);
+						}
 					}
 				} else {
 					log('Could not determine likes + dislikes');
