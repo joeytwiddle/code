@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.4
+// @version        1.4.5
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
@@ -15,7 +15,7 @@ var placeFaviconByUrl      = false;   // The little green link below the article
 var placeFaviconAfter      = false;   // Display after the link instead of before it
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
 var placeFaviconOffTheLeft = true;    // Makes the favicon sit out to the left of the main column (not on startpage)
-var iconSize               = 1.2;
+var iconSize               = 1.3;
 var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we center-align with the text, for larger we top-align
 
 // With thanks to:
@@ -146,11 +146,12 @@ function getGoogleResultsLinks () {
 
 var style = document.createElement('STYLE');
 var padSide = (placeFaviconAfter ? 'left' : 'right');
-var leftPadding = 1.2 * iconSize + 0.5;
+var leftPadding = 1.2 * iconSize + 0.6;
 // We can try to centralise the icon with the text
 // Or we can top-align the icon with the text (better for larger icon sizes)
-var topPadding = centraliseIconVertically ? 0.5 + 0.07 - iconSize / 2 : 0;
+var topPadding = centraliseIconVertically ? 0.95 - iconSize / 2 : 0.35;
 var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + leftPadding + 'em; top: ' + topPadding + 'em;' : '';
+// If we are using placeFaviconOffTheLeft, then we don't need the paddings or alignment here
 style.innerHTML = ".favicon { padding-" + padSide + ": " + (iconSize / 2) + "em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
 
