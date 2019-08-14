@@ -2,7 +2,7 @@
 // @name           StackExchange Tweaks
 // @namespace      SET
 // @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
-// @version        1.0.11
+// @version        1.0.12
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://superuser.com/*
@@ -30,6 +30,10 @@ var hideSidebarOnQuestionPages = true;
 //
 var noShadows = true;
 
+// Lighten the new stats above the question, if you find them distracting
+//
+var deemphasiseStats = true;
+
 // ==/Options==
 
 if (swapProfileAndButtons) {
@@ -56,4 +60,9 @@ if (hideSidebarOnQuestionPages) {
 if (noShadows) {
     // The "Featured on Meta" box on the right, above "Related" and "Hot Network Questions"
     GM_addStyle('.s-sidebarwidget { box-shadow: none; }');
+}
+
+if (deemphasiseStats) {
+    // There isn't a clear ID or class for the stats, so I used this monstrosity
+    GM_addStyle('#question-header + .grid.fw-wrap.bb { opacity: 0.7; font-size: 0.9em; }');
 }
