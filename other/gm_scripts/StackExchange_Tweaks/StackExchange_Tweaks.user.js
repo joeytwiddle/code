@@ -5,11 +5,13 @@
 // @version        1.0.13
 // @license        MIT
 // @include        https://stackoverflow.com/*
+// @include        https://*.stackoverflow.com/*
 // @include        https://superuser.com/*
 // @include        https://serverfault.com/*
 // @include        https://*.stackexchange.com/*
 // @include        https://askubuntu.com/*
 // @include        https://mathoverflow.net/*
+// @include        https://stackapps.com/*
 // @grant          GM_addStyle
 // ==/UserScript==
 
