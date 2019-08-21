@@ -2,7 +2,7 @@
 // @name           StackExchange Tweaks
 // @namespace      SET
 // @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
-// @version        1.0.13
+// @version        1.0.14
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://*.stackoverflow.com/*
@@ -54,8 +54,17 @@ if (swapProfileAndButtons) {
 if (hideSidebarOnQuestionPages) {
     if (document.location.pathname.match(/^\/(q|questions)\//)) {
         GM_addStyle('#left-sidebar { display: none; }');
+        // On some sites this leaves an unnecessary line down the left of the content, which we can remove.
+        // But on some sites, the lines is an all sides, so we don't want to remove it!
+        /*
         if (document.location.hostname.match(/^(stackoverflow.com|(politics|physics|earthscience).stackexchange.com)$/)) {
             GM_addStyle('#content { border-left: none; }');
+        }
+        */
+        // General purpose solution: do on the left whatever the right is doing.
+        const contentElem = document.querySelector('#content');
+        if (contentElem) {
+            contentElem.style.borderLeft = getComputedStyle(contentElem)['border-right'];
         }
     }
 }
