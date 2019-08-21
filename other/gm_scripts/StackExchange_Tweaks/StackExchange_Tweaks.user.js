@@ -2,13 +2,14 @@
 // @name           StackExchange Tweaks
 // @namespace      SET
 // @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
-// @version        1.0.12
+// @version        1.0.13
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://superuser.com/*
 // @include        https://serverfault.com/*
 // @include        https://*.stackexchange.com/*
 // @include        https://askubuntu.com/*
+// @include        https://mathoverflow.net/*
 // @grant          GM_addStyle
 // ==/UserScript==
 
