@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey06
+// @version       0.20180116142410-joey07
 // ==/UserScript==
 (function() {var css = [
 	".new-header {",
@@ -194,6 +194,16 @@
     "    content: 'guardian';",
     "    color: white;",
     "}",
+
+    // The yellow CTA clashes against the classic blue.  Shift it towards orange for balance.
+    `
+    .cta-bar__cta {
+        background-color: hsl(43, 100%, 55%);
+    }
+    .cta-bar__heading {
+        color: hsl(43, 100%, 55%);
+    }
+    `,
 
     // Instead of the new font "Guardian Egyptian Web" with the sharp serifs
     // use the old font "Guardian Text Egyptian Web" with the softer serifs
