@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Lucky Bang
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      1.0.0
+// @version      1.0.1
 // @description  Add a ! to the end of your google search to perform a lucky search
 // @author       joeytwiddle
 // @license      ISC
@@ -9,6 +9,7 @@
 // TODO This currently acts on pages which do not support lucky search (e.g. Google Images).  Ideally we would activate only on pages where we can actually help!
 // @include      /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @grant        none
+// @run-at       document-start
 // ==/UserScript==
 
 (function() {
