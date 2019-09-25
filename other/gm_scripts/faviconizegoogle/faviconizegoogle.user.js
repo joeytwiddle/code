@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.5
+// @version        1.4.6
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
 // @grant          none
@@ -130,7 +130,8 @@ function getGoogleResultsLinks () {
 
 	// For startpage.com
 	if (links.length === 0) {
-		links = document.querySelectorAll('.clk > a');
+		//links = document.querySelectorAll('.clk > a');
+		links = document.querySelectorAll('.w-gl__result-title');
 	}
 
 	// Remove any links which contain only one image
@@ -162,7 +163,7 @@ function updateFavicons () {
 	if (links.length === 0) {
 		links = document.getElementsByTagName("A");
 	}
-	// console.log("Got links = "+links.snapshotLength);
+	//console.log("Got links:", links);
 
 	// for (var i=0;i<links.snapshotLength;i++) {
 		// var link = links.snapshotItem(i);
@@ -209,7 +210,7 @@ var results_count = -1;
 
 function checkForUpdate () {
 	// #ires was needed for the News tab, which doesn't have a .srg.  Perhaps we could use ires for all tabs.
-	var new_srg = document.getElementsByClassName("srg")[0] || document.getElementById("ires") || document.querySelector('.web_regular_results');
+	var new_srg = document.getElementsByClassName("srg")[0] || document.getElementById("ires") || document.querySelector('.w-gl--default');
 	//console.log("[FaviconizeGoogle.user.js] last_srg:" ,last_srg);
 	//console.log("[faviconizegoogle.user.js] new_srg:" ,new_srg);
 	var new_results_count = getGoogleResultsLinks().length;
