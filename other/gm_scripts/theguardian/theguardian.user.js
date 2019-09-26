@@ -13,8 +13,22 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey07
+// @version       0.20180116142410-joey08
 // ==/UserScript==
+
+// An example of the old site, for reference:
+// http://web.archive.org/web/20150321110247/http://www.theguardian.com/us
+
+// The new Guardian uses a dark blue, and this yellow on top
+//const yellowOrangeHighlight = '#ffe500';
+//const yellowOrangeHighlight = 'hsl(54, 100%, 50%)';
+
+// But the original Guardian used a lighter blue.  It needs a different yellow to work with it.
+// This was used on the old site, but not touching the blue.  It's too strong.
+//const yellowOrangeHighlight = `hsl(44, 100%, 65%)`;
+// Our own:
+const yellowOrangeHighlight = `hsl(44, 100%, 70%)`;
+
 (function() {var css = [
 	".new-header {",
 	"    background: #005689;",
@@ -198,10 +212,28 @@
     // The yellow CTA clashes against the classic blue.  Shift it towards orange for balance.
     `
     .cta-bar__cta {
-        background-color: hsl(43, 100%, 55%);
+        background-color: ${yellowOrangeHighlight};
     }
     .cta-bar__heading {
-        color: hsl(43, 100%, 55%);
+        color: ${yellowOrangeHighlight};
+    }
+    .old-article-message {
+        background: ${yellowOrangeHighlight};
+    }
+    .content--pillar-news .old-article-message {
+        color: black;
+    }
+    .contributions__adblock .contributions__adblock-content {
+        border-top-color: ${yellowOrangeHighlight};
+    }
+    .contributions__adblock .contributions__adblock-button {
+        background-color: ${yellowOrangeHighlight};
+    }
+    .contributions__epic {
+        border-top-color: ${yellowOrangeHighlight};
+    }
+    a[href].contributions__contribute.contributions__contribute--epic, a[href].contributions__learn-more.contributions__learn-more--epic, .contributions__adblock-button a {
+        background-color: ${yellowOrangeHighlight};
     }
     `,
 
