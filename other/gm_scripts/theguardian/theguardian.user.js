@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey08
+// @version       0.20180116142410-joey09
 // ==/UserScript==
 
 // An example of the old site, for reference:
@@ -29,6 +29,9 @@
 // Our own:
 const yellowOrangeHighlight = `hsl(44, 100%, 70%)`;
 
+const activePillarHighlight = '#fff';
+//const activePillarHighlight = yellowOrangeHighlight;
+
 (function() {var css = [
 	".new-header {",
 	"    background: #005689;",
@@ -40,8 +43,15 @@ const yellowOrangeHighlight = `hsl(44, 100%, 70%)`;
 	"}",
 	"",
 	".pillar-link.pillar-link:after {",
-	"    border-color:#fff;",
+	"    border-color:" + activePillarHighlight + ";",
 	"}",
+    `
+    /* The white activePillarHighlight looks good, except when it merges into other white. */
+    /* We can fix it by surrounding it in blue. */
+    .l-footer__secondary {
+        padding-top: 4px;
+    }
+    `,
 	"",
 	".top-bar__item--cta--circle:before {",
 	"    background:#4bc6df;",
@@ -234,6 +244,13 @@ const yellowOrangeHighlight = `hsl(44, 100%, 70%)`;
     }
     a[href].contributions__contribute.contributions__contribute--epic, a[href].contributions__learn-more.contributions__learn-more--epic, .contributions__adblock-button a {
         background-color: ${yellowOrangeHighlight};
+    }
+
+    .l-footer {
+        background: #005689;
+    }
+    .footer__back-to-top {
+        background-color: #005689;
     }
     `,
 
