@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         npmjs.com visual tweaks
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
+// @version      1.0.1
 // @description  Makes READMEs on npmjs.com look more like READMEs on GitHub (font, size, padding, some colors); also makes the content wider
 // @author       joeytwiddle
 // @copyright    2018-2019, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -196,13 +196,13 @@
 
     if (floatTheSidebar) {
         var checkTheSidebar = function () {
-            const mainLeftPanel = document.querySelector('.package__main___3By_B');
+            const mainLeftPanel = document.querySelector('._6620a4fd');
             if (!mainLeftPanel) return;
 
             const readmeElement = document.querySelector('#readme');
             if (!readmeElement) return;
 
-            const sidebarElement = document.querySelector('.package__rightSidebar___9dMXo');
+            const sidebarElement = document.querySelector('.fdbf4038');
             if (!sidebarElement) return;
             if (sidebarElement.parentNode.classList.contains('visual-tweaks-userscript-sidebar-container')) {
                 //console.log("We have already handled this sidebar");
