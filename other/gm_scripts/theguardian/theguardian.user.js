@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey09
+// @version       0.20180116142410-joey10
 // ==/UserScript==
 
 // An example of the old site, for reference:
@@ -22,12 +22,13 @@
 // The new Guardian uses a dark blue, and this yellow on top
 //const yellowOrangeHighlight = '#ffe500';
 //const yellowOrangeHighlight = 'hsl(54, 100%, 50%)';
+// But the original Guardian used a lighter blue.
+// Since we reintroduce that blue, we need a different yellow to work with it.
 
-// But the original Guardian used a lighter blue.  It needs a different yellow to work with it.
-// This was used on the old site, but not touching the blue.  It's too strong.
-//const yellowOrangeHighlight = `hsl(44, 100%, 65%)`;
-// Our own:
-const yellowOrangeHighlight = `hsl(44, 100%, 70%)`;
+// This yellow was used on the old site, although it never used to touch the blue background.
+const yellowOrangeHighlight = `hsl(44, 100%, 65%)`;
+// We could make it lighter if we wanted.
+//const yellowOrangeHighlight = `hsl(44, 100%, 70%)`;
 
 const activePillarHighlight = '#fff';
 //const activePillarHighlight = yellowOrangeHighlight;
