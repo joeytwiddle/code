@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey10
+// @version       0.20180116142410-joey11
 // ==/UserScript==
 
 // An example of the old site, for reference:
@@ -50,7 +50,7 @@ const activePillarHighlight = '#fff';
     /* The white activePillarHighlight looks good, except when it merges into other white. */
     /* We can fix it by surrounding it in blue. */
     .l-footer__secondary {
-        padding-top: 4px;
+        padding-top: 1px;
     }
     `,
 	"",
@@ -252,6 +252,19 @@ const activePillarHighlight = '#fff';
     }
     .footer__back-to-top {
         background-color: #005689;
+    }
+
+    /* Hovered links in the header/footer */
+    .top-bar__item:hover, .top-bar__item:focus {
+        color: ${yellowOrangeHighlight};
+    }
+    .colophon__item a:hover, .colophon__item a:focus {
+        color: ${yellowOrangeHighlight};
+    }
+
+    /* Hovered buttons, e.g. in the daily email signup form */
+    .email-sub__form--footer .email-sub__submit-button:hover, .email-sub__form--footer .email-sub__submit-button:focus, .email-sub__form--footer .email-sub__submit-button:active {
+        background-color: ${yellowOrangeHighlight};
     }
     `,
 
