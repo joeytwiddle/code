@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey11
+// @version       0.20180116142410-joey12
 // ==/UserScript==
 
 // An example of the old site, for reference:
@@ -245,6 +245,18 @@ const activePillarHighlight = '#fff';
     }
     a[href].contributions__contribute.contributions__contribute--epic, a[href].contributions__learn-more.contributions__learn-more--epic, .contributions__adblock-button a {
         background-color: ${yellowOrangeHighlight};
+    }
+    .contributions__highlight {
+        background-color: ${yellowOrangeHighlight};
+    }
+    .component-button--primary {
+        background-color: ${yellowOrangeHighlight};
+    }
+    .component-button--primary:hover, .component-button--primary:focus {
+        background-color: ${yellowOrangeHighlight};
+    }
+    ::selection {
+        background: ${yellowOrangeHighlight};
     }
 
     .l-footer {
