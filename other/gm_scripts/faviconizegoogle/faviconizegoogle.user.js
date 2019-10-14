@@ -5,9 +5,10 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.6
+// @version        1.4.7
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
-// @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage.com\/.*/
+// @exclude        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
+// @include        /https?:\/\/www\.ecosia\.org\/(search|news|videos)?.*/
 // @grant          none
 // ==/UserScript==
 
@@ -28,6 +29,8 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 // - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
 // - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
 
+// 2018-10-14 Added support for ecosia.org!
+// 2018-10-14 Disabled startpage.com, because their CSP has blocked favicons from loading.
 // 2018-07-31 Dropped support for news.google.com, because it is now linking to local URLs, instead of to external websites.
 
 // TODO: The relative positioning of the icon appears a bit off for sub-links of the main result.
@@ -134,6 +137,11 @@ function getGoogleResultsLinks () {
 		links = document.querySelectorAll('.w-gl__result-title');
 	}
 
+	// For ecosia.org
+	if (links.length === 0) {
+		links = document.querySelectorAll('.result-title');
+	}
+
 	// Remove any links which contain only one image
 	links = [...links].filter(link => {
 		if (link.childNodes.length === 1 && link.childNodes[0].tagName === 'IMG') {
@@ -152,6 +160,12 @@ var leftPadding = 1.2 * iconSize + 0.6;
 // Or we can top-align the icon with the text (better for larger icon sizes)
 var topPadding = centraliseIconVertically ? 0.95 - iconSize / 2 : 0.35;
 var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + leftPadding + 'em; top: ' + topPadding + 'em;' : '';
+if (document.location.hostname === 'www.ecosia.org') {
+	var topMargin = 0.1 + centraliseIconVertically * iconSize / 13;
+	// Cancel the above padding (it stretches the icon on ecosia)
+	// Use margin for vertical positioning
+	extra += ' padding: 0; margin-top: ' + (-topMargin) + 'em;';
+}
 // If we are using placeFaviconOffTheLeft, then we don't need the paddings or alignment here
 style.innerHTML = ".favicon { padding-" + padSide + ": " + (iconSize / 2) + "em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
@@ -210,7 +224,11 @@ var results_count = -1;
 
 function checkForUpdate () {
 	// #ires was needed for the News tab, which doesn't have a .srg.  Perhaps we could use ires for all tabs.
-	var new_srg = document.getElementsByClassName("srg")[0] || document.getElementById("ires") || document.querySelector('.w-gl--default');
+	var new_srg = document.querySelector('.srg') || document.querySelector('#ires');
+	// startpage
+	new_srg = new_srg || document.querySelector('.w-gl--default');
+	// ecosia
+	new_srg = new_srg || document.querySelector('.mainline');
 	//console.log("[FaviconizeGoogle.user.js] last_srg:" ,last_srg);
 	//console.log("[faviconizegoogle.user.js] new_srg:" ,new_srg);
 	var new_results_count = getGoogleResultsLinks().length;
