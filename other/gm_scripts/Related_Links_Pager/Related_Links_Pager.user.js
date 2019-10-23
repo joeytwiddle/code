@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.30
+// @version        1.3.31
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -35,10 +35,11 @@
 
 // == OPTIONS ==
 
-var delayBeforeRunning = 2000;
+var delayBeforeRunning = 500;
 var minimumGroupSize   = 2;
 var maximumGroupSize   = 250;         // Some webservers restrict long URLs, responding with "Bad Request".
-var groupLinksByClass  = true;
+var useClassnamesInXPath = false;
+var groupLinksByClass    = true;
 // CONSIDER TODO: A better compromise for all sites might be groupLinksWhichShareAtLeastOneClass.  This would reject links which do not share any classes with the focused link.
 
 var showGroupCountInLinkTitle = true;    // Updates hovered links' titles to show number of siblings.
@@ -217,14 +218,27 @@ function getXPath(node) {
   if (!node) {
     return '';
   }
+  var parentPath = getXPath(node.parentNode);
   if (ensureFirstGoogleResultIsRelated) {
     // Sometimes google will put all the results inside a .srg div, except for the first one.
     // To ensure the first link appears related to the other links, we ignore the .srg element.
     if (node.className === 'srg') {
-      return getXPath(node.parentNode);
+      // Don't include this node
+      return parentPath;
+    }
+    // Even after removing the .srg element, in late 2019 we observed:
+    // - The first link on the page has its .rc two levels below the .g
+    // - But the other links on the page have their .rcs three levels below the .g
+    //
+    // So, if we detect .rc three levels below .g, we convert it to two levels:
+    if (node.className === 'rc' && node.parentNode.parentNode.parentNode.className === 'g') {
+      parentPath = getXPath(node.parentNode.parentNode);
     }
   }
-  return getXPath(node.parentNode) + '/' + node.nodeName.toLowerCase();
+  var thisNode = useClassnamesInXPath && node.className
+    ? node.className.replace(/(^| +)/g, '.')
+    : node.nodeName.toLowerCase();
+  return parentPath + '/' + thisNode;
 }
 
 function seekLinkInAncestry(startElem) {
@@ -425,7 +439,16 @@ function runRelatedLinksPager() {
   function getGroupSignature(link) {
     if (!link.cachedGroupSignature) {
       // We remove offsets like [4] from the unique xpath to get a more general path signature.
-      link.cachedGroupSignature = getXPath(link).replace(/\[[0-9]*\]/g, '');
+      var xpath = getXPath(link).replace(/\[[0-9]*\]/g, '');
+
+      // An alternative way to fix the issue with the first google result
+      // But this only work when useClassnamesInXPath is enabled
+      if (ensureFirstGoogleResultIsRelated) {
+        xpath = xpath.replace('/.srg/', '/');
+        xpath = xpath.replace('/.g/div/div/.rc/.r/a', '/.g/div/.rc/.r/a');
+      }
+
+      link.cachedGroupSignature = xpath;
     }
     return link.cachedGroupSignature;
   }
@@ -459,7 +482,8 @@ function runRelatedLinksPager() {
       }
     }
     if (verbose) {
-      GM_log("Got " + collected.length + " matching siblings: for " + clickedLink.outerHTML + " with xpath " + seekXPath);
+      //GM_log("Got " + collected.length + " matching siblings: for " + clickedLink.outerHTML + " with xpath " + seekXPath);
+      GM_log("Found " + collected.length + " matches for " + seekXPath);
     }
     return collected;
   }
