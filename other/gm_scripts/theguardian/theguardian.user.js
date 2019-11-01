@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey12
+// @version       0.20180116142410-joey13
 // ==/UserScript==
 
 // An example of the old site, for reference:
@@ -27,8 +27,8 @@
 
 // This yellow was used on the old site, although it never used to touch the blue background.
 const yellowOrangeHighlight = `hsl(44, 100%, 65%)`;
-// We could make it lighter if we wanted.
-//const yellowOrangeHighlight = `hsl(44, 100%, 70%)`;
+// Now that it touches the blue, heavier may be preferable.
+//const yellowOrangeHighlight = `hsl(44, 100%, 58%)`;
 
 const activePillarHighlight = '#fff';
 //const activePillarHighlight = yellowOrangeHighlight;
@@ -233,6 +233,9 @@ const activePillarHighlight = '#fff';
     }
     .content--pillar-news .old-article-message {
         color: black;
+    }
+    .contributions__adblock {
+        background-color: ${yellowOrangeHighlight};
     }
     .contributions__adblock .contributions__adblock-content {
         border-top-color: ${yellowOrangeHighlight};
