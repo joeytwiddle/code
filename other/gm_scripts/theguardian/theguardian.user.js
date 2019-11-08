@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey13
+// @version       0.20180116142410-joey14
 // ==/UserScript==
 
 // An example of the old site, for reference:
@@ -280,6 +280,11 @@ const activePillarHighlight = '#fff';
     /* Hovered buttons, e.g. in the daily email signup form */
     .email-sub__form--footer .email-sub__submit-button:hover, .email-sub__form--footer .email-sub__submit-button:focus, .email-sub__form--footer .email-sub__submit-button:active {
         background-color: ${yellowOrangeHighlight};
+    }
+
+    /* New overlay footer */
+    .site-message--subscription-banner {
+        background: ${yellowOrangeHighlight};
     }
     `,
 
