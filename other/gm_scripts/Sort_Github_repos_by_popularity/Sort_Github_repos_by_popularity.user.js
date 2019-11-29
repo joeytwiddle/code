@@ -2,10 +2,10 @@
 // @name         Sort Github repos by popularity
 // @namespace    http://tampermonkey.net/
 // @license      MIT
-// @version      0.1.3
+// @version      0.1.4
 // @description  Sort user's Github repositories by popularity (only applies to those visible on the current page)
 // @author       joeytwiddle
-// @match        https://github.com/*tab=repositories*
+// @include      https://github.com/*tab=repositories*
 // @grant        none
 // ==/UserScript==
 
@@ -38,7 +38,7 @@
   function getPopularity (li) {
     const starSvg = li.querySelector('[aria-label=star]');
     const textElem = starSvg && starSvg.nextSibling;
-    const popularity = textElem && Number(textElem.textContent) || 0;
+    const popularity = textElem && Number(textElem.textContent.replace(/,/g, '')) || 0;
     //console.log("Popularity:", popularity);
     return popularity;
   }
