@@ -1,9 +1,9 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name          Tab size
 // @namespace     http://nv.github.com/tab-size.js/
 // @include       *
 // @description   Replace all tab characters with two spaces (or something else)
-// @version       1.0.3
+// @version       1.1
 // @icon          http://userscripts.ru/js/tab-character-size/chrome/icon_48.png
 // @grant         GM_addStyle
 // @grant         GM_getValue
@@ -17,18 +17,20 @@
 
 //var REPLACEMENT = '  ';
 //var REPLACEMENT = '->';
-//var REPLACEMENT = '| ';
+//var REPLACEMENT = '|-';
+//var REPLACEMENT = '|  ';
 //var REPLACEMENT = '⤚';
 //var REPLACEMENT = '→';
 //var REPLACEMENT = '⇒';
 //var REPLACEMENT = '⇨';
 //var REPLACEMENT = '➡';
-var REPLACEMENT = '⟼';     // Wider than 1 char even in monospaced fonts
+//var REPLACEMENT = '⟼'; // Can appear wider than 1 char even in some monospaced fonts
 //var REPLACEMENT = '↦';
 //var REPLACEMENT = '↠';
 //var REPLACEMENT = '⤇';
 //➩ ➪ ➫ ➬ ➭ ➮ ➯ ➱
-//➟ ➠ 
+//➟ ➠
+var REPLACEMENT = '➞ ';
 
 var style_tabs = true;
 
@@ -37,7 +39,7 @@ if (typeof GM_getValue === 'function') {
 }
 
 if (style_tabs && typeof GM_addStyle === 'function') {
-	GM_addStyle('.tab-size-tab { opacity: 0.2; /* color: rgb(127,127,255); */ }');
+	GM_addStyle('.tab-size-tab { opacity: 0.15; /* color: rgb(127,127,255); */ }');
 	REPLACEMENT = '<span class="tab-size-tab">' + REPLACEMENT + '</span>';
 }
 
@@ -62,3 +64,14 @@ if (typeof GM_registerMenuCommand === 'function') {
 		GM_setValue('tab_replacement', prompt('Replace tabs with', REPLACEMENT));
 	});
 }
+
+/*
+// For GitHub (when the above has failed)
+function changeTabSizeAttributes() {
+	Array.from(document.querySelectorAll('[data-tab-size]')).forEach(elem => {
+		elem.setAttribute('data-tab-size', 2);
+	});
+}
+changeTabSizeAttributes();
+//setTimeout(changeTabSizeAttributes, 4000);
+*/
