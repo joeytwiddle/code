@@ -3,7 +3,7 @@
 // @namespace     http://nv.github.com/tab-size.js/
 // @include       *
 // @description   Replace all tab characters with two spaces (or something else)
-// @version       1.2
+// @version       1.3
 // @icon          http://userscripts.ru/js/tab-character-size/chrome/icon_48.png
 // @grant         GM_addStyle
 // @grant         GM_getValue
@@ -21,13 +21,17 @@
 //var REPLACEMENT = '|  ';
 //var REPLACEMENT = '⇥  ';
 //var REPLACEMENT = '⤚';
+//var REPLACEMENT = '⤜';
 //var REPLACEMENT = '→';
 //var REPLACEMENT = '⇒';
 //var REPLACEMENT = '⇨';
 //var REPLACEMENT = '➡';
-//var REPLACEMENT = '⟼'; // Can appear wider than 1 char even in some monospaced fonts
 //var REPLACEMENT = '↦';
 //var REPLACEMENT = '↠';
+//var REPLACEMENT = '➛';
+//var REPLACEMENT = '➜';
+//var REPLACEMENT = '⇰';
+//var REPLACEMENT = '⟼'; // Can appear wider than 1 char even in some monospaced fonts
 //var REPLACEMENT = '⟾';
 //var REPLACEMENT = '⤇ ';
 //var REPLACEMENT = '➾ ';
