@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.3.31
+// @version        1.4.0
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -50,7 +50,7 @@ var enableOnShiftClick = true;        // Allows you to avoid the script when nee
 var enableOnRightClick = false;
 
 var keepNavigationHistory = false;    // When off, sideways paging is not added to the browser history.  The back button will return you to the page before you started paging, not the previous page you were on.
-var leaveHashUrlsAlone = true;        // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
+//var leaveHashUrlsAlone = true;        // Many sites use # these days for their own purposes - this avoids the risk of breaking them.  Update: This is now determined dynamically, and only set true if we cannot use local/GM storage.
 var forceTravel = false;              // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
 // BUG: When attempting to open a link in a new tab with Ctrl-click, forceTravel will make the current tab navigate to that page.
 var clearDataFromLocation = true;     // Tidies up your location bar URL, but prevents the pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.  Disable this for debugging.
@@ -101,6 +101,7 @@ if (isGoogleSearchResultsPage) {
 var ensureFirstGoogleResultIsRelated = isGoogleSearchResultsPage;
 
 // == CHANGELOG ==
+// 2019-12-10 Remove global option 'leaveHashUrlsAlone' - enable dynamically instead
 // 2012-10-27 Added passPacketByGM for all browsers except Chrome.
 // 2012-10-21 Fixes for Google search results link rewriting war!
 // 2012-10-08 Fixed inefficiencies in getXPath which could cause lockups.
@@ -511,6 +512,8 @@ function runRelatedLinksPager() {
     if (link.getAttribute("href") && link.getAttribute("href").charAt(0) === '#') {
       return false;
     }
+
+    var leaveHashUrlsAlone = !canPassPacketByGM(link, []);
 
     // What about links to #s in other pages?  I decided in the end to leave them
     // alone by default (preserve the existing hash string).
