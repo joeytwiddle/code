@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey14
+// @version       0.20180116142410-joey15
 // ==/UserScript==
 
 // An example of the old site, for reference:
@@ -43,8 +43,13 @@ const activePillarHighlight = '#fff';
 	"    color:#fff;",
 	"}",
 	"",
+	/* Make the tab indicator white instead of multi-coloured */
 	".pillar-link.pillar-link:after {",
 	"    border-color:" + activePillarHighlight + ";",
+	"}",
+	/* Skip the white stripe across the bar at the top of the page */
+	".pillar-link:not(.pillar-link--current-section):not(:hover):after {",
+	"    border-top: 0;",
 	"}",
     `
     /* The white activePillarHighlight looks good, except when it merges into other white. */
