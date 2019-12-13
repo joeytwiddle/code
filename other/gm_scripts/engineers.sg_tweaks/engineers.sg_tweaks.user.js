@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Engineers.SG Tweaks
 // @namespace    https://github.com/joeytwiddle/code/blob/master/other/gm_scripts/engineers.sg_tweaks/engineers.sg_tweaks.user.js
-// @version      0.3
+// @version      0.4
 // @description  Small visual improvements to the engineers.sg website
 // @author       joeytwiddle
 // @match        https://engineers.sg/events
@@ -37,7 +37,7 @@
             .events-list .event-item {
                 border: 1px solid #0001;
                 margin: 1.2em 0;
-                box-shadow: 0 2px 5px #0002;
+                box-shadow: 0 2px 6px #0001;
             }
 
             /* Don't make the headers wider than the cards (it looks weird) */
