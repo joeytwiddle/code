@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Lucky Bang
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      1.0.2
+// @version      1.0.3
 // @description  Add a ! to the end of your google search to perform a lucky search
 // @author       joeytwiddle
 // This is supposed to be all google search sites.  Copied from faviconizegoogle.user.js
@@ -51,10 +51,12 @@
     const startTime = Number(GM_getValue('lucky_search_initiated'));
     if (typeof startTime === 'number' && startTime >= Date.now() - 15 * 1000 && startTime <= Date.now()) {
       const url = params.q;
-      console.log("Automatically following the redirect to:", url);
-      GM_setValue('lucky_search_initiated', '');
-      document.location.replace(url);
-      document.location.assign(url);
+      if (url) {
+        console.log("Automatically following the redirect to:", url);
+        GM_setValue('lucky_search_initiated', '');
+        //document.location.replace(url);
+        document.location.assign(url);
+      }
     }
   }
 })();
