@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name          Google's Old Favicon
 // @description   Brings back the old Google favicon
-// @version       2.19
+// @version       2.20
 // @author        !user
 // @include       https://www.google.tld/*
 // @include       https://google.tld/*
 // @exclude       https://google.tld/maps/*
+// @exclude       /https?:\/\/google\.com\/maps\/.*/
 // ==/UserScript==
 
 // This wasn't working on Google Search pages, but it appears to work now.
