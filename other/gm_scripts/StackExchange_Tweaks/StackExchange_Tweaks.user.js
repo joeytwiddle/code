@@ -2,7 +2,7 @@
 // @name           StackExchange Tweaks
 // @namespace      SET
 // @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
-// @version        1.0.14
+// @version        1.0.15
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://*.stackoverflow.com/*
@@ -64,7 +64,7 @@ if (hideSidebarOnQuestionPages) {
         // General purpose solution: do on the left whatever the right is doing.
         const contentElem = document.querySelector('#content');
         if (contentElem) {
-            contentElem.style.borderLeft = getComputedStyle(contentElem)['border-right'];
+            contentElem.style.borderLeft = getComputedStyle(contentElem)['border-right'] || 'none';
         }
     }
 }
