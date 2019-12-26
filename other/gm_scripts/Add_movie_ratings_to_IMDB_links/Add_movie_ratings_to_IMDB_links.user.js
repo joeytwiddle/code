@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
 // @author         StackOverflow community (especially Brock Adams)
-// @version        2015-11-24-9-joeytwiddle
+// @version        2015-11-24-10-joeytwiddle
 // @license        MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -12,12 +12,11 @@
 // ==/UserScript==
 // Special Thanks to Brock Adams for this script: http://stackoverflow.com/questions/23974801/gm-xmlhttprequest-data-is-being-placed-in-the-wrong-places/23992742
 
-// @todo Do not send cookies along with GM_xmlhttpRequest, so that IMDB won't cache our "recently viewed"
-//       (Use fetch instead of GM_xmlhttpRequest?)
-
 var maxLinksAtATime     = 100; //-- pages can have 100's of links to fetch. Don't spam server or browser.
 var fetchedLinkCnt      = 0;
 var skipEpisodes        = true; //-- I only want to see ratings for movies or TV shows, not TV episodes
+
+var addRatingToTitle    = true; //-- Bonus feature: Put the rating in the browser's title bar (should also appear in bookmarks)
 
 var $ = unsafeWindow.$;
 
@@ -217,3 +216,13 @@ continueBttn.addEventListener ("click", function (){
 );
 
 processIMDB_Links ();
+
+if (addRatingToTitle) {
+    const foundRating = document.querySelectorAll('.ratingValue [itemprop=ratingValue]');
+    if (foundRating.length === 1) {
+        const rating = foundRating[0].textContent;
+        if (String(Number(rating)) === rating) {
+          document.title = `(${rating}) ` + document.title;
+        }
+    }
+}
