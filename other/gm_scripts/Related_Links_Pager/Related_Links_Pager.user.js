@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.0
+// @version        1.4.1
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -215,12 +215,25 @@ if (typeof GM_setValue !== 'function' || forcePolyfillForGM_setValue) {
   };
 }
 
+function getAncestors(node) {
+  var ancestors = [];
+  while (node = node.parentNode) {
+    ancestors.push(node);
+  }
+  return ancestors.reverse();
+}
+
+function getAncestorWithClass(node, className) {
+  return getAncestors(node).find(a => ` ${a.className} `.includes(` ${className} `));
+}
+
 function getXPath(node) {
   if (!node) {
     return '';
   }
   var parentPath = getXPath(node.parentNode);
   if (ensureFirstGoogleResultIsRelated) {
+    /*
     // Sometimes google will put all the results inside a .srg div, except for the first one.
     // To ensure the first link appears related to the other links, we ignore the .srg element.
     if (node.className === 'srg') {
@@ -234,6 +247,17 @@ function getXPath(node) {
     // So, if we detect .rc three levels below .g, we convert it to two levels:
     if (node.className === 'rc' && node.parentNode.parentNode.parentNode.className === 'g') {
       parentPath = getXPath(node.parentNode.parentNode);
+    }
+    */
+    // In January 2020 the above stopped working, because we now have:
+    // /#document/html/.srp.tbo.vasq.peek-rhs.BbLFkb/div/div/.mw/div/.col/div/.med/div/div/div/.bkWMgd/.g.mnr-c.g-blk/.kp-blk.c2xzTb.Wnoohf.OJXvsb/.xpdopen/.ifM9O/div/.g/div/.rc/.r/a for the first link
+    // /#document/html/.srp.tbo.vasq.peek-rhs.BbLFkb/div/div/.mw/div/.col/div/.med/div/div/div/.bkWMgd/.g.kno-kp.mnr-c.g-blk/.kp-blk.cUnQKe.Wnoohf.OJXvsb/.xpdopen/.ifM9O/.feCgPc.q1kEvb.vsXRLb.y.yf/.related-question-pair/g-accordion-expander/.gy6Qzb.kno-ahide/div/div/.g/div/.rc/.r/a for related questions results (which we don't really want to include in the main results, becuase they start off hidden)
+    // /#document/html/.srp.tbo.vasq.peek-rhs.BbLFkb/div/div/.mw/div/.col/div/.med/div/div/div/.bkWMgd/.g.kno-kp.mnr-c.g-blk/.kp-blk.cUnQKe.Wnoohf.OJXvsb/.xpdopen/.ifM9O/.feCgPc.q1kEvb.vsXRLb.y.yf/.related-question-pair/g-accordion-expander/.gy6Qzb.kno-aoc.kno-aex/div/div/.g/div/.rc/.r/a for related questions which have been expanded (we could include these, or not)
+    // /#document/html/.srp.tbo.vasq.peek-rhs.BbLFkb/div/div/.mw/div/.col/div/.med/div/div/div/.bkWMgd/.g/div/.rc/.r/a for later links
+    // /#document/html/.srp.tbo.vasq.peek-rhs.BbLFkb/div/div/.mw/div/.col/div/.next-col/div/.med/div/div/div/.bkWMgd/.g/div/.rc/.r/a for links on subsequent pages (loaded by tumpio's Endless Google)
+    // This is rather a broad fix.  It combines those wanted above, and rejects the unwanted "related questions", but it might bring in false positives in future.
+    if (node.className === 'g' && !getAncestorWithClass(node, 'related-question-pair') && !getAncestorWithClass(node, 'g-accordion-expander')) {
+      parentPath = '*';
     }
   }
   var thisNode = useClassnamesInXPath && node.className
