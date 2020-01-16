@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Engineers.SG Tweaks
 // @namespace    https://github.com/joeytwiddle/code/blob/master/other/gm_scripts/engineers.sg_tweaks/engineers.sg_tweaks.user.js
-// @version      0.4
+// @version      0.5
 // @description  Small visual improvements to the engineers.sg website
 // @author       joeytwiddle
 // @match        https://engineers.sg/events
@@ -35,9 +35,9 @@
             }
 
             .events-list .event-item {
-                border: 1px solid #0001;
+                /* border: 1px solid #0001; */
                 margin: 1.2em 0;
-                box-shadow: 0 2px 6px #0001;
+                box-shadow: 0 0px 6px #0001;
             }
 
             /* Don't make the headers wider than the cards (it looks weird) */
@@ -60,17 +60,19 @@
             .events-list .event-item > div > p:nth-child(3) {
                 position: absolute;
                 top: 0;
-                right: 2em;
+                right: 1em;
                 margin: 0;
             }
 
             /* Put the event location below that */
+            /*
             .events-list .event-item > div > p:nth-child(4) {
                 position: absolute;
                 top: 2.5em;
-                right: 2em;
+                right: 1em;
                 margin: 0;
             }
+            */
 
             /* THe header must leave space for the date and time */
             .events-list .event-item h5 {
@@ -80,12 +82,12 @@
             /* Put the join button in the bottom-right */
             .events-list .event-item > div > a {
                 position: absolute;
-                top: 5em;
-                right: 2em;
+                bottom: 0.5em;
+                right: 1em;
             }
 
             .events-list .event-item {
-                min-height: 11em;
+                min-height: 8.7em;
             }
         `);
     }
