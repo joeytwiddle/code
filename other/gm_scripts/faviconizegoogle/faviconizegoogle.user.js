@@ -5,10 +5,10 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.8
-// @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
+// @version        1.4.9
+// @exclude        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @exclude        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
-// @include        /https?:\/\/www\.ecosia\.org\/(search|news|videos)?.*/
+// @exclude        /https?:\/\/www\.ecosia\.org\/(search|news|videos)?.*/
 // @grant          none
 // ==/UserScript==
 
@@ -29,6 +29,8 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 // - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
 // - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
 
+// 2020-01-22 Disabled Google, because Google is now displaying favicons itself!
+// 2020-01-22 Disabled Ecosia, because their CSP is blocking images
 // 2018-10-14 Added support for ecosia.org!
 // 2018-10-14 Disabled startpage.com, because their CSP has blocked favicons from loading.
 // 2018-07-31 Dropped support for news.google.com, because it is now linking to local URLs, instead of to external websites.
