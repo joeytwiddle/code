@@ -5,12 +5,15 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.9
+// @version        1.4.10
 // @exclude        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @exclude        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @exclude        /https?:\/\/www\.ecosia\.org\/(search|news|videos)?.*/
 // @grant          none
 // ==/UserScript==
+
+// TODO: For Ecosia and StartPage, we may be able to bypass CSP by fetching the images using GM_xmlHttpRequest, and converting the content into a data: URL
+//       Alternatively, we could re-enable those sites, and recommend users to unlock CSP restrictions using one of these methods: https://stackoverflow.com/questions/27323631/how-to-override-content-security-policy-while-including-script-in-browser-js-con
 
 var placeFaviconByUrl      = false;   // The little green link below the article title
 var placeFaviconAfter      = false;   // Display after the link instead of before it
