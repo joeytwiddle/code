@@ -3,6 +3,7 @@ module.exports = {
     'eslint:recommended',
   ],
   env: {
+    browser: true,
     greasemonkey: true,
   },
 };
