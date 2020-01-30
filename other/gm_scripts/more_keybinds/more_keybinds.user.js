@@ -2,13 +2,14 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.2.2
+// @version        1.2.3
 // @include        *
 // @run-at         document-start
 // @grant          none
 // ==/UserScript==
 
-var SCROLL_AMOUNT = 60;
+// jQuery might be present
+/* eslint-env jquery */
 
 // Not all keys fire a keypress event (Chrome 2010), so we use keydown.
 document.addEventListener('keydown', keypressListener, false);
@@ -77,30 +78,38 @@ function keypressListener(evt) {
 	}
 
 	if (!evt.ctrlKey && !evt.shiftKey && !evt.metaKey) {
-		if (document.location.host !== "9gag.com") {
+		if (document.location.host !== "9gag.com" /* && document.location.host !== "github.com" */) {
 			if (code === 'K'.charCodeAt(0)) {
-				scrollBy(-getScrollAmount());
+				bestScrollBy(-getScrollAmount());
 			}
 
 			if (code === 'J'.charCodeAt(0)) {
-				scrollBy(+getScrollAmount());
+				bestScrollBy(+getScrollAmount());
 			}
 		}
 	}
 
 }
 
-function scrollBy(amount) {
-	// If jQuery is present, use it to perform a smooth scroll
-	if (typeof $ !== "undefined" && $.fn && $.fn.animate) {
+// Try to perform a smooth vertical scroll, but fall back to a jump scroll if neccessary
+function bestScrollBy(amount) {
+	if (typeof window.scrollBy === 'function') {
+		// If browser has native scrollBy, use that
+		window.scrollBy({
+			left: 0,
+			top: amount,
+			behavior: 'smooth'
+		});
+	} else if (typeof $ !== "undefined" && $.fn && $.fn.animate) {
+		// Otherwise, if jQuery is present, use that
 		queue(function(next){
 			$("html,body").animate({scrollTop: $(document).scrollTop() + amount}, 200, "swing", ifBody(next));
 		});
 	} else {
-		// otherwise perform a jerky scroll
-		// Chrome:
+		// Otherwise perform a jerky scroll
+		// Does not do anything in Chrome:
 		document.body.scrollTop += amount;
-		// Firefox:
+		// Works in Chrome/Firefox:
 		document.documentElement.scrollTop += amount;
 	}
 }
