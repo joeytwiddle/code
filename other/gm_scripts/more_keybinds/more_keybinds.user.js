@@ -51,7 +51,8 @@ function keypressListener(evt) {
 	*/
 
 	// Ctrl+Shift+Up goes up in the URL path (removes the tail leaf)
-	if (code == 38 && evt.ctrlKey && evt.shiftKey) {
+	// Cmd+Alt+Up on macOS also works
+	if ((code == 38 && evt.ctrlKey && evt.shiftKey) || (evt.code == 'ArrowUp' && evt.altKey && evt.metaKey)) {
 		var newURL = document.location.href;
 		if (newURL.slice(-1)=='/') {
 			newURL = newURL.slice(0,-1);
