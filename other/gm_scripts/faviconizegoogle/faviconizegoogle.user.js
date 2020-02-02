@@ -5,8 +5,8 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.10
-// @exclude        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
+// @version        1.4.11
+// @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @exclude        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @exclude        /https?:\/\/www\.ecosia\.org\/(search|news|videos)?.*/
 // @grant          none
@@ -32,7 +32,8 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 // - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
 // - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
 
-// 2020-01-22 Disabled Google, because Google is now displaying favicons itself!
+// 2020-02-02 Reenabled Google again, because Google has stopped showing favicons.
+// 2020-01-22 Disabled Google, because Google is now displaying favicons itself.
 // 2020-01-22 Disabled Ecosia, because their CSP is blocking images
 // 2018-10-14 Added support for ecosia.org!
 // 2018-10-14 Disabled startpage.com, because their CSP has blocked favicons from loading.
@@ -163,7 +164,7 @@ var padSide = (placeFaviconAfter ? 'left' : 'right');
 var leftPadding = 1.2 * iconSize + 0.6;
 // We can try to centralise the icon with the text
 // Or we can top-align the icon with the text (better for larger icon sizes)
-var topPadding = centraliseIconVertically ? 0.95 - iconSize / 2 : 0.35;
+var topPadding = centraliseIconVertically ? 0.75 - iconSize / 2 : 0.35;
 var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + leftPadding + 'em; top: ' + topPadding + 'em;' : '';
 if (document.location.hostname === 'www.ecosia.org') {
 	var topMargin = 0.1 + centraliseIconVertically * iconSize / 13;
