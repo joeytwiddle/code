@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitLab Tweaks
 // @namespace    GLT
-// @version      0.0.6
+// @version      1.0.0
 // @description  Improve visual design of GitLab, to reduce visual and cognitive strain, and increase zen mindfulness
 // @author       joeytwiddle
 // @copyright    2018, Paul "Joey" Clark (http://neuralyte.org/~joey)
@@ -10,6 +10,8 @@
 // @run-at       document-start
 // @grant        GM_addStyle
 // ==/UserScript==
+
+/* eslint-env es6 */
 
 (function() {
   'use strict';
@@ -38,6 +40,8 @@
   const showScrollbarOnIssueSidebar = true;
 
   const smallScrollbars = true;
+
+  const hideSidebarsUntilHovered = true;
 
 
   // Notes:
@@ -151,6 +155,19 @@
         border-radius: 10px;
       }
       */
+    `);
+  }
+
+  if (hideSidebarsUntilHovered) {
+    GM_addStyle(`
+      .nav-sidebar > *, .right-sidebar > * {
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .nav-sidebar:hover > *, .right-sidebar:hover > * {
+        opacity: 1;
+      }
     `);
   }
 
