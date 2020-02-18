@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.11
+// @version        1.4.12
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @exclude        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @exclude        /https?:\/\/www\.ecosia\.org\/(search|news|videos)?.*/
@@ -64,6 +64,16 @@ if (document.location.search.match(/&tbm=nws/)) {
 	placeFaviconOffTheLeft = false;
 	// The layout is a bit too cramped for large favicons
 	iconSize = 0.9;
+}
+
+function findClosest (elem, tagName) {
+	// eslint-disable-next-line no-cond-assign
+	while (elem = elem.parentNode) {
+		if (elem.tagName && elem.tagName.toLowerCase() === tagName.toLowerCase()) {
+			return elem;
+		}
+	}
+	return null;
 }
 
 function createFaviconFor (url) {
@@ -192,17 +202,30 @@ function updateFavicons () {
 		// if (link.href.match('^javascript:') || link.href.match('^#')) {
 			// continue;
 		// }
+
 		var targetUrl = link.getAttribute('data-href') || link.href;
+
 		//// Skip relative and same-host links:
 		if (targetUrl.match(/^[/]/) || targetUrl.match("://" + document.location.host)) {
 			continue;
 		}
+
 		//console.log("[faviconizegoogle.user.js] link.getAttribute(data-faviconized):" ,link.getAttribute("data-faviconized"));
 		if (link.getAttribute("data-faviconized")) {
 			// Already faviconized
 			//console.log("[faviconizegoogle.user.js] Skipping");
 			continue;
 		}
+
+		// Sometimes Google shows multiple results from one side, side-by-side in a table
+		// In this case, adding a favicon to the later links is redundant, and tends to overlap the earlier link
+		// So let's not do that
+		var tableCell = findClosest(link, 'td');
+		if (tableCell && tableCell.parentNode.firstChild !== tableCell) {
+			// We are in a table and we are not the first cell; don't add favicon
+			continue;
+		}
+
 		link.setAttribute("data-faviconized", "yes");
 		var img = createFaviconFor(targetUrl);
 		// <cite> is for google, .url is for startpage
