@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.1
+// @version        1.4.2
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -618,9 +618,19 @@ function runRelatedLinksPager() {
       // Convert from links to records:
       var siblings = linksInGroup.map(function(l) {
         var record = [l.textContent, l.href];
+
+        // On Google search, now the <a> link contains both the page title and the URL, which messes up the textContent we extracted
+        // We only want the title, so let's look for the h3 inside it.
+        var subTitle = l.querySelector('h3');
+        if (subTitle) {
+          record[0] = subTitle.textContent;
+        }
+
+        // If this link is the one we are currently hovering
         if (l.href === link.href) {
           record[2] = 1; // Mark this record as the (soon-to-be) current one
         }
+
         return record;
       });
       if (siblings.length <= minimumGroupSize) {
