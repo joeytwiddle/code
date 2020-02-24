@@ -15,8 +15,10 @@
 // 0: Old 'G'
 // 1: Blue 'g'
 // 2: Multi-color 'g'
-const EDITION = 0;
+var EDITION = 0;
 // BUG: Neither 1 or 2 work in my Chrome!  Although 1 was supplied with this script.  (Maybe it was a caching issue.)
+
+// See also: White 'g' on blue background at https://greasyfork.org/en/scripts/12271-revert-to-google-s-old-2012-2015-favicon
 
 var head = document.getElementsByTagName('head')[0];
 var icon = document.createElement('link');
