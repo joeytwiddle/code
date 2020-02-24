@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.12
+// @version        1.4.13
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @exclude        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @exclude        /https?:\/\/www\.ecosia\.org\/(search|news|videos)?.*/
@@ -174,7 +174,7 @@ var padSide = (placeFaviconAfter ? 'left' : 'right');
 var leftPadding = 1.2 * iconSize + 0.6;
 // We can try to centralise the icon with the text
 // Or we can top-align the icon with the text (better for larger icon sizes)
-var topPadding = centraliseIconVertically ? 0.75 - iconSize / 2 : 0.35;
+var topPadding = centraliseIconVertically ? 0.87 - iconSize / 2 : 0.35;
 var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + leftPadding + 'em; top: ' + topPadding + 'em;' : '';
 if (document.location.hostname === 'www.ecosia.org') {
 	var topMargin = 0.1 + centraliseIconVertically * iconSize / 13;
