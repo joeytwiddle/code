@@ -2,7 +2,7 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.2.3
+// @version        1.2.4
 // @include        *
 // @run-at         document-start
 // @grant          none
@@ -25,10 +25,31 @@ function keypressListener(evt) {
 	GM_log("Caught keypress "+code+" with modifiers: "+modifierReport);
 	*/
 
+	// Do not intercept any of the keys below when the user is focused on an input or textarea.
+	/*
+	//var focusedElement = document.activeElement;   // document.body if no input is focused
+	var focusedElement = evt.target || event.srcElement;
+	if (focusedElement) {
+		var isInput = focusedElement.nodeName === 'INPUT' || focusedElement.nodeName === 'TEXTAREA';
+		if (isInput) {
+			return;
+		}
+	}
+	*/
+	// From next_imageprevious_image.user.js:
+	if (evt.target.tagName && evt.target.tagName.match(/input|select|textarea/i) || evt.target.getAttribute('contenteditable')==="true") {
+		return;
+	}
+
 	// Actions
 
-	// Ctrl+Delete goes Back
+	// Ctrl+Backspace goes Back
 	if (code == 8 && evt.ctrlKey) {
+		window.history.back();
+	}
+
+	// The Delete key, because sometimes I map Ctrl+Backspace to emit a Delete
+	if (code == 46) {
 		window.history.back();
 	}
 
@@ -59,22 +80,6 @@ function keypressListener(evt) {
 			newURL = newURL.slice(0,-1);
 		}
 		document.location.href = document.location.href.replace(/[#/?][^#/?]*[/]*$/,'');
-	}
-
-	// Do not intercept any of the keys below when the user is focused on an input or textarea.
-	/*
-	//var focusedElement = document.activeElement;   // document.body if no input is focused
-	var focusedElement = evt.target || event.srcElement;
-	if (focusedElement) {
-		var isInput = focusedElement.nodeName === 'INPUT' || focusedElement.nodeName === 'TEXTAREA';
-		if (isInput) {
-			return;
-		}
-	}
-	*/
-	// From next_imageprevious_image.user.js:
-	if (evt.target.tagName && evt.target.tagName.match(/input|select|textarea/i) || evt.target.getAttribute('contenteditable')==="true") {
-		return;
 	}
 
 	if (!evt.ctrlKey && !evt.shiftKey && !evt.metaKey) {
