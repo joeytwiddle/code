@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Telegram Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.0.1
+// @version      0.0.2
 // @description  Make Telegram Web nicer to use (layout, design)
 // @author       joeytwiddle
 // @match        https://web.telegram.org/*
@@ -52,8 +52,8 @@
           /* background-color: #cef; */
           background-color: hsl(203, 60%, 92%);
           /* margin: 4px; */
-          border-radius: 12px;
-          padding: 4px;
+          border-radius: 25px;
+          padding: 5px 10px 5px 5px;
       }
     `);
   }
