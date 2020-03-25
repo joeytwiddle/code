@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Telegram Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.0.2
+// @version      0.0.3
 // @description  Make Telegram Web nicer to use (layout, design)
 // @author       joeytwiddle
 // @match        https://web.telegram.org/*
@@ -40,7 +40,8 @@
           display: table;
         }
         .im_message_out {
-          margin-left: auto;
+          /* The !important is needed to overwrite the padding in .im_grouped_short .im_content_message_wrap (when the local user sends multiple messages) */
+          margin-left: auto !important;
         }
       }
     `);
