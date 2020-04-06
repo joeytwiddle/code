@@ -1,16 +1,19 @@
 // ==UserScript==
 // @name            Scroll Everywhere
-// @description     Scroll everywhere with right mouse button.
+// @description     Scroll entire page quickly with middle mouse button.
 // @author          tumpio
-// @oujs:author     tumpio
+// @collaborator    joeytwiddle
 // @namespace       tumpio@sci.fi
 // @homepageURL     https://openuserjs.org/scripts/tumpio/Scroll_Everywhere
 // @supportURL      https://github.com/tumpio/gmscripts
 // @icon            https://raw.githubusercontent.com/tumpio/gmscripts/master/Scroll_Everywhere/large.png
 // @include         *
 // @grant           none
-// @version         0.3c
+// @version         0.3d
+// @license         MIT
 // ==/UserScript==
+
+// This is a version of tumpio's script which defaults to middle-click drag and will do a relative scroll of the entire page.  I find this more intuitive.
 
 /* jshint multistr: true, strict: false, browser: true, devel: true */
 /* global escape: true,GM_getValue: true,GM_setValue: true,GM_addStyle: true,GM_xmlhttpRequest: true */
@@ -29,14 +32,14 @@ var relativeScrolling, lastX, lastY, scaleX, scaleY, power, offsetMiddle;
 // NOTE: Do not run on iframes
 if (window.top === window.self) {
     // USER SETTINGS
-    mouseBtn = 3; // 1:left, 2:middle, 3:right mouse button
-    reverse = false; // reversed scroll direction
+    mouseBtn = 2; // 1:left, 2:middle, 3:right mouse button
+    reverse = true; // reversed scroll direction
     stopOnSecondClick = false; // keep scrolling until the left mouse button clicked
     verticalScroll = false; // vertical scrolling
     slowScrollStart = false; // slow scroll start on begin
     startAnimDelay = 150; // slow scroll start mode animation delay
     cursorStyle = "grab"; // cursor style on scroll
-    middleIsStart = false; // don't jump when the mouse starts moving
+    middleIsStart = true; // don't jump when the mouse starts moving
     relativeScrolling = false; // scroll the page relative to where we are now
     scaleX = 3; // how fast to scroll with relative scrolling
     scaleY = 3;
@@ -134,6 +137,8 @@ function scroll(e) {
             e.clientY)
     );
 }
+
+const trace = (arg) => { console.log(arg); return arg; };
 
 function stop() {
     cursorMask.style.display = "none";
