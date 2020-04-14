@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>1337 formulah showar bai squirrel and joeytwiddle!11</title>
+<style>
+    * {margin: 0px; padding: 0px; font-family: "Tahoma", sans-serif; font-size: 12px;}
+    html, body { width: 100%; height: 100%; overflow: hidden;  }
+    #canvas { position: absolute; top: 0px; left: 0px; cursor: pointer;}
+    
+    #controls { position: absolute; top: 1px; left: 2px;  text-shadow: #fff 0px 0px 10px;}
+    #controls button { padding: 0px; margin: 0px; }
+    #controls input { padding: 0px; margin: 0px 1px; height: 13px;}
+    #controls input.short { width: 40px; }
+    #controls input.long { width: 242px; }
+    #controls input.slider { width: 200px; }
+    #controls table { border-spacing: 0px; }
+    #controls table td { padding: 0px; margin: 0px; height: 19px;}
+    
+    .info {font-size: 70%; width: 250px;  text-shadow: #fff 0px 0px 10px;}
+    .info * {font-size: 100%;}
+    
+    .flink { border-bottom: 1px dotted; cursor: pointer; white-space: nowrap; }
+    .flink:hover { border-bottom: 1px solid; }
+    
+    footer { display:block; position: absolute; bottom: 0px; left: 2px; font-size: 70%; text-shadow: #fff 0px 0px 10px;}
+    footer * {font-size: 100%;}
+</style>
+<script>
+
+//#############################################################################
+//#############################################################################
+//############################################################################# VARIABLES
+
+// CONSTANTS
+var X=0; var Y=1; var Z=2;
+var take = [ [Z,Y], [Z,X], [Y,X] ]; // x=z/y  y=z/x  z=y/x
+var WIREFRAME = 0, ZCOLORED = 1, ZCOLORED2 = 2, LIGHTED = 3;
+
+
+// CANVAS
+var canvaswidth, canvasheight
+
+// GLOBAL VARS
+var _canvas, _ctx, _magnification;
+var camera, magnification, multiplier, angles, gridsize;
+var parallel;                                   //boolean
+var dragging;                                   //boolean
+var oldpoint = [];
+var a3 = []; a3r = []; a2 = [];
+var shapes = [], shapes3r = []; shapes2 = [];
+var formula, min_x, min_y, max_x, max_y, min_z, max_z;
+var mode;
+var index=0;
+
+// TEMP
+var dot
+var tempcam
+var z, zs = [], max1, max2, triangles = [], i;
+var time1;
+var A, B, C
+
+//############################################################################# USER FUNCTIONS
+
+function cos(a) { return Math.cos( a / 180 * Math.PI); }
+function sin(a) { return Math.sin( a / 180 * Math.PI); }
+function tan(a) { return Math.tan( a / 180 * Math.PI); }
+var abs = Math.abs;
+var sqrt = Math.sqrt;
+var log = Math.log;
+var floor = Math.floor;
+var ceil = Math.ceil;
+var pow = Math.pow;
+var round = Math.round;
+var random = Math.random;
+function sqr(n) { 
+    return n*n 
+};
+
+//#############################################################################
+//############################################################################# MAIN FUNCTIONS
+//#############################################################################
+
+function c2dto3d() {
+    if (parallel) return [dot[X] * magnification, -dot[Z] * magnification]
+    dot[Y] += camera;
+    return [camera * dot[X] / dot[Y] * magnification, -camera * dot[Z] / dot[Y] * magnification]
+}
+
+function rotate() {
+    for (i = 2; i>=0; i--) {
+        if (angles[i] != 0) {
+            h = dot[take[i][0]]; w = dot[take[i][1]];
+            alpha = Math.abs( Math.atan( h/w ) );
+            
+            if (w < 0) {
+                if (h < 0)  angle = Math.PI + alpha;
+                else        angle = Math.PI - alpha;
+            }
+            else {
+                if (h < 0)  angle = -1 * alpha;
+                else        angle = alpha;
+            }
+            
+            angle += angles[i];
+            len = Math.sqrt( h*h + w*w );
+            if (len == 0) angle = 0;
+            dot[take[i][0]] = Math.sin( angle ) * len;       
+            dot[take[i][1]] = Math.cos( angle ) * len;
+        }
+    }
+}
+
+function get3dcoordinates() {
+    // THIS USES formula, multiplier, gridsize, min_x, min_y, max_x, max_y AND YIELDS a3[][] = [x, y, z]
+    min_z = +Infinity, max_z = -Infinity;
+    var xstep = (max_x - min_x) / gridsize;
+    var ystep = (max_y - min_y) / gridsize;
+    for (var n = 0; n <= gridsize; n++ ) {
+        a3[n] = [];
+        for (var m = 0; m <= gridsize; m++ ) {
+            x = min_x + n*xstep;
+            y = min_y + m*ystep;
+            z = eval(formula);
+            a3[n][m] = [x, y, z*multiplier];
+
+            if (a3[n][m][Z] < min_z) min_z = a3[n][m][Z];
+            if (a3[n][m][Z] > max_z) max_z = a3[n][m][Z];
+        }
+    }
+};
+
+function get2dcoordinatesandrotatedarray() {
+    // THIS USES a3 AND YIELDS a3r[][] = [x, y, z] & a2[];
+    for (var n = 0; n <= gridsize; n++ ) {
+        a2[n] = [];
+        a3r[n] = [];
+        for (var m = 0; m <= gridsize; m++ ) {
+            dot = a3[n][m].slice(0);
+            rotate();
+            a3r[n][m] = dot.slice(0);
+            a2[n][m] = c2dto3d();
+        }
+    }
+};
+
+function shapes_get2dcoordinatesandrotatedarray() {
+    // THIS ISES shapes AND YIELDS shapes3r[][][] = [x, y, z] & shapes2[][][] = [x, y];
+    for (var n = 0; n < shapes.length; n++ ) { // for each shape
+        shapes2[n] = [];
+        shapes3r[n] = [];
+        for (var m = 0; m < shapes[n].length; m++ ) {  //for each path
+        shapes2[n][m] = [];
+        shapes3r[n][m] = [];
+            for (var l = 0; l < shapes[n][m].length; l++) {
+                dot = shapes[n][m][l].slice(0);
+                rotate();
+                shapes3r[n][m][l] = dot.slice(0);
+                shapes2[n][m][l] = c2dto3d();
+                
+            }
+        }
+    }
+}
+
+//############################################################################# DRAW
+
+function draw(newformula) {
+
+    index++; //alert(index);
+
+    time1 = new Date(); time1 = time1.getTime();
+    
+    document.getElementById("lol").innerHTML = "Preparing ["+index+"]... "
+
+   
+    // GET VALUES
+    if (document.getElementById("wireframe").checked) mode = WIREFRAME;
+    else if (document.getElementById("zcolored").checked) mode = ZCOLORED;
+    else if (document.getElementById("zcolored2").checked) mode = ZCOLORED2;
+    else if (document.getElementById("lighted").checked) mode = LIGHTED;
+    
+    formula = document.getElementById("formula").value; 
+    min_x = eval(document.getElementById("minx").value);
+    min_y = eval(document.getElementById("miny").value);
+    max_x = eval(document.getElementById("maxx").value);
+    max_y = eval(document.getElementById("maxy").value);
+    
+    var rx = eval(document.getElementById("irx").value) / 180 * Math.PI;
+    var ry = eval(document.getElementById("iry").value) / 180 * Math.PI;
+    var rz = eval(document.getElementById("irz").value) / 180 * Math.PI;
+
+    gridsize = eval(document.getElementById("igridsize").value);
+    magnification = eval(document.getElementById("imagnification").value);
+    multiplier = eval(document.getElementById("imultiplier").value);
+    camera = eval(document.getElementById("icamera").value);
+    angles = [rx, ry, rz];
+
+
+    // PARALLEL & ADJUST CAMERA
+    if (parallel && camera) {
+        parallel = false;
+        document.getElementById("parallel").checked = false;
+    };
+    if (!parallel) {
+        camera_min = Math.max.apply( Math, [ Math.abs(min_x), Math.abs(min_y), Math.abs(max_x), Math.abs(max_y) ] ) * 2
+        document.getElementById("camera").min = camera_min;
+        if (camera < camera_min) {
+            camera = camera_min;
+            document.getElementById("icamera").value = camera;
+        }
+    }
+    
+    document.getElementById("lol").innerHTML += "<br>Calculating 3d coordinates... "
+    
+    // GET 3d COORDINATES
+    if (newformula) {
+        get3dcoordinates();                  // a3[n][m] = [x, y, z]
+        shapes_get3dcoordinates();
+    }
+
+    document.getElementById("lol").innerHTML += "<br>Rotating and calculating 2d coordinates... "
+    
+    // GET 2d COORDINATES & ROTATED ARRAY
+    get2dcoordinatesandrotatedarray();  // a3[n][m] = [x, y, z];    a3r[n][m] = [x, y, z];    a2[n][m] = [x, y]
+    shapes_get2dcoordinatesandrotatedarray();
+      
+    // RESET CANVAS & TRANSLATE
+    _canvas.width = canvaswidth;
+    _ctx.translate( Math.round((canvaswidth + document.getElementById('controls').getBoundingClientRect().right/2)/2), Math.round(canvasheight/2) );
+ 
+    
+    // DRAW IT ALL
+
+    switch (mode) {
+        case WIREFRAME:
+            wireframe(); break;
+        case ZCOLORED:
+            color_function = colored_z;
+            colored(); break;
+        case ZCOLORED2:
+            color_function = colored_z2;
+            colored(); break;
+        case LIGHTED:
+            color_function = colored_l;
+            colored(); break;
+    }                           //  */
+};
+
+//############################################################################# COLORED
+
+function ahaha(a,b) {return b[3] - a[3]}
+
+function colored() {
+    
+    drawshapes(0.2);
+    document.getElementById("lol").innerHTML += "<br>Finding all valid triangles... "
+    
+    // FIND ALL TRIANGLES;
+    triangles = [];
+    for (var n = 0; n < gridsize; n++ ) {
+        for (var m = 0; m < gridsize; m++ ) {
+            for (var l=0; l<2; l++) {
+                trianglemaxy = Math.max( a3r[n+1][m][Y], a3r[n][m+1][Y], a3r[n+l][m+l][Y]);
+                validz = !( isNaN(a3r[n+1][m][Z]) || isNaN(a3r[n][m+1][Z]) || isNaN(a3r[n+l][m+l][Z]) );
+                if (validz) triangles.push([[n+l,m+l], [n+1,m], [n,m+1], trianglemaxy]);       // triangles[?] = [ [BASE], [A], [B], maxy ]
+            };
+        }
+    }
+    
+    // SORT THEM
+    triangles.sort(ahaha);
+ 
+    document.getElementById("lol").innerHTML += "<br>Drawing the " + triangles.length +" triangles... "
+    
+    // DRAW THEM
+    colored_loop(0, Math.min(Math.ceil(triangles.length/6), 600), index)
+};
+
+
+function colored_loop(i, inc, myindex) { 
+    if (i<triangles.length && index==myindex) {
+        b = i+inc
+        for(i; i<b && i<triangles.length && index==myindex; i++) 
+            color_function(triangles[i]);
+        setTimeout("colored_loop("+i+","+inc+","+myindex+")", 0);
+    }
+    else if (index == myindex) {
+        drawshapes(0.2);
+        document.getElementById("lol").innerHTML += "<br>Rendering took <b>" + (new Date().getTime()-time1)/1000 + "</b> seconds.";
+    }
+}
+
+
+function colored_z(triangle) {
+    for (k=0; k<3; k++) zs[k] = a3[triangle[k][X]][triangle[k][Y]][Z];
+    z = (Math.min(zs[0], zs[1], zs[2])+Math.max(zs[0], zs[1], zs[2]))/2;
+    red = Math.round((z-min_z) / (max_z-min_z) * 256);
+    
+    _ctx.beginPath();
+    _ctx.fillStyle = "rgb(" + red + ",0,0)";
+    _ctx.moveTo.apply(_ctx, a2[triangle[1][X]][triangle[1][Y]]);  //A
+    _ctx.lineTo.apply(_ctx, a2[triangle[0][X]][triangle[0][Y]]);  //BASE
+    _ctx.lineTo.apply(_ctx, a2[triangle[2][X]][triangle[2][Y]]);  //B
+    _ctx.fill();
+}
+
+function colored_z2(triangle) {
+    for (k=0; k<3; k++) zs[k] = a3[triangle[k][X]][triangle[k][Y]][Z];
+    z = (Math.min(zs[0], zs[1], zs[2])+Math.max(zs[0], zs[1], zs[2]))/2;
+    red = Math.round((z-min_z) / (max_z-min_z) * 256);
+    
+    _ctx.beginPath();
+    _ctx.fillStyle = "rgb(" + red + ",0,0)";
+    _ctx.moveTo.apply(_ctx, a2[triangle[1][X]][triangle[1][Y]]);  //A
+    _ctx.lineTo.apply(_ctx, a2[triangle[0][X]][triangle[0][Y]]);  //BASE
+    _ctx.lineTo.apply(_ctx, a2[triangle[2][X]][triangle[2][Y]]);  //B
+    _ctx.closePath();
+    _ctx.strokeStyle = _ctx.fillStyle;
+    _ctx.stroke(); 
+    _ctx.fill();
+}
+
+function colored_l(triangle) {
+    A = a3r[triangle[0][X]][triangle[0][Y]].slice(0);
+    B = a3r[triangle[1][X]][triangle[1][Y]].slice(0);
+    C = a3r[triangle[2][X]][triangle[2][Y]].slice(0);
+    O = [max_x*0.5,min_y*1.4,max_x*0.3] // light source, relative to centre (0,0,0)
+    L = [0, 0, 0]   // light destination, relative to centre
+    
+    //MAKE O zero
+    dot_substract(A,O); dot_substract(B,O); dot_substract(C,O); 
+    dot_substract(L,O);
+    dot_substract(O,O);
+    
+    //FIND K, the centre of the triangle ABC; now see "TRIANGLE N"
+    K = [ (A[X]+B[X]+C[X])/3 , (A[Y]+B[Y]+C[Y])/3, (A[Z]+B[Z]+C[Z])/3]; 
+    
+    //FIND lalpha
+    OL = dots_len(O,L); OK = dots_len(O,K); LK = dots_len(L,K);
+    lalpha = Math.acos( (sqr(OL) + sqr(OK) - sqr(LK)) / (2 * OL * OK ) );
+    
+    //FIND beta = asic(h/OK) = asin(3*V/Area/OK)
+    V = volume_tetrahedron(A, B, C);
+    Area = area_triangle(A, B, C);
+    lbeta = Math.asin( 3*V/Area/OK );
+    
+    
+    //USE OK, lalpha, lbeta to compute lightness
+    lalpha = lalpha/Math.PI*2; //0..1 //!!
+    lbeta = lbeta/Math.PI*2; //0..1 //!!
+    red = 1-Math.sqrt(lalpha*10)/4;
+    red = red * 10/OK
+    red = Math.floor(red * 256 * lbeta);
+    
+    //DRAW
+    _ctx.beginPath();
+    _ctx.fillStyle = "rgb(" + red + ",0,0)";
+    _ctx.moveTo.apply(_ctx, a2[triangle[1][X]][triangle[1][Y]]);  //A
+    _ctx.lineTo.apply(_ctx, a2[triangle[0][X]][triangle[0][Y]]);  //BASE
+    _ctx.lineTo.apply(_ctx, a2[triangle[2][X]][triangle[2][Y]]);  //B
+    _ctx.closePath();
+    _ctx.strokeStyle = _ctx.fillStyle;
+    _ctx.stroke(); 
+    _ctx.fill();
+};
+
+function dot_substract(dot_from, dot_what) {
+    for (var i=0; i<3; i++) dot_from[i] -= dot_what[i];
+}
+
+function dots_len(dota, dotb) {
+    return sqrt( sqr(dota[X]-dotb[X]) + sqr(dota[Y]-dotb[Y]) + sqr(dota[Z]-dotb[Z]) );
+}
+
+function volume_tetrahedron(X, Y, Z) {          // X abc Y def Z ghi /// aei + bfg + cdh - afh - bdi - ceg)/6;
+    return Math.abs( X[0]*Y[1]*Z[2] + X[1]*Y[2]*Z[0] + X[2]*Y[0]*Z[1] - X[0]*Y[2]*Z[1] - X[1]*Y[0]*Z[2] - X[2]*Y[1]*Z[0])/6; //!!
+}
+
+function area_triangle(X, Y, Z) {
+    // area = sqrt( s(s-a)(s-b)(s-c) ); s= a+b+c/2
+    aa = dots_len(X,Y);
+    bb = dots_len(X,Z);
+    cc = dots_len(Y,Z);
+    ss = 0.5*(aa+bb+cc);
+    return Math.sqrt( ss*(ss-aa)*(ss-bb)*(ss-cc) );
+}
+
+//############################################################################# WIREFRAME
+
+function wireframe() {
+    
+    document.getElementById("lol").innerHTML += "<br>Drawing... "
+    
+    // PREPARE THE LINES. THIS IS THE FASTEST FUNCTION
+    var n=0, m=0, j=0, skip;
+    while(j<2) {
+        skip = false;
+        while(true) {
+            if (isGood(n,m)) _ctx.moveTo.apply(_ctx,a2[n][m]);
+            else skip = true;
+            while (true) {
+            if (skip) { 
+                if (isGood(n,m)) { 
+                    skip = false;
+                    _ctx.moveTo.apply(_ctx,a2[n][m]);
+                }
+            }
+            else { 
+                if ( isGood(n,m)) _ctx.lineTo.apply(_ctx,a2[n][m]);
+                else skip = true;
+            }
+                if (j==0) { m++; if (m>gridsize) {m=0; break;} }
+                else { n++; if (n>gridsize) {n=0; break;} }
+            }
+            if (j==0) { n++; if (n>gridsize) {n=0; break;} }
+            else { m++; if (m>gridsize) {m=0; break;} }
+        };
+        j++;
+    };
+    
+    
+    // DRAW
+    _ctx.strokeStyle = "#000";
+    _ctx.stroke();
+    drawshapes(0.4);
+    document.getElementById("lol").innerHTML += "<br>Rendering took <b>" + (new Date().getTime()-time1)/1000 + "</b> seconds.";
+};
+
+//############################################################################# SHAPES
+
+function drawshapes(alpha) {
+    _ctx.beginPath();
+    
+    for (var n = 0; n < shapes.length; n++ ) { // for each shape
+        
+        for (var m = 0; m < shapes[n].length; m++ ) {  //for each path
+            //alert(shapes[n].length);
+            _ctx.moveTo.apply(_ctx, shapes2[n][m][0]);
+            for (var l = 1; l < shapes[n][m].length; l++) { //for each point
+                _ctx.lineTo.apply(_ctx, shapes2[n][m][l]);
+                //alert(shapes2[n][m][l]);
+            }
+        }
+    }
+    _ctx.strokeStyle = "rgba(0,0,0,"+alpha+")";
+    _ctx.stroke();
+};
+
+//#############################################################################
+//############################################################################# COMPLEMENTARY FUNCTIONS
+//#############################################################################
+
+function init() {
+    _canvas = document.getElementById("canvas");
+    _ctx = _canvas.getContext("2d");
+    _magnification = document.getElementById("magnification")
+    
+    _canvas.onmousemove = drag;
+    _canvas.onmousewheel = magnify;
+    if (window.addEventListener) window.addEventListener('DOMMouseScroll', magnify, false);
+    
+    adjustcanvas();
+    draw(true);
+}
+
+function shapes_get3dcoordinates() {
+    // each shape = [ [[startpoint] [nextpoint] [nextpoint] [lastpoint]], ... ]
+    var h = Math.max(Math.min((max_y-min_y)/2, (max_x-min_x)/2),(max_z-min_z)/2)*1.2;
+    var s = h/gridsize; var hs = h-s-s; var arrow_z = [];
+    arrow_z.push([[0,0,0], [0,0,h], [-s,-s,hs], [-s,+s,hs], [0,0,h], [+s,-s,hs], [+s,+s,hs], [0,0,h]])
+    arrow_z.push([[-s,-s,hs], [+s,-s,hs]])
+    arrow_z.push([[-s,+s,hs], [+s,+s,hs]])
+    var z = h/1.2;
+    
+    h = (max_x-min_x)/2*1.2; s = h/gridsize; hs = h-s-s; var arrow_x = [];
+    arrow_x.push([[0,0,0], [h,0,0], [hs,-s,-s], [hs,+s,-s], [h,0,0], [hs,-s,+s], [hs,+s,+s], [h,0,0]])
+    arrow_x.push([[hs,-s,-s], [hs,-s,+s]])
+    arrow_x.push([[hs,+s,-s], [hs,+s,+s]])
+    var x = h/1.2;
+
+    h = (max_y-min_y)/2*1.2; s = h/gridsize; hs = h-s-s; var arrow_y = [];
+    arrow_y.push([[0,0,0], [0,h,0], [-s,hs,-s], [+s,hs,-s], [0,h,0], [-s,hs,+s], [+s,hs,+s], [0,h,0]])
+    arrow_y.push([[-s,hs,-s], [-s,hs,+s]])
+    arrow_y.push([[+s,hs,-s], [+s,hs,+s]])
+    var y = h/1.2;
+    
+    var box = [];
+    box.push([[-x,-y,-z], [-x,+y,-z], [-x,+y,z], [-x,-y,z], [-x,-y,-z], [+x,-y,-z], [+x,y,-z], [+x,y,z], [+x,-y,z], [+x,-y,-z]])
+    box.push([[-x,+y,-z], [+x,+y,-z]])
+    box.push([[-x,+y,+z], [+x,+y,+z]])
+    box.push([[-x,-y,+z], [+x,-y,+z]])
+    
+    shapes = [arrow_z, arrow_x, arrow_y, box];
+}
+
+function isGood(n,m) {
+    if ( isNaN(a2[n][m][X]) || isNaN(a2[n][m][Y])) return false;
+    return true;
+}
+
+//WINDOW RESIZING
+function adjustcanvas() {
+    canvaswidth =  window.innerWidth
+    canvasheight = window.innerHeight
+    _canvas.width = canvaswidth 
+    _canvas.height = canvasheight
+}
+
+window.onresize = function() {
+    adjustcanvas();
+    draw();
+}
+
+//############################################################################# UI
+
+//CONTROLS
+function cv(element) {
+    document.getElementById("i" + element.id).value = element.value;
+};
+
+function cv2(element) {
+    document.getElementById(element.id.substr(1,20)).value = element.value;
+};
+
+function cpar(element) {
+    parallel = element.checked;
+    if (parallel) {
+        tempcam = [document.getElementById("icamera").value, document.getElementById("camera").value];
+        document.getElementById("icamera").value = "";
+        document.getElementById("camera").value = document.getElementById("camera").max;
+    }
+    else {
+        document.getElementById("icamera").value = tempcam[0];
+        document.getElementById("camera").value = tempcam[1];
+    }
+}
+
+function resetcoords() {
+    var elements = [ document.getElementById("rx"), document.getElementById("ry"), document.getElementById("rz") ];
+    var values = [45, 0, 45];
+    for (var i=0; i<3; i++) {
+        elements[i].value = values[i];
+        cv(elements[i]);
+    }
+}
+
+function show(formula) {
+    document.getElementById("formula").value = formula;
+    draw(true);
+}
+
+
+// MOUSE ACTIONS
+function drag(ev) {
+    if (dragging) { 
+        ev = ev || window.event;
+        var z = document.getElementById("rz"), x = document.getElementById("rx");
+        var newz = eval(z.value) + ((ev.screenX - oldpoint[0]) / canvaswidth * 360);
+        var newx = eval(x.value) + ((ev.screenY - oldpoint[1]) / canvasheight * 360);
+        if (newz < -180) newz += 360; if (newz > 180) newz -= 360;
+        if (newx < -180) newx += 360; if (newx > 180) newx -= 360;
+        z.value = newz; x.value = newx;
+        cv(z); cv(x);
+        oldpoint = [ev.screenX, ev.screenY]
+        draw();
+    }
+}
+
+function magnify(ev) {
+    ev = ev || window.event;
+    if (ev.wheelDelta) delta = ev.wheelDelta/120;
+    else if (ev.detail) delta = ev.detail/3;
+    else return 0;
+    var newmag = eval(_magnification.value) + delta;
+    if (newmag < eval(_magnification.min)) newmag = eval(_magnification.min);
+    _magnification.value = newmag;
+    cv(_magnification);
+    draw();
+}
+
+//#############################################################################
+//#############################################################################
+//#############################################################################
+
+</script>
+</head>
+<body onLoad="init();">
+
+<!-- CANVAS -->
+
+<canvas id="canvas" onMouseDown="_canvas.style.cursor='move';oldpoint=[event.screenX, event.screenY]; dragging=1" onMouseUp="dragging=0;_canvas.style.cursor='pointer'">This applications requires a html5-ready browser.</canvas>
+
+<!-- CONTROLS -->
+
+<div id="controls">
+<table>
+    <tr>
+        <td>formula:
+        <td colspan="3">
+            <input id="formula" type="text" value="sin(sqrt(x*x + y*y)*65)" class="long" onChange="draw(true)" />
+    <tr>
+        <td>input span:
+        <td colspan="3">
+            &nbsp;x: <input id="minx" type="number" value="-10" class="short" onChange="draw(true)">
+            to <input id="maxx" type="number" value="10" class="short" onChange="draw(true)">
+            & y: <input id="miny" type="number" value="-10" class="short" onChange="draw(true)">
+            to <input id="maxy" type="number" value="10" class="short" onChange="draw(true)">
+    <tr>
+        <td>grid size:
+        <td colspan="3">
+            <input id="gridsize" type="range" min="5" max="200" step="1" value="100" class="slider" onChange="cv(this); draw(true);"><input value="100" id="igridsize" type="number" class="short" onChange="cv2(this); draw(true);">
+    <tr>
+        <td>magnification:
+        <td colspan="3">
+            <input id="magnification" type="range" min="0" max="100" step="0.1" value="30" class="slider" onChange="cv(this); draw();"><input value="30" id="imagnification" type="number" class="short" onChange="cv2(this); draw();">
+    <tr>
+        <td>z multiplier:
+        <td colspan="3">
+            <input id="multiplier" type="range" min="0" max="3" step="0.1" value="1"  class="slider" onChange="cv(this); draw(true);"><input value="1" id="imultiplier" type="number" class="short" onChange="cv2(this); draw(true);" step="0.1"><button onClick="var w = document.getElementById('multiplier'); w.value = 1; cv(w); draw(true)">1</button>
+    <tr>
+        <td>rotation x:
+        <td>
+            <input id="rx" type="range" min="-180" max="180" step="1" onChange="cv(this);draw()" value="45" class="slider"><input id="irx" type="number" onChange="cv2(this); draw();" value="45" class="short">
+        <td rowspan="3">
+            <img  height="55" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAA9CAYAAACUTfioAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjbQg61aAAABN0lEQVRIS8WWP0uCURTGhUChwXRwFsIxaAv6AH2PliZp8wMEujc7OrT2ARyF5jaRiAhCbIhqCNyy54Hr6Pv8lvDA4R3uj+c9954/99Zqe7ehIrgkUdQFPcgHBD4Q9CHvEPhK0B0B24J+CWjmXX5O4CdBMwLOBb1S8IeAC0EbeSPBLwVsJXBFQcfnX1cqOi5D9mbVr51nQzE73QJ+p42cFHBJwecEHhdFp7HSfCTezGMCvb6moONDiiOBrsloRyI+I1UAt4PPNNqpiPtIFWCs7zWFXXIXCb4hij0a4xvZNT7HW6m5ZaO5XVGuUfW0pIbqEVf4trliz+AuxH2NJwWePc4GmmYG8XzEExfPcM8ddCvge8ZTYhqLUYCb/yyB+HbtS2mS1PwC+JJbdacdagW9KfArJYX1D+t/uXBVWuWiF5wAAAAASUVORK5CYII%3D">
+    <tr>
+        <td>rotation y:
+        <td>
+            <input id="ry" type="range" min="-180" max="180" step="1" onChange="cv(this); draw();" value="0" class="slider"><input id="iry" type="number" onChange="cv2(this); draw();" value="0"  class="short"> 
+        <td>
+            <button onClick="resetcoords(); draw();">R</button>
+    <tr>
+        <td>rotation z:
+        <td>
+            <input id="rz" type="range" min="-180" max="180" step="1" onChange="cv(this); draw();" value="45" class="slider"><input id="irz" type="number" onChange="cv2(this); draw();" value="45" class="short">
+    <tr>
+        <td>perspective:
+        <td colspan="3">
+            <input id="camera" type="range" min="0" max="100" step="1" onChange="cv(this); draw();" value="35" class="slider"><input id="icamera" type="number" onChange="cv2(this); draw();" value="45" class="short">
+    <tr>
+        <td>projection:
+        <td colspan="3">
+            &nbsp;<input id="parallel" type="checkbox" onChange="cpar(this); draw();"> parallel (no perspective)
+    <tr>
+        <td>rendering:
+        <td colspan="3">
+            &nbsp;<input id="wireframe" type="radio" onChange="draw()" name="r"> wireframe
+                  <input id="lighted" type="radio" onChange="draw()" name="r" checked> spotlight
+    <tr>
+        <td>
+        <td colspan="3">
+            &nbsp;<input id="zcolored"  type="radio" onChange="draw()" name="r"> z-colored
+                  <input id="zcolored2" type="radio" onChange="draw()" name="r"> z-colored and outlined
+</table>
+
+<!-- INFORMATION AND LINKS -->
+
+<div class="info" style="position: relative">
+    Click+drag to rotate. Wheel to zoom.<br>No licence or whatsoever included.
+    <br>Use functions: 
+    <div style="margin-left: 10px; margin-top: 1px; margin-bottom: 3px;">
+        <abbr title="Cosine. E.g. cos(x)">cos</abbr>, 
+        <abbr title="Sine. E.g. sin(60)">sin</abbr>,
+        <abbr title="Tangent. E.g. tan(y)">tan</abbr> (in degrees);
+        <abbr title="Square root. E.g. sqrt(abs(x))">sqrt</abbr>, 
+        <abbr title="Square. E.g. sqr(3) would yield 9">sqr</abbr>;<br>
+        <abbr title="Absolute (i.e. positive) value. E.g. abs(-5) would yield 5">abs</abbr>, 
+        <abbr title="Logarithm. E.g. log(1)">log</abbr>, 
+        <abbr title="Floor. E.g. floor(0.5) would yield 0">floor</abbr>, 
+        <abbr title="Ceiling. E.g. ceil(0.5) would yield 1">ceil</abbr>, 
+        <abbr title="Power. E.g. pow(2,3) would yield 8">pow</abbr>, 
+        <abbr title="Round. E.g. round(y)">round</abbr>, 
+        <abbr title="Random. E.g. random() would yield something random between 0 and 1">random</abbr>.
+    </div>
+    Try the following formulas: 
+    <div style="margin-left: 10px; margin-top: 1px; margin-bottom: 3px;">
+        <span class="flink" onClick="show('log(abs(x*y)+1)');">log(abs(x*y)+1)</span>,<br>
+        <span class="flink" onClick="show('cos(x*50)-cos(y*50)/2');">cos(x*50)*cos(y*50)</span>,<br>
+        <span class="flink" onClick="show('sin(x*y*15)');">sin(x*y*15)</span>,<br>
+        <span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10))*75)*3');">sin(sqrt(abs(x-y+x*y/10))*75)*3</span>,<br>
+        <span class="flink" onClick="show('sqrt(100-sqr(x)-sqr(y))');">sqrt(100-sqr(x)-sqr(y))</span>,<br>
+        <span class="flink" onClick="show('-log(0.1+abs(sin(49*sqrt(x*x + y*y))))');">-log(0.1+abs(sin(49*sqrt(x*x + y*y))))</span>,<br>
+        <span class="flink" onClick="show('((a=sqr(x)+sqr((y-pow(x*x,1/3)))-50)<0)?abs(a)/15:0')">((a=x*x+pow((y-pow(x*x,1/3)),2)-50)&lt;0)?abs(a)/15:0</span>,<br>
+        <span class="flink" onClick="show('b=(((l=pow(x+2,2)+pow(y+6,2)-3*3)<0) && x<0)?sqrt(abs(l)):(((r=pow(x-2,2)+pow(y+6,2)-3*3)<0) && x>=0)?sqrt(abs(r)):0;s=((x<=2) && (x>=-2) && (y<4.5) && (y>=-5))?sqrt(4-x*x):0;h=(((h=pow(x,2)+pow(y-6,2)-3*3)<0) && (y>=4.5))?sqrt(abs(h)):0;(b>s)?b:s||h');">don't click this</span>,<br>
+        <span class="flink" onClick="show('sin(sqrt(sqr(x) + sqr(y))*65)');">sin(sqrt(sqr(x) + sqr(y))*65)</span>.<br>
+    </div>
+    If this ruins your PC..<br>&nbsp;&nbsp;&nbsp;why, that'd be amazing, man!<br>
+    <span style="padding-left: 100px;"><i>-- made by squirrel</i></span>
+</div>
+
+</div>
+
+<!-- STATUS TEXT -->
+
+<footer id="lol"></footer>
+
+<!-- THAT'S IT -->
+
+</body>
+</html>
