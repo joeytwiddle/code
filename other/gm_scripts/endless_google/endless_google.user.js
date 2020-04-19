@@ -2,155 +2,148 @@
 // @name            Endless Google [fork]
 // @description     Load more results automatically and endlessly.
 // @author          tumpio
-// @oujs:author     tumpio
-// @license         MIT
 // @namespace       tumpio@sci.fi
-// @homepageURL     https://openuserjs.org/scripts/tumpio/tumpiosci.fi/Endless_Google
-// @supportURL      https://github.com/tumpio/gmscripts
+// @homepageURL     https://openuserjs.org/scripts/tumpio/Endless_Google
+// @supportURL      https://github.com/tumpio/gmscripts/issues
 // @icon            https://github.com/tumpio/gmscripts/raw/master/Endless_Google/large.png
 // @include         http://www.google.*
 // @include         https://www.google.*
 // @include         https://encrypted.google.*
 // @run-at          document-start
-// @grant           GM_xmlhttpRequest
+// @version         0.0.6-joey7
+// @license         MIT
 // @grant           GM_addStyle
-// @version         0.0.4-joey6
+// @noframes
 // ==/UserScript==
 
-// TODO: on page refresh:
-//  2: load only the last scrolled page (on refresh, load last requested page) (could be a good default, needs scroll up support)
-//      beforeunload -> store last requested page with GM_setVariable() and reload it instead
-// TODO: onerror, onabort: show to user "page loading failed", button to retry
-
-// FIXME: bug: Suggested images don't show up on new requested pages
-// case: https://www.google.fi/webhp?tab=ww&ei=e0UjU9ynEKqkyAO46YD4DQ&ved=0CBEQ1S4#q=tetsaus
-// workaround, hiding now
-
-// FUTURE: Options dialog
-// FUTURE: Replace footer with page #no info UI
-// FUTURE: Add page up/down and back to top/bottom controls UI + (go to the page #n)?
-// FUTURE: Add columns support
-// FUTURE: show page loading icon
-// FUTURE: show page fav-icons for results
-// FUTURE: number results
-// FUTURE: option to load static google css
-// FUTURE: support scroll up
+// This is joeytwiddle's tiny fork of tumpio's original which:
+// 1. Adds a bit of extra CSS, which used to help me focus
+// 2. Is available on greasyfork website
 
 if (location.href.indexOf("tbm=isch") !== -1) // NOTE: Don't run on image search
     return;
 if (window.top !== window.self) // NOTE: Do not run on iframes
     return;
 
-document.addEventListener('DOMContentLoaded', function () {
+const centerElement = "#center_col";
+const loadWindowSize = 1.6;
+const filtersAll = ["#foot", "#bottomads"];
+const filtersCol = filtersAll.concat(["#extrares", "#imagebox_bigimages"]);
+let   msg = "";
 
-    // NOTE: Options
-    var request_pct = 1.50; // percentage of window height left on document to request next page, value must be between 0-1
-    var event_type = "scroll"; // or "wheel"
-    var on_page_refresh = 1;
-    // 0: reload all previous pages requested
-    // 1: load only the first page (prevent restoring the scroll position)
-    // 2: load only the last page requested
-    var main = document.getElementById("main");
-    var rcnt = document.getElementById("rcnt");
-    var input = document.getElementById("lst-ib");
-    var input_value = input.value;
-    var old_scrollY = 0;
-    var scroll_events = 0;
-    var next_link = null;
-    var cols = [];
-    var request_offsetHeight = 0;
-    var stop_events = false;
+const css = `
+.page-number {
+  position: relative;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+	margin-bottom: 2em;
+	color: #808080;
+}
+.page-number::before {
+  content: "";
+  background-color: #ededed;
+  height: 1px;
+  width: 100%;
+  margin: 1em 3em;
+}
+.endless-msg {
+  position:fixed;
+  bottom:0;
+  left:0;
+  padding:5px 10px;
+  background: darkred;
+  color: white;
+  font-size: 11px;
+  display: none;
+}
+.endless-msg.shown {
+  display:block;
+}
+`;
 
-    input.addEventListener("blur", reset, false); // NOTE: listens for new search input to reset state
-    window.addEventListener(event_type, onScroll, false);
+let pageNumber = 1;
+let prevScrollY = 0;
+let nextPageLoading = false;
 
-    // Disabled by Joey because it is mildly annoying when clicking a link, and I'm not sure what its benefit is
-    //window.addEventListener("beforeunload", function () {
-    //    window.scrollTo(0, 0);
-    //}, false);
+function requestNextPage() {
+    nextPageLoading = true;
+    let nextPage = new URL(location.href);
+    if (!nextPage.searchParams.has("q")) return;
 
-    function requestNextPage(link) {
-        console.log("request next");
-        console.log(link);
-        GM_xmlhttpRequest({
-            method: "GET",
-            url: link,
-            onload: function (response) {
-                var el = document.getElementById('navcnt');
-                el.parentNode.removeChild(el); //Deletes the navigation box
-                
-                var holder = document.createElement("div");
-                holder.innerHTML = response.responseText;
-                next_link = holder.querySelector("#pnnext").href;
+    nextPage.searchParams.set("start", String(pageNumber * 10));
+    !msg.classList.contains("shown") && msg.classList.add("shown");
+    fetch(nextPage.href)
+        .then(response => response.text())
+        .then(text => {
+            let parser = new DOMParser();
+            let htmlDocument = parser.parseFromString(text, "text/html");
+            let content = htmlDocument.documentElement.querySelector(centerElement);
 
-                var next_col = document.createElement("div");
-                next_col.className = "EG_col";
-                next_col.appendChild(holder.querySelector("#center_col"));
+            content.id = "col_" + pageNumber;
+            filter(content, filtersCol);
 
-                var rel_search = next_col.querySelector("#extrares");
-                var rel_images = next_col.querySelector("#imagebox_bigimages");
-                var rel_ads = next_col.querySelector("#tads");
-                if (rel_search)
-                    rel_search.style.display = "none"; // NOTE: Hides repeating "related searches"
-                if (rel_images)
-                    rel_images.style.display = "none"; // NOTE: Hides related images, that are broken (bug)
-                if (rel_ads)
-                    rel_ads.style.display = "none"; // NOTE: Hides repeating "search results ad"
+            let pageMarker = document.createElement("div");
+            pageMarker.textContent = String(pageNumber + 1);
+            pageMarker.className = "page-number";
 
-                cols.push(next_col);
-                console.log("Page no: " + cols.length);
-                next_col.id = next_col.className + "_" + (cols.length - 1); // NOTE: add unique id for every new col
+            let col = document.createElement("div");
+            col.className = "next-col";
+            col.appendChild(pageMarker);
+            col.appendChild(content);
+            document.querySelector(centerElement).appendChild(col);
 
-                if (!rcnt || cols.length === 1) // NOTE: needs to be rechecked on a state reset too, and late insertation of element on google instant
-                    rcnt = document.getElementById("rcnt");
-                rcnt.appendChild(next_col);
-                stop_events = false;
-                window.addEventListener(event_type, onScroll, false);
+            if (!content.querySelector("#rso")) {
+                // end of results
+                window.removeEventListener("scroll", onScrollDocumentEnd);
+                nextPageLoading = false;
+                msg.classList.contains("shown") && msg.classList.remove("shown");
+                return;
             }
+
+            pageNumber++;
+            nextPageLoading = false;
+            msg.classList.contains("shown") && msg.classList.remove("shown");
         });
+}
 
+function onScrollDocumentEnd() {
+    let y = window.scrollY;
+    let delta = y - prevScrollY;
+    if (!nextPageLoading && delta > 0 && isDocumentEnd(y)) {
+        requestNextPage();
     }
+    prevScrollY = y;
+}
 
-    function onScroll(e) {
-        var y = window.scrollY;
-        // if (scroll_events === 0) old_scrollY = y; // stops only if scroll position was on 2. page
-        var delta = e.deltaY || y - old_scrollY; // NOTE: e.deltaY for "wheel" event
-        if (delta > 0 && (window.innerHeight + y) >= (document.body.clientHeight - (window.innerHeight * request_pct))) {
-            console.log("scroll end");
-            window.removeEventListener(event_type, onScroll, false);
+function isDocumentEnd(y) {
+    return y + window.innerHeight * loadWindowSize >= document.body.clientHeight;
+}
 
-            try {
-                if(!stop_events){
-                    stop_events = true;
-                    requestNextPage(next_link || document.getElementById("pnnext").href);
-                }
-            } catch (err) {
-                console.error(err.name + ": " + err.message);
-                // NOTE: recovery unnecessary, input event handles it with reset on new search
-            }
+function filter(node, filters) {
+    for (let filter of filters) {
+        let child = node.querySelector(filter);
+        if (child) {
+            child.parentNode.removeChild(child);
         }
-        old_scrollY = y;
-        scroll_events += 1;
     }
+}
 
-    // NOTE: Resets the script state on a new search
-    function reset() {
-        if (input.value !== input_value) {
-            input_value = input.value;
-            window.scrollTo(0, 0);
-            for (var i = 0; i < cols.length; i++)
-                rcnt.removeChild(cols[i]);
-            cols = [];
-            next_link = null;
-            old_scrollY = 0;
-            scroll_events = 0;
-            console.log("RESET");
-            }
-    }
+function init() {
+    prevScrollY = window.scrollY;
+    window.addEventListener("scroll", onScrollDocumentEnd);
+    filter(document, filtersAll);
+    let style = document.createElement("style");
+    style.type = "text/css";
+    style.appendChild(document.createTextNode(css));
+    document.head.appendChild(style);
+    msg = document.createElement("div");
+    msg.setAttribute("class", "endless-msg");
+    msg.innerText = "Loading next page...";
+    document.body.appendChild(msg);
+}
 
-    console.log("egoogle.js initialized");
-});
-console.log("egoogle.js loaded");
+document.addEventListener("DOMContentLoaded", init);
 
 // The related searches are a bit jarring because they mix in with the search results.
 // So we give them a light grey background, so are visually distinguishable
