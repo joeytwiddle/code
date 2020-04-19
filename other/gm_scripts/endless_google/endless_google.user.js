@@ -10,7 +10,7 @@
 // @include         https://www.google.*
 // @include         https://encrypted.google.*
 // @run-at          document-start
-// @version         0.0.6-joey7
+// @version         0.0.6-joey8
 // @license         MIT
 // @grant           GM_addStyle
 // @noframes
@@ -145,10 +145,10 @@ function init() {
 
 document.addEventListener("DOMContentLoaded", init);
 
-// The related searches are a bit jarring because they mix in with the search results.
-// So we give them a light grey background, so are visually distinguishable
-// Trying to produce something similar to the exp-outline class
-GM_addStyle("#extrares { border: 1px solid rgba(0, 0, 0, 0.13); border-radius: 0px; background: rgba(0, 0, 0, 0.02); margin-bottom: 24px; }");
+// The related searches are a bit distracting because they mix in with the search results.
+// So we give them a light grey background, so they are visually distinguishable.
+// Trying to produce something similar to the exp-outline class.
+GM_addStyle("#extrares { border: 1px solid rgba(0, 0, 0, 0.15); border-radius: 0px; background: rgba(0, 0, 0, 0.02); margin-bottom: 24px; padding-left: 26px; padding-right: 26px; }");
 // Lets also reduce the rather large top and bottom padding on this box
-GM_addStyle("#brs { margin-bottom: 20px }");
-GM_addStyle("#brs > * { margin-top: 26px }");
+GM_addStyle("#brs { margin-bottom: 20px !important; }");
+GM_addStyle("#brs > * { margin-top: 20px !important; }");
