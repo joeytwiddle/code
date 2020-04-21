@@ -5,15 +5,13 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.4.13
+// @version        1.5.0
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
-// @exclude        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
-// @exclude        /https?:\/\/www\.ecosia\.org\/(search|news|videos)?.*/
-// @grant          none
+// @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
+// @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
+// @grant          GM_xmlhttpRequest
+// @connect        *
 // ==/UserScript==
-
-// TODO: For Ecosia and StartPage, we may be able to bypass CSP by fetching the images using GM_xmlHttpRequest, and converting the content into a data: URL
-//       Alternatively, we could re-enable those sites, and recommend users to unlock CSP restrictions using one of these methods: https://stackoverflow.com/questions/27323631/how-to-override-content-security-policy-while-including-script-in-browser-js-con
 
 var placeFaviconByUrl      = false;   // The little green link below the article title
 var placeFaviconAfter      = false;   // Display after the link instead of before it
@@ -32,6 +30,7 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 // - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
 // - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
 
+// 2020-04-21 Re-enabled for Ecosia and StartPage, bypass CSP by fetching the images using GM_xmlhttpRequest.
 // 2020-02-02 Reenabled Google again, because Google has stopped showing favicons.
 // 2020-01-22 Disabled Google, because Google is now displaying favicons itself.
 // 2020-01-22 Disabled Ecosia, because their CSP is blocking images
@@ -54,7 +53,16 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 // hostname extraction implemented aggressively, which results in favicons
 // being given to unexpected things like bookmarklets which contain a site url.
 
-if (document.location.host.match(/\bstartpage\b/)) {
+var isEcosia = document.location.hostname === 'www.ecosia.org' || document.location.hostname === 'ecosia.org';
+var isStartpage = document.location.host.match(/\bstartpage\b/);
+
+var bypassCSP = isEcosia || isStartpage;
+
+if (isEcosia) {
+	iconSize = iconSize * 0.6;
+}
+
+if (isStartpage) {
 	// This feature doesn't work on startpage!
 	placeFaviconOffTheLeft = false;
 }
@@ -64,6 +72,12 @@ if (document.location.search.match(/&tbm=nws/)) {
 	placeFaviconOffTheLeft = false;
 	// The layout is a bit too cramped for large favicons
 	iconSize = 0.9;
+}
+
+if ((isEcosia || isStartpage) && (window.innerWidth < 1000)) {
+	// At lower widths, these website collapse their layout so there is no margin on the left, in which case we don't want to float the favicon out of view.
+	// We dare not do this for Google, as this isn't working right now!
+	placeFaviconOffTheLeft = false;
 }
 
 function findClosest (elem, tagName) {
@@ -100,24 +114,62 @@ function createFaviconFor (url) {
 	img.className = 'favicon';
 	img.border = 0;
 	img.style.display = 'none';
-	var tryNextExtension = function () {
-		if (urlsToTry.length === 0) {
-			removeListeners();
-			return;
-		}
-		img.src = urlsToTry.shift();
-	};
 	var showImage = function () {
 		img.style.display = '';
-		removeListeners();
+		if (typeof removeListeners === 'function') {
+			removeListeners();
+		}
 	};
-	var removeListeners = function () {
-		img.removeEventListener('load', showImage);
-		img.removeEventListener('error', tryNextExtension);
-	};
-	img.addEventListener('load', showImage, false);
-	img.addEventListener('error', tryNextExtension, false);
-	tryNextExtension();
+	if (bypassCSP) {
+		var blobToDataURL = (blob, callback) => {
+			var a = new FileReader();
+			a.onload = function(e) {
+				callback(e.target.result);
+			};
+            a.readAsDataURL(blob);
+		};
+		var tryNextUrlNoCors = function () {
+			if (urlsToTry.length === 0) {
+				return;
+			}
+			var url = 'https:' + urlsToTry.shift();
+			console.log('url:', url);
+			GM_xmlhttpRequest({
+				method: 'GET',
+				url: url,
+				responseType: 'blob',
+				onload: (res) => {
+					//console.log('response:', res.response);
+					blobToDataURL(res.response, (dataUrl) => {
+						//console.log('dataUrl:', dataUrl);
+						const isImage = dataUrl.startsWith('data:application/octet-stream;') || dataUrl.startsWith('data:image/');
+						if (isImage) {
+							img.src = dataUrl;
+							showImage();
+						} else {
+							tryNextUrlNoCors();
+						}
+					});
+				},
+			});
+		};
+		tryNextUrlNoCors();
+	} else {
+		var tryNextUrl = function () {
+			if (urlsToTry.length === 0) {
+				removeListeners();
+				return;
+			}
+			img.src = urlsToTry.shift();
+		};
+		var removeListeners = function () {
+			img.removeEventListener('load', showImage);
+			img.removeEventListener('error', tryNextUrl);
+		};
+		img.addEventListener('load', showImage, false);
+		img.addEventListener('error', tryNextUrl, false);
+		tryNextUrl();
+	}
 	return img;
 }
 
@@ -155,7 +207,8 @@ function getGoogleResultsLinks () {
 
 	// For ecosia.org
 	if (links.length === 0) {
-		links = document.querySelectorAll('.result-title');
+		// We use .result-body to avoid getting deep links (which were producing an unwanted second large favicon)
+		links = document.querySelectorAll('.result-body .result-title');
 	}
 
 	// Remove any links which contain only one image
@@ -170,20 +223,19 @@ function getGoogleResultsLinks () {
 }
 
 var style = document.createElement('STYLE');
-var padSide = (placeFaviconAfter ? 'left' : 'right');
-var leftPadding = 1.2 * iconSize + 0.6;
+var marginSide = (placeFaviconAfter ? 'left' : 'right');
+var leftPadding = 1.2 * iconSize + 0.6 - 0.3 * isEcosia;
 // We can try to centralise the icon with the text
 // Or we can top-align the icon with the text (better for larger icon sizes)
 var topPadding = centraliseIconVertically ? 0.87 - iconSize / 2 : 0.35;
 var extra = placeFaviconOffTheLeft ? 'position: absolute; left: -' + leftPadding + 'em; top: ' + topPadding + 'em;' : '';
-if (document.location.hostname === 'www.ecosia.org') {
-	var topMargin = 0.1 + centraliseIconVertically * iconSize / 13;
-	// Cancel the above padding (it stretches the icon on ecosia)
+if (isEcosia) {
+	var topMargin = 0.3 + centraliseIconVertically * iconSize / 13;
 	// Use margin for vertical positioning
-	extra += ' padding: 0; margin-top: ' + (-topMargin) + 'em;';
+	extra += ' margin-top: ' + (-topMargin) + 'em;';
 }
 // If we are using placeFaviconOffTheLeft, then we don't need the paddings or alignment here
-style.innerHTML = ".favicon { padding-" + padSide + ": " + (iconSize / 2) + "em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
+style.innerHTML = ".favicon { box-sizing: content-box; margin-" + marginSide + ": 0.3em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
 
 function updateFavicons () {
@@ -230,6 +282,13 @@ function updateFavicons () {
 		var img = createFaviconFor(targetUrl);
 		// <cite> is for google, .url is for startpage
 		var targetNode = (placeFaviconByUrl && link.parentNode.parentNode.querySelector('cite, .url') || link);
+
+		if (isEcosia && !placeFaviconOffTheLeft) {
+			// With the default `display: block` the link will break onto a separate line from the favicon, so we do this
+			link.style.display = 'inline-block';
+			link.parentNode.style.whiteSpace = 'nowrap';
+		}
+
 		if (placeFaviconInsideLink) {
 			if (placeFaviconAfter) {
 				targetNode.appendChild(img);
