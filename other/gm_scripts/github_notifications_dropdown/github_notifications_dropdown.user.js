@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
-// @copyright      2014-2017, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.1.3
+// @author         joeytwiddle
+// @contributors   SkyzohKey
+// @copyright      2014-2020, Paul "Joey" Clark (http://neuralyte.org/~joey)
+// @version        1.2.0
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -24,6 +26,7 @@ var makeBlocksCollapsableOnNotificationsPage = true;
 // Disabled by default because it was conflicting with other scripts (https://github.com/joeytwiddle/code/issues/2)
 var makeAllFileAndDiffBlocksCollapsable = false;
 
+// If you want to change the colour of the blue notification dot, uncomment one of these
 // Github's blue dot (2017)
 //var notificationDotStyle = 'linear-gradient(hsl(212, 100%, 66%), hsl(212, 100%, 46%))';
 // Github's blue dot (2016)
@@ -40,7 +43,10 @@ var makeAllFileAndDiffBlocksCollapsable = false;
 var mainNotificationsPath = "/notifications";
 
 var notificationButtonLink = $("header a.notification-indicator[href]");
-var notificationButtonContainer = notificationButtonLink.closest(".Header-item");
+// In v1, the click listener was on the containing <li> so we had to listen there
+//var notificationButtonContainer = notificationButtonLink.closest("li");
+// In v2, the listener needs to go on the link
+var notificationButtonContainer = notificationButtonLink;
 var closeClickTargets = $("body, header a.notification-indicator[href]");
 
 var notificationsDropdown = null;
@@ -110,16 +116,21 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	var linkToPage = mainNotificationsPath;
 	//var linkToPage = targetPage;
 	var seeAll = $("<a class='notifications-dropdown-see-all' href='"+encodeURI(linkToPage)+"'>See all the notifications</a>");
-	notificationsDropdown.append(seeAll);
+	notificationsList.append(seeAll);
 
 	var arrowSize = 10;
 
+	// In v2, this appears on the notifications page, but not other pages.
+	// It is needed to activate some of the CSS for the notifications list.
+	document.body.classList.add('notifications-v2');
+
 	$("<style>").html(""
 	  + " .notifications-dropdown { "
-	  + "   border: 1px solid rgba(0, 0, 0, 0.15); "
+	  //+ "   border: 1px solid rgba(0, 0, 0, 0.15); "
 	  + "   background-color: #fff; "
 	  //+ "   padding: 2px 16px; "
-	  + "   box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.15); "
+	  //+ "   box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.15); "
+	  + "   box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.2); "
 	  + "   border-radius: 4px; "
 	  //+ "   max-height: 90%; "
 	  //+ "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
@@ -208,6 +219,29 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	  + " .notification-indicator.tooltipped.tooltip-hidden:before, .notification-indicator.tooltipped.tooltip-hidden:after { "
 	  + "   display: none; "
 	  + " } "
+	  // Additions for GitHub notifications v2 (2020)
+	  // The header only contains "Select all" and that isn't working for me
+	  + " .notifications-dropdown .Box-header { "
+	  + "   display: none !important; "
+	  + " } "
+	  // Let's also hide the inline checkboxes
+	  + " .notifications-dropdown .p-2 { "
+	  + "   visibility: hidden; "
+	  + " } "
+	  /*
+	  // This should be hidden
+	  + " .notification-is-starred-icon { "
+	  + "   display: none; "
+	  + " } "
+	  */
+	  // These buttons don't work.  Let's keep them visible, but make them appear disabled.
+	  + " .notifications-dropdown .notification-list-item-actions { "
+	  + "   opacity: 0.3; "
+	  + "   pointer-events: none; "
+	  + " } "
+	  + " .notifications-dropdown .notifications-list { "
+	  + "   margin-bottom: 0 !important; "
+	  + " } "
 	).appendTo("body");
 
 	notificationButtonLink.addClass("tooltip-hidden");
@@ -219,8 +253,8 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	}).appendTo("body"); // Done sooner so we can get its width
 	var topOfDropdown = notificationButtonContainer.offset().top + notificationButtonContainer.innerHeight() + 4;
 	var leftOfDropdown = notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth()/2 - notificationsDropdown.innerWidth()/2;
-	leftOfDropdown = Math.max(leftOfDropdown, 12);
 	leftOfDropdown = Math.min(leftOfDropdown, window.innerWidth - 12 - notificationsDropdown.innerWidth() - 20);
+	leftOfDropdown = Math.max(leftOfDropdown, 0);
 	notificationsDropdown.css({
 		top: topOfDropdown + "px",
 		left: leftOfDropdown + "px",
@@ -343,5 +377,9 @@ if (makeAllFileAndDiffBlocksCollapsable) {
 }
 
 if (typeof notificationDotStyle !== 'undefined') {
-    GM_addStyle(".notification-indicator .mail-status.unread { background-image: " + notificationDotStyle + "; }");
+	$("<style>").html(`
+	  .notification-indicator .mail-status.unread {
+	    background-image: ${notificationDotStyle};
+	  }
+	`).appendTo("body");
 }
