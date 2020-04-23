@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2020, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.2.1
+// @version        1.2.2
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -393,6 +393,13 @@ if (document.location.pathname === mainNotificationsPath) {
 	var reposList = $('.js-notification-sidebar-repositories ul.filter-list');
 	var reposInList = document.querySelectorAll('.js-notification-sidebar-repositories ul.filter-list > li');
 	if (reposInList.length === 25) {
-		reposList.append(jQuery('<li>').html('<b>Some repositories may not be shown</b>'));
+		reposList.append(
+			jQuery('<li>')
+				.html('<center><b>Some repositories may not be shown</b></center>')
+				.css({
+					background: '#eee',
+					padding: '4px',
+				})
+		);
 	}
 }
