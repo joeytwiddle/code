@@ -41,20 +41,20 @@ var notificationDotStyle = '';
 
 // ==/Options==
 
-var mainNotificationsPath = "/notifications";
+var mainNotificationsPath = '/notifications';
 
-var notificationButtonLink = $("header a.notification-indicator[href]");
+var notificationButtonLink = $('header a.notification-indicator[href]');
 // In v1, the click listener was on the containing <li> so we had to listen there
 //var notificationButtonContainer = notificationButtonLink.closest("li");
 // In v2, the listener needs to go on the link
 var notificationButtonContainer = notificationButtonLink;
-var closeClickTargets = $("body, header a.notification-indicator[href]");
+var closeClickTargets = $('body, header a.notification-indicator[href]');
 
 var notificationsDropdown = null;
 var tabArrow = null;
 
 function listenForNotificationClick() {
-	notificationButtonContainer.on("click", onNotificationButtonClicked);
+	notificationButtonContainer.on('click', onNotificationButtonClicked);
 }
 
 function onNotificationButtonClicked(evt) {
@@ -63,31 +63,31 @@ function onNotificationButtonClicked(evt) {
 		return;
 	}
 	evt.preventDefault();
-	notificationButtonContainer.off("click", onNotificationButtonClicked);
+	notificationButtonContainer.off('click', onNotificationButtonClicked);
 	// For GM 4.0 we must use an absolute path, so we use .prop() instead of .attr().  "This is an issue with Firefox and content scripts"
-	var targetPage = notificationButtonLink.prop("href");
+	var targetPage = notificationButtonLink.prop('href');
 	fetchNotifications(targetPage);
 }
 
 function fetchNotifications(targetPage) {
 	notificationButtonContainer.css({
-		opacity: "0.3",
-		outline: "none",
+		opacity: '0.3',
+		outline: 'none',
 	});
 	$.ajax({
 		url: targetPage,
-		dataType: "html",
+		dataType: 'html',
 	}).then(receiveNotificationsPage.bind(null, targetPage)).fail(receiveNotificationsPage);
 }
 
 function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
-	notificationButtonContainer.css("opacity", "");
+	notificationButtonContainer.css('opacity', '');
 
-	notificationsDropdown = $("<div>").addClass("notifications-dropdown");
+	notificationsDropdown = $('<div>').addClass('notifications-dropdown');
 
-	var title = "Notifications";
+	var title = 'Notifications';
 	if (targetPage !== mainNotificationsPath) {
-		title += " for " + targetPage.replace(/^\/+|\/notifications$/g, '');
+		title += ' for ' + targetPage.replace(/^\/+|\/notifications$/g, '');
 	}
 	var titleElem = $('<h3>').text(title);
 	if (targetPage !== mainNotificationsPath) {
@@ -97,25 +97,25 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 			closeNotificationsDropdown();
 			fetchNotifications(mainNotificationsPath);
 		});
-		titleElem.append(textNode(" ("), buttonToSeeAll, textNode(")"));
+		titleElem.append(textNode(' ('), buttonToSeeAll, textNode(')'));
 	}
 	//notificationsDropdown.append( $("<span class='notitifcations-dropdown-title'>").append(titleElem) );
 
-	var notificationPage = $("<div>").append($.parseHTML(data));
-	var notificationsList = notificationPage.find(".notifications-list");
+	var notificationPage = $('<div>').append($.parseHTML(data));
+	var notificationsList = notificationPage.find('.notifications-list');
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
-	notificationsList.find("a").each(function() {
-		$(this).attr("title", $(this).text().trim());
+	notificationsList.find('a').each(function() {
+		$(this).attr('title', $(this).text().trim());
 	});
 	var minWidth = Math.min(700, window.innerWidth - 48);
 	if (notificationsList.children().length === 0) {
-		notificationsDropdown.append("<span class='notifications-dropdown-no-new'>No new notifications</span>");
+		notificationsDropdown.append('<span class=\'notifications-dropdown-no-new\'>No new notifications</span>');
 		minWidth = 200;
 	}
 	notificationsDropdown.append(notificationsList);
 	var linkToPage = mainNotificationsPath;
 	//var linkToPage = targetPage;
-	var seeAll = $("<a class='notifications-dropdown-see-all' href='" + encodeURI(linkToPage) + "'>See all the notifications</a>");
+	var seeAll = $('<a class=\'notifications-dropdown-see-all\' href=\'' + encodeURI(linkToPage) + '\'>See all the notifications</a>');
 	notificationsList.append(seeAll);
 
 	var arrowSize = 10;
@@ -124,7 +124,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 	// It is needed to activate some of the CSS for the notifications list.
 	document.body.classList.add('notifications-v2');
 
-	$("<style>").html(`
+	$('<style>').html(`
 		.notifications-dropdown {
 		  /* border: 1px solid rgba(0, 0, 0, 0.15); */
 		  background-color: #fff;
@@ -245,30 +245,30 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 		.notifications-dropdown .notifications-list {
 		  margin-bottom: 0 !important;
 		}
-	`).appendTo("body");
+	`).appendTo('body');
 
-	notificationButtonLink.addClass("tooltip-hidden");
+	notificationButtonLink.addClass('tooltip-hidden');
 
 	notificationsDropdown.css({
-		"position": "absolute", // Must be set before we can read width accurately
-		"min-width": minWidth + "px",
+		'position': 'absolute', // Must be set before we can read width accurately
+		'min-width': minWidth + 'px',
 		//overflow: "auto",
-	}).appendTo("body"); // Done sooner so we can get its width
+	}).appendTo('body'); // Done sooner so we can get its width
 	var topOfDropdown = notificationButtonContainer.offset().top + notificationButtonContainer.innerHeight() + 4;
 	var leftOfDropdown = notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth() / 2 - notificationsDropdown.innerWidth() / 2;
 	leftOfDropdown = Math.min(leftOfDropdown, window.innerWidth - 12 - notificationsDropdown.innerWidth() - 20);
 	leftOfDropdown = Math.max(leftOfDropdown, 0);
 	notificationsDropdown.css({
-		top: topOfDropdown + "px",
-		left: leftOfDropdown + "px",
+		top: topOfDropdown + 'px',
+		left: leftOfDropdown + 'px',
 		//"max-height": "calc(100% - "+(topOfDropdown+8)+"px)",
 	});
 
 	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.
-	tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
-		left: (notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth() / 2 - arrowSize) + "px",
-		top: (topOfDropdown - arrowSize + 1) + "px",
-	}).appendTo("body");
+	tabArrow = $('<div>').addClass('notifications-dropdown-arrow').css({
+		left: (notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth() / 2 - arrowSize) + 'px',
+		top: (topOfDropdown - arrowSize + 1) + 'px',
+	}).appendTo('body');
 
 	makeNotificationBlocksCollapsable(notificationsDropdown);
 	listenForMarkAsReadClick(notificationsDropdown);
@@ -277,11 +277,11 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 }
 
 function listenForCloseNotificationDropdown() {
-	closeClickTargets.on("click", considerClosingNotificiationDropdown);
+	closeClickTargets.on('click', considerClosingNotificiationDropdown);
 }
 
 function considerClosingNotificiationDropdown(evt) {
-	if ($(evt.target).closest(".notifications-dropdown").length) {
+	if ($(evt.target).closest('.notifications-dropdown').length) {
 		// A click inside the dropdown doesn't count!
 	} else {
 		evt.preventDefault();
@@ -291,33 +291,33 @@ function considerClosingNotificiationDropdown(evt) {
 }
 
 function closeNotificationsDropdown() {
-	closeClickTargets.off("click", considerClosingNotificiationDropdown);
+	closeClickTargets.off('click', considerClosingNotificiationDropdown);
 	notificationsDropdown.remove();
 	tabArrow.remove();
 	notificationButtonContainer.css({
-		"background-color": "",
-		"background-image": "",
+		'background-color': '',
+		'background-image': '',
 	});
-	notificationButtonLink.removeClass("tooltip-hidden");
+	notificationButtonLink.removeClass('tooltip-hidden');
 }
 
 function listenForMarkAsReadClick(parentElement) {
-	$(".mark-all-as-read", parentElement).click(function() {
+	$('.mark-all-as-read', parentElement).click(function() {
 		// Always collapse the repo's notifications block when the mark-as-read tick icon is clicked.
-		var $divToCollapse = $(this).closest(".js-notifications-browser").find(".boxed-group-inner.notifications");
+		var $divToCollapse = $(this).closest('.js-notifications-browser').find('.boxed-group-inner.notifications');
 		collapseBlock($divToCollapse);
 	});
 }
 
 function makeNotificationBlocksCollapsable(parentElement) {
-	makeBlocksCollapsable(parentElement, ".js-notifications-browser > h3", ".boxed-group-inner.notifications");
+	makeBlocksCollapsable(parentElement, '.js-notifications-browser > h3', '.boxed-group-inner.notifications');
 }
 
 function makeFileAndDiffBlocksCollapsable(parentElement) {
 	// The headers used to be: .file.js-details-container > .meta but they changed to .file-header early in 2015
 	// .data.highlight.blob-wrapper is the content box for the content or a file diff
 	// .render-wrapper is the container for github's image diff viewers (2-up, swipe, onion skin)
-	makeBlocksCollapsable(parentElement, ".file-header", ".data.highlight , .render-wrapper");
+	makeBlocksCollapsable(parentElement, '.file-header', '.data.highlight , .render-wrapper');
 }
 
 // When an element matching headerSelector is clicked, the next sibling bodySelector will be collapsed or expanded (toggled).
@@ -329,28 +329,28 @@ function makeBlocksCollapsable(parentElement, headerSelector, bodySelector) {
 		}
 		// The parent of the header is usually a `div.file`
 		var $divToCollapse = $(this).parent().find(bodySelector);
-		var wasHidden = $divToCollapse.hasClass("ghndd-collapsed");
+		var wasHidden = $divToCollapse.hasClass('ghndd-collapsed');
 		var hideContent = !wasHidden;
 		if (hideContent) {
 			collapseBlock($divToCollapse);
 		} else {
 			expandBlock($divToCollapse);
 		}
-	}).css({ cursor: "pointer" });
+	}).css({ cursor: 'pointer' });
 }
 
 // Under the new styling, while the top border is placed on the header, the bottom border is placed on the box.  (This is the case for notifications, but not for file/diff boxes.)
 // If we hide the box entirely, we will lose the bottom border.
 // So our plan is to rollup the box, hide its children, and then show the box again.
 function collapseBlock($divToCollapse) {
-	$divToCollapse.addClass("ghndd-collapsed");
+	$divToCollapse.addClass('ghndd-collapsed');
 	$divToCollapse.slideUp(150, function() {
 		$divToCollapse.children().hide();
 		$divToCollapse.slideDown(1);
 	});
 }
 function expandBlock($divToCollapse) {
-	$divToCollapse.removeClass("ghndd-collapsed");
+	$divToCollapse.removeClass('ghndd-collapsed');
 	$divToCollapse.slideUp(1, function() {
 		$divToCollapse.children().show();
 		$divToCollapse.slideDown(150);
@@ -380,11 +380,11 @@ if (makeAllFileAndDiffBlocksCollapsable) {
 }
 
 if (typeof notificationDotStyle !== 'undefined' && notificationDotStyle) {
-	$("<style>").html(`
+	$('<style>').html(`
 		.notification-indicator .mail-status.unread {
 			background-image: ${notificationDotStyle};
 		}
-	`).appendTo("body");
+	`).appendTo('body');
 }
 
 // Mitigations for v2
