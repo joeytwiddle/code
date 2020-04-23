@@ -2,9 +2,9 @@
 // @name           Github Notifications Dropdown
 // @namespace      joeytwiddle
 // @author         joeytwiddle
-// @contributors   SkyzohKey
+// @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2020, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.2.0
+// @version        1.2.1
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -14,10 +14,8 @@
 
 // bug: If the notifications list is longer than the page, scroll down to the bottom and then try to click on the white space below the Github document's content.  The event does not fire there!
 
-// When using @grant none then we should also avoid messing with the page's jQuery (or lack of jQuery).
+// When using @grant none then we should also avoid messing with the page's jQuery (if it has one)
 this.$ = this.jQuery = jQuery.noConflict(true);
-
-// Contributors: joeytwiddle, SkyzohKeyx, Marti, darkred
 
 // ==Options==
 
@@ -359,7 +357,7 @@ function textNode(text){
 }
 
 
-// Init:
+// Init
 listenForNotificationClick();
 
 // Optional: If we are on the notifications page, add our rollup feature there too!
@@ -382,4 +380,14 @@ if (typeof notificationDotStyle !== 'undefined') {
 	    background-image: ${notificationDotStyle};
 	  }
 	`).appendTo("body");
+}
+
+// Mitigations for v2
+if (document.location.pathname === '/notifications') {
+	// Inform the user if the list of repositories has (likely) been truncated
+	var reposList = $('.js-notification-sidebar-repositories ul.filter-list');
+	var reposInList = document.querySelectorAll('.js-notification-sidebar-repositories ul.filter-list > li');
+	if (reposInList.length === 25) {
+		reposList.append(jQuery('<li>').html('<b>Some repositories may not be shown</b>'));
+	}
 }
