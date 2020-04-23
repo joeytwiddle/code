@@ -12,6 +12,8 @@
 // @grant          GM_addStyle
 // ==/UserScript==
 
+/* eslint-env jquery */
+
 // bug: If the notifications list is longer than the page, scroll down to the bottom and then try to click on the white space below the Github document's content.  The event does not fire there!
 
 // When using @grant none then we should also avoid messing with the page's jQuery (if it has one)
@@ -24,7 +26,8 @@ var makeBlocksCollapsableOnNotificationsPage = true;
 // Disabled by default because it was conflicting with other scripts (https://github.com/joeytwiddle/code/issues/2)
 var makeAllFileAndDiffBlocksCollapsable = false;
 
-// If you want to change the colour of the blue notification dot, uncomment one of these
+// If you want to change the colour of the blue notification dot, uncomment one of the following
+var notificationDotStyle = '';
 // Github's blue dot (2017)
 //var notificationDotStyle = 'linear-gradient(hsl(212, 100%, 66%), hsl(212, 100%, 46%))';
 // Github's blue dot (2016)
@@ -50,11 +53,11 @@ var closeClickTargets = $("body, header a.notification-indicator[href]");
 var notificationsDropdown = null;
 var tabArrow = null;
 
-function listenForNotificationClick(){
+function listenForNotificationClick() {
 	notificationButtonContainer.on("click", onNotificationButtonClicked);
 }
 
-function onNotificationButtonClicked(evt){
+function onNotificationButtonClicked(evt) {
 	// Act normally (do nothing) if a modifier key is pressed, or if it was a right or middle click.
 	if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.which !== 1) {
 		return;
@@ -66,54 +69,53 @@ function onNotificationButtonClicked(evt){
 	fetchNotifications(targetPage);
 }
 
-function fetchNotifications(targetPage){
+function fetchNotifications(targetPage) {
 	notificationButtonContainer.css({
-		"opacity": "0.3",
-		"outline": "none"
+		opacity: "0.3",
+		outline: "none",
 	});
 	$.ajax({
 		url: targetPage,
-		dataType: "html"
-	}).then(receiveNotificationsPage.bind(null,targetPage)).fail(receiveNotificationsPage);
+		dataType: "html",
+	}).then(receiveNotificationsPage.bind(null, targetPage)).fail(receiveNotificationsPage);
 }
 
-function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
+function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 	notificationButtonContainer.css("opacity", "");
 
 	notificationsDropdown = $("<div>").addClass("notifications-dropdown");
 
 	var title = "Notifications";
-	var extra = null;
-	if (targetPage != mainNotificationsPath) {
-		title += " for " + targetPage.replace(/^\/+|\/notifications$/g,'');
+	if (targetPage !== mainNotificationsPath) {
+		title += " for " + targetPage.replace(/^\/+|\/notifications$/g, '');
 	}
 	var titleElem = $('<h3>').text(title);
-	if (targetPage != mainNotificationsPath) {
+	if (targetPage !== mainNotificationsPath) {
 		var buttonToSeeAll = $('<a href="#">').text('See all');
-		buttonToSeeAll.on('click', function(evt){
+		buttonToSeeAll.on('click', function(evt) {
 			evt.preventDefault();
 			closeNotificationsDropdown();
 			fetchNotifications(mainNotificationsPath);
 		});
-		titleElem.append( textNode(" ("), buttonToSeeAll, textNode(")") );
+		titleElem.append(textNode(" ("), buttonToSeeAll, textNode(")"));
 	}
 	//notificationsDropdown.append( $("<span class='notitifcations-dropdown-title'>").append(titleElem) );
 
-	var notificationPage = $("<div>").append( $.parseHTML(data) );
+	var notificationPage = $("<div>").append($.parseHTML(data));
 	var notificationsList = notificationPage.find(".notifications-list");
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
-	notificationsList.find("a").each(function(){
+	notificationsList.find("a").each(function() {
 		$(this).attr("title", $(this).text().trim());
 	});
 	var minWidth = Math.min(700, window.innerWidth - 48);
-	if (notificationsList.children().length == 0) {
+	if (notificationsList.children().length === 0) {
 		notificationsDropdown.append("<span class='notifications-dropdown-no-new'>No new notifications</span>");
 		minWidth = 200;
 	}
 	notificationsDropdown.append(notificationsList);
 	var linkToPage = mainNotificationsPath;
 	//var linkToPage = targetPage;
-	var seeAll = $("<a class='notifications-dropdown-see-all' href='"+encodeURI(linkToPage)+"'>See all the notifications</a>");
+	var seeAll = $("<a class='notifications-dropdown-see-all' href='" + encodeURI(linkToPage) + "'>See all the notifications</a>");
 	notificationsList.append(seeAll);
 
 	var arrowSize = 10;
@@ -122,135 +124,138 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	// It is needed to activate some of the CSS for the notifications list.
 	document.body.classList.add('notifications-v2');
 
-	$("<style>").html(""
-	  + " .notifications-dropdown { "
-	  //+ "   border: 1px solid rgba(0, 0, 0, 0.15); "
-	  + "   background-color: #fff; "
-	  //+ "   padding: 2px 16px; "
-	  //+ "   box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.15); "
-	  + "   box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.2); "
-	  + "   border-radius: 4px; "
-	  //+ "   max-height: 90%; "
-	  //+ "   margin-bottom: 20px; "   // If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap.
-	  + "   z-index: 50; "     // To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues
-	  + " } "
-	  + " .notifications-dropdown > .css-truncate, .notifications-dropdown .list-group-item-name a { "
-	  + "   max-width: " + (minWidth - 300) + "px !important;"
-	  + " } "
-	  + " .notifications-dropdown-see-all { "
-	  + "   display: block; "
-	  + "   font-weight: bold; "
-	  //+ "   margin-top: 20px; "
-	  + "   padding: 5px; "
-	  + "   text-align: center; "
-	  + "   background-color: #F5F5F5 !important; "
-	  + "   border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; "
-	  + " } "
-	  + " .notifications-dropdown-see-all:hover { "
-	  + "   background-color: #4078C0 !important; "
-	  + "   color: white; "
-	  + "   text-decoration: none; "
-	  + " } "
-	  + " .notifications-dropdown-no-new { "
-	  + "   display: block; "
-	  + "   height: 30px; "
-	  + "   line-height: 30px; "
-	  + "   padding: 0 10px; "
-	  + "   margin-bottom: 0; "
-	  + "   text-align: center; "
-	  + "   font-weight: bold; "
-	  + "   font-size: 16px; "
-	  + " } "
-	  // Redesign the notification area.
-	  + " .notifications-dropdown .boxed-group > h3 { "
-	  + "   border-radius: 0; "
-	  + "   border-width: 0px 0px 0px; "
-	  + " } "
-	  + " .notifications-dropdown .boxed-group:first-child h3 { "
-	  + "   border-top-left-radius: 3px; "
-	  + "   border-top-right-radius: 3px; "
-	  + " } "
-	  + " .notifications-dropdown .boxed-group-inner { "
-	  + "   border: 0; "
-	  + "   border-radius: 0; "
-	  + "   padding: 0; "
-	  + "   border-top: 1px solid #D8D8D8; "
-	  + "   border-bottom: 1px solid #D8D8D8; "
-	  + " } "
-	  + " .notifications-dropdown .notifications-list .boxed-group { "
-	  + "   margin: 0 !important; "
-	  + " } "
-	  + " .notifications-dropdown .notifications-list .paginate-container { "
-	  + "   margin: 0 !important;"
-	  + " } "
-	  // GitHub uses default 20px here, but it applies to the last one too, which messes up our layout.
-	  + " .notifications-dropdown .notifications-list .boxed-group:not(:last-child) { "
-	  //+ "   margin-bottom: 16px; "
-	  + " } "
-	  + " .notifications-dropdown .notifications-list .boxed-group:last-child { "
-	  + "   margin-bottom: 0px; "
-	  + " } "
-	  + " .notifications-dropdown .notifications-list { "
-	  + "   float: initial; "
-	  + " } "
-	  // No longer an issue:
-	  // There was a rule on the user profile page that applies to the notification ticks (which are usually never seen on that page).  The rule matches `body.page-profile .box-header .tooltipped`.
-	  // That rule messes up the position of each tick icon relative to its containing header.  So we override to the previous values.
-	  /*
-	  + " .notifications-dropdown .box-header .mark-all-as-read { "
-	  + "   top: auto !important; "
-	  + "   left: auto !important; "
-	  + "   right: auto !important; "
-	  + "   bottom: auto !important; "
-	  + "   float: right; "
-	  + " } "
-	  */
-	  + " .notifications-dropdown-arrow { "
-	  + "   position: absolute; "
-	  + "   width: 0px; "
-	  + "   height: 0px; "
-	  + "   border-left: "+arrowSize+"px solid transparent; "
-	  + "   border-right: "+arrowSize+"px solid transparent; "
-	  + "   border-bottom: "+arrowSize+"px solid #d6d8da; "
-	  + "   z-index: 10000001; "
-	  + " } "
-	  + " .notification-indicator.tooltipped.tooltip-hidden:before, .notification-indicator.tooltipped.tooltip-hidden:after { "
-	  + "   display: none; "
-	  + " } "
-	  // Additions for GitHub notifications v2 (2020)
-	  // The header only contains "Select all" and that isn't working for me
-	  + " .notifications-dropdown .Box-header { "
-	  + "   display: none !important; "
-	  + " } "
-	  // Let's also hide the inline checkboxes
-	  + " .notifications-dropdown .p-2 { "
-	  + "   visibility: hidden; "
-	  + " } "
-	  /*
-	  // This should be hidden
-	  + " .notification-is-starred-icon { "
-	  + "   display: none; "
-	  + " } "
-	  */
-	  // These buttons don't work.  Let's keep them visible, but make them appear disabled.
-	  + " .notifications-dropdown .notification-list-item-actions { "
-	  + "   opacity: 0.3; "
-	  + "   pointer-events: none; "
-	  + " } "
-	  + " .notifications-dropdown .notifications-list { "
-	  + "   margin-bottom: 0 !important; "
-	  + " } "
-	).appendTo("body");
+	$("<style>").html(`
+		.notifications-dropdown {
+		  /* border: 1px solid rgba(0, 0, 0, 0.15); */
+		  background-color: #fff;
+		  /* padding: 2px 16px; */
+		  /* box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.15); */
+		  box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.2);
+		  border-radius: 4px;
+		  /* max-height: 90%; */
+		  /* If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap. */
+		  /* margin-bottom: 20px; */
+		  /* To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues */
+		  z-index: 50;
+		}
+		.notifications-dropdown > .css-truncate, .notifications-dropdown .list-group-item-name a {
+		  max-width: ${minWidth - 300}px !important;
+		}
+		.notifications-dropdown-see-all {
+		  display: block;
+		  font-weight: bold;
+		  /* margin-top: 20px; */
+		  padding: 5px;
+		  text-align: center;
+		  background-color: #F5F5F5 !important;
+		  border-bottom-left-radius: 3px; border-bottom-right-radius: 3px;
+		}
+		.notifications-dropdown-see-all:hover {
+		  background-color: #4078C0 !important;
+		  color: white;
+		  text-decoration: none;
+		}
+		.notifications-dropdown-no-new {
+		  display: block;
+		  height: 30px;
+		  line-height: 30px;
+		  padding: 0 10px;
+		  margin-bottom: 0;
+		  text-align: center;
+		  font-weight: bold;
+		  font-size: 16px;
+		}
+		/* Redesign the notification area. */
+		.notifications-dropdown .boxed-group > h3 {
+		  border-radius: 0;
+		  border-width: 0px 0px 0px;
+		}
+		.notifications-dropdown .boxed-group:first-child h3 {
+		  border-top-left-radius: 3px;
+		  border-top-right-radius: 3px;
+		}
+		.notifications-dropdown .boxed-group-inner {
+		  border: 0;
+		  border-radius: 0;
+		  padding: 0;
+		  border-top: 1px solid #D8D8D8;
+		  border-bottom: 1px solid #D8D8D8;
+		}
+		.notifications-dropdown .notifications-list .boxed-group {
+		  margin: 0 !important;
+		}
+		.notifications-dropdown .notifications-list .paginate-container {
+		  margin: 0 !important;
+		}
+		/* GitHub uses default 20px here, but it applies to the last one too, which messes up our layout. */
+		.notifications-dropdown .notifications-list .boxed-group:not(:last-child) {
+		  /* margin-bottom: 16px; */
+		}
+		.notifications-dropdown .notifications-list .boxed-group:last-child {
+		  margin-bottom: 0px;
+		}
+		.notifications-dropdown .notifications-list {
+		  float: initial;
+		}
+		/* No longer an issue:
+		 * There was a rule on the user profile page that applies to the notification ticks (which are usually never seen on that page).  The rule matches: body.page-profile .box-header .tooltipped
+		 * That rule messes up the position of each tick icon relative to its containing header.  So we override to the previous values.
+		 */
+		/*
+		.notifications-dropdown .box-header .mark-all-as-read {
+		  top: auto !important;
+		  left: auto !important;
+		  right: auto !important;
+		  bottom: auto !important;
+		  float: right;
+		}
+		*/
+		.notifications-dropdown-arrow {
+		  position: absolute;
+		  width: 0px;
+		  height: 0px;
+		  border-left: ${arrowSize}px solid transparent;
+		  border-right: ${arrowSize}px solid transparent;
+		  border-bottom: ${arrowSize}px solid #d6d8da;
+		  z-index: 10000001;
+		}
+		.notification-indicator.tooltipped.tooltip-hidden:before, .notification-indicator.tooltipped.tooltip-hidden:after {
+		  display: none;
+		}
+		/* Additions for GitHub notifications v2 (2020) */
+		/* The header only contains "Select all" and that isn't working for me */
+		.notifications-dropdown .Box-header {
+		  display: none !important;
+		}
+		/* Let's also hide the inline checkboxes */
+		.notifications-dropdown .p-2 {
+		  visibility: hidden;
+		}
+		/* This should be hidden */
+		/*
+		.notification-is-starred-icon {
+		  display: none;
+		}
+		*/
+		/* These buttons don't work.  Let's keep them visible, but make them appear disabled. */
+		.notifications-dropdown .notification-list-item-actions {
+		  opacity: 0.3;
+		  pointer-events: none;
+		}
+		.notifications-dropdown .notifications-list {
+		  margin-bottom: 0 !important;
+		}
+	`).appendTo("body");
 
 	notificationButtonLink.addClass("tooltip-hidden");
 
 	notificationsDropdown.css({
-		position: "absolute",   // Must be set before we can read width accurately
-		"min-width": minWidth+"px",
+		"position": "absolute", // Must be set before we can read width accurately
+		"min-width": minWidth + "px",
 		//overflow: "auto",
 	}).appendTo("body"); // Done sooner so we can get its width
 	var topOfDropdown = notificationButtonContainer.offset().top + notificationButtonContainer.innerHeight() + 4;
-	var leftOfDropdown = notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth()/2 - notificationsDropdown.innerWidth()/2;
+	var leftOfDropdown = notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth() / 2 - notificationsDropdown.innerWidth() / 2;
 	leftOfDropdown = Math.min(leftOfDropdown, window.innerWidth - 12 - notificationsDropdown.innerWidth() - 20);
 	leftOfDropdown = Math.max(leftOfDropdown, 0);
 	notificationsDropdown.css({
@@ -261,7 +266,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 
 	// This little white wedge should lead from the notification button to the title of the dropdown, +1 pixel lower in order to overlap the top border.
 	tabArrow = $("<div>").addClass("notifications-dropdown-arrow").css({
-		left: (notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth()/2 - arrowSize) + "px",
+		left: (notificationButtonContainer.offset().left + notificationButtonContainer.innerWidth() / 2 - arrowSize) + "px",
 		top: (topOfDropdown - arrowSize + 1) + "px",
 	}).appendTo("body");
 
@@ -271,12 +276,12 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR){
 	listenForCloseNotificationDropdown();
 }
 
-function listenForCloseNotificationDropdown(){
+function listenForCloseNotificationDropdown() {
 	closeClickTargets.on("click", considerClosingNotificiationDropdown);
 }
 
-function considerClosingNotificiationDropdown(evt){
-	if ($(evt.target).closest(".notifications-dropdown").length){
+function considerClosingNotificiationDropdown(evt) {
+	if ($(evt.target).closest(".notifications-dropdown").length) {
 		// A click inside the dropdown doesn't count!
 	} else {
 		evt.preventDefault();
@@ -285,30 +290,30 @@ function considerClosingNotificiationDropdown(evt){
 	}
 }
 
-function closeNotificationsDropdown(){
+function closeNotificationsDropdown() {
 	closeClickTargets.off("click", considerClosingNotificiationDropdown);
 	notificationsDropdown.remove();
 	tabArrow.remove();
 	notificationButtonContainer.css({
 		"background-color": "",
-		"background-image": ""
+		"background-image": "",
 	});
 	notificationButtonLink.removeClass("tooltip-hidden");
 }
 
 function listenForMarkAsReadClick(parentElement) {
-	$(".mark-all-as-read", parentElement).click(function(){
+	$(".mark-all-as-read", parentElement).click(function() {
 		// Always collapse the repo's notifications block when the mark-as-read tick icon is clicked.
 		var $divToCollapse = $(this).closest(".js-notifications-browser").find(".boxed-group-inner.notifications");
 		collapseBlock($divToCollapse);
 	});
 }
 
-function makeNotificationBlocksCollapsable(parentElement){
+function makeNotificationBlocksCollapsable(parentElement) {
 	makeBlocksCollapsable(parentElement, ".js-notifications-browser > h3", ".boxed-group-inner.notifications");
 }
 
-function makeFileAndDiffBlocksCollapsable(parentElement){
+function makeFileAndDiffBlocksCollapsable(parentElement) {
 	// The headers used to be: .file.js-details-container > .meta but they changed to .file-header early in 2015
 	// .data.highlight.blob-wrapper is the content box for the content or a file diff
 	// .render-wrapper is the container for github's image diff viewers (2-up, swipe, onion skin)
@@ -316,8 +321,8 @@ function makeFileAndDiffBlocksCollapsable(parentElement){
 }
 
 // When an element matching headerSelector is clicked, the next sibling bodySelector will be collapsed or expanded (toggled).
-function makeBlocksCollapsable(parentElement, headerSelector, bodySelector){
-	$(headerSelector, parentElement).click(function(evt){
+function makeBlocksCollapsable(parentElement, headerSelector, bodySelector) {
+	$(headerSelector, parentElement).click(function(evt) {
 		// Act normally (do nothing) if a modifier key is pressed, or if it was a right or middle click.
 		if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.which !== 1) {
 			return;
@@ -339,20 +344,20 @@ function makeBlocksCollapsable(parentElement, headerSelector, bodySelector){
 // So our plan is to rollup the box, hide its children, and then show the box again.
 function collapseBlock($divToCollapse) {
 	$divToCollapse.addClass("ghndd-collapsed");
-	$divToCollapse.slideUp(150, function(){
+	$divToCollapse.slideUp(150, function() {
 		$divToCollapse.children().hide();
 		$divToCollapse.slideDown(1);
 	});
 }
 function expandBlock($divToCollapse) {
 	$divToCollapse.removeClass("ghndd-collapsed");
-	$divToCollapse.slideUp(1, function(){
+	$divToCollapse.slideUp(1, function() {
 		$divToCollapse.children().show();
 		$divToCollapse.slideDown(150);
 	});
 }
 
-function textNode(text){
+function textNode(text) {
 	return document.createTextNode(text);
 }
 
@@ -369,21 +374,21 @@ if (makeBlocksCollapsableOnNotificationsPage) {
 if (makeAllFileAndDiffBlocksCollapsable) {
 	// TODO: This should be run on-demand, in case we reached a file or diff page via pushState().
 	// Delay added because sometimes only 11 files were visible, but more were visible if we waited longer.
-	setTimeout(function(){
+	setTimeout(function() {
 		makeFileAndDiffBlocksCollapsable(document.body);
 	}, 2000);
 }
 
-if (typeof notificationDotStyle !== 'undefined') {
+if (typeof notificationDotStyle !== 'undefined' && notificationDotStyle) {
 	$("<style>").html(`
-	  .notification-indicator .mail-status.unread {
-	    background-image: ${notificationDotStyle};
-	  }
+		.notification-indicator .mail-status.unread {
+			background-image: ${notificationDotStyle};
+		}
 	`).appendTo("body");
 }
 
 // Mitigations for v2
-if (document.location.pathname === '/notifications') {
+if (document.location.pathname === mainNotificationsPath) {
 	// Inform the user if the list of repositories has (likely) been truncated
 	var reposList = $('.js-notification-sidebar-repositories ul.filter-list');
 	var reposInList = document.querySelectorAll('.js-notification-sidebar-repositories ul.filter-list > li');
