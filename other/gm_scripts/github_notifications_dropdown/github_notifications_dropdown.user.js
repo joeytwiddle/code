@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2020, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.2.2
+// @version        1.2.3
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -397,7 +397,7 @@ if (document.location.pathname === mainNotificationsPath) {
 			jQuery('<li>')
 				.html('<center><b>Some repositories may not be shown</b></center>')
 				.css({
-					background: '#eee',
+					background: '#fafabb',
 					padding: '4px',
 				})
 		);
