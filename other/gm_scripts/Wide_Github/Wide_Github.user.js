@@ -1,7 +1,7 @@
 "use strict";
 
 // ==UserScript==
-// @name        Wide Github
+// @name        Wide Github [fork]
 // @namespace   https://github.com/xthexder/wide-github
 // @description Change all Github repository and gist pages to be full width and dynamically sized.
 // @author      xthexder
@@ -10,7 +10,7 @@
 // @contributor Marti Martz (https://github.com/Martii)
 // @contributor Paul "Joey" Clark (https://github.com/joeytwiddle)
 // @license     MIT; https://raw.githubusercontent.com/xthexder/wide-github/master/LICENSE
-// @version     1.2.0-joey7
+// @version     1.2.0-joey8
 // @icon        https://raw.githubusercontent.com/xthexder/wide-github/master/icon.png
 // @homepageURL https://github.com/xthexder/wide-github
 // @supportURL  https://github.com/xthexder/wide-github/issues
