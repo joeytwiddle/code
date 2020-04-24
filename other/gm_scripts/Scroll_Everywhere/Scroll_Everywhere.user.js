@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name            Scroll Everywhere
+// @name            Scroll Everywhere [fork]
 // @description     Scroll entire page quickly with middle mouse button.
 // @author          tumpio
 // @collaborator    joeytwiddle
@@ -9,7 +9,7 @@
 // @icon            https://raw.githubusercontent.com/tumpio/gmscripts/master/Scroll_Everywhere/large.png
 // @include         *
 // @grant           none
-// @version         0.3d
+// @version         0.3e
 // @license         MIT
 // ==/UserScript==
 
