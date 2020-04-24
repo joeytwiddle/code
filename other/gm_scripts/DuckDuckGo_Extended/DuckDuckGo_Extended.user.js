@@ -2,7 +2,7 @@
 // @name            DuckDuckGo Extended [fork]
 // @description     Extends DDG by adding a customizable list of additional search engines for making fast searches from other engines.
 // @namespace       userscripts.org/users/439657
-// @homepage        http://userscripts.org/scripts/show/129505
+// @homepage        http://userscripts-mirror.org/scripts/show/129505
 // @icon            http://s3.amazonaws.com/uso_ss/icon/129505/large.png?1368599692
 // @OLDupdateURL    https://userscripts.org/scripts/source/129505.meta.js
 // @OLDdownloadURL  https://userscripts.org/scripts/source/129505.user.js
@@ -13,7 +13,7 @@
 // @grant           GM_getValue
 // @grant           GM_setValue
 // @grant           GM_xmlhttpRequest
-// @version         2.0.4-joey2
+// @version         2.0.4-joey3
 // @author          tumpio
 // ==/UserScript==
 
