@@ -1,11 +1,11 @@
 ﻿// ==UserScript==
-// @name            DuckDuckGo Extended
+// @name            DuckDuckGo Extended [fork]
 // @description     Extends DDG by adding a customizable list of additional search engines for making fast searches from other engines.
 // @namespace       userscripts.org/users/439657
 // @homepage        http://userscripts.org/scripts/show/129505
 // @icon            http://s3.amazonaws.com/uso_ss/icon/129505/large.png?1368599692
-// @updateURL       https://userscripts.org/scripts/source/129505.meta.js
-// @downloadURL     https://userscripts.org/scripts/source/129505.user.js
+// @OLDupdateURL    https://userscripts.org/scripts/source/129505.meta.js
+// @OLDdownloadURL  https://userscripts.org/scripts/source/129505.user.js
 // @match           *://duckduckgo.com/*
 // @exclude         *://duckduckgo.com/post2.html 
 // @match           http://mycroftproject.com/*
@@ -13,7 +13,7 @@
 // @grant           GM_getValue
 // @grant           GM_setValue
 // @grant           GM_xmlhttpRequest
-// @version         2.0.4
+// @version         2.0.4-joey2
 // @author          tumpio
 // ==/UserScript==
 
