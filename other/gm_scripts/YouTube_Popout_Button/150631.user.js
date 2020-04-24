@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name           YouTube Popout Button
 // @description    Provides a button to pupout the current YouTube video in a new window.
-// @downstreamURL  http://userscripts.org/scripts/source/150631.user.js
-// @version        1.0.4
+// @version        1.1.0
+// @author
+// @license        ISC
 // @include        http://*.youtube.com/watch*
 // @include        http://youtube.com/watch*
 // @include        https://*.youtube.com/watch*
@@ -11,21 +12,29 @@
 // ==/UserScript==
 
 // This is a combination of two scripts I found:
-// http://userscripts.org/scripts/show/75815#YouTube:_Pop-out_Video
-// and
-// http://userscripts.org/scripts/show/69687#YouTube_Popout
+// - http://userscripts-mirror.org/scripts/show/75815#YouTube:_Pop-out_Video
+// - http://userscripts-mirror.org/scripts/show/69687#YouTube_Popout
+// For a while I think I hosted it at:
+// - http://userscripts-mirror.org/scripts/source/150631.user.js
 
-(function() {
+// Need to delay, or the target div won't be rendered yet
+setTimeout(function() {
 
     // Create Button
     var divWatchHeadline = document.evaluate("//div[@id='watch-actions']", document, null, XPathResult.ANY_UNORDERED_NODE_TYPE, null).singleNodeValue;
     divWatchHeadline = divWatchHeadline || document.getElementById("watch7-secondary-actions");
     divWatchHeadline = divWatchHeadline || document.getElementById("watch8-secondary-actions");
-    divWatchHeadline.appendChild(document.createTextNode("\n"));
-    var buttonPopout = divWatchHeadline.appendChild(document.createElement("button"));
-    divWatchHeadline.appendChild(document.createTextNode("\n"));
+    divWatchHeadline = divWatchHeadline || document.querySelector("#menu .ytd-video-primary-info-renderer");
+    //divWatchHeadline = divWatchHeadline || document.querySelector("#top-level-buttons");
+    //divWatchHeadline.appendChild(document.createTextNode("\n"));
+    var buttonPopout = document.createElement("button");
+	//divWatchHeadline.appendChild(buttonPopout);
+	divWatchHeadline.insertBefore(buttonPopout, divWatchHeadline.lastChild);
+    //divWatchHeadline.appendChild(document.createTextNode("\n"));
     buttonPopout.title = "Pop-out Video";
-    buttonPopout.setAttribute("class", "yt-uix-button yt-uix-button-default yt-uix-tooltip");
+    //buttonPopout.setAttribute("class", "yt-uix-button yt-uix-button-default yt-uix-tooltip");
+	buttonPopout.style.background = 'transparent';
+	buttonPopout.style.border = 'none';
     buttonPopout.setAttribute("data-tooltip-title", "Pop-out Video");
     var popoutImage = document.createElement("img");
     var offButton = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAMAAAAolt3jAAABKVBMVEVmZmZaWlp1dXVsbGxjY2NkZGRnZ2d0dHRYWFhoaGhZWVlpaWlzc3NxcXFubm52dnZ2dnZoaGh3d3dzc3NfX19paWlnZ2dqampeXl5vb29ra2tubm5vb29nZ2dzc3Nqampqampzc3N2dnZfX19ycnJYWFhVVVVeXl5oaGhfX19hYWFoaGj////Dw8PGxsZeXl6ioqJ2dnZiYmJzc3OysrLT09P09PTLy8vp6emfn5+9vb2YmJhqamrX19fNzc3AwMCRkZFcXFzk5OS8vLy5ubnPz8/a2tqkpKTBwcHJycn29vbMzMyJiYmdnZ3W1taMjIxhYWGIiIjf39+cnJy6urrQ0NCbm5tvb291dXXIyMj6+vqPj49ubm6FhYWXl5dpaWmnp6dwcHCEhISvBaPYAAAALHRSTlMA8gDyAAAANvIAxQB8APJf8rvlhsXF6vLF7fL08u6QxABqZMkAysra5fLywMzgc80AAAC2SURBVHheHcpVcsQwFAXRK1myBxmCzCCZhpk5zEz7X0TepP9OVUMGOefxRMyg1lOAMDmPePOybdvfP1g4aq0MFNVcAiVFOO1MiFMDyeVQKJPNVUtE28D1jVv49asErUarCLRUJf9Icp37hzWwYsk5J403Np+ePbCX18+vW3Xnb21bO7tgNaXqjbf3jz2xzzlYm85Ot9c/kCYxMFTUTBUOIYIczoXWunypr44AEcbxCfvv9AyA/AMMShwGeYE4AgAAAABJRU5ErkJggg==";
@@ -40,23 +49,20 @@
 
     // Opens a new window in which to display the video
     buttonPopout.addEventListener("click", popoutVideo, false);
-    function popoutVideo() {
 
+    function popoutVideo() {
        // Grabbing Video Id
        function gup( name ) {
           name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
           var regexS = "[\\?&]"+name+"=([^&#]*)";
           var regex = new RegExp( regexS );
           var results = regex.exec( window.location.href );
-          if( results == null )
-             return "";
-          else
-             return results[1];
+		  return results && results[1];
        };
 
        var ytvidid = gup( 'v' );
 
-       if (ytvidid != null) {
+       if (ytvidid) {
           //var link = "http://www.youtube.com/watch_popup?v=";
           //var flink = link+ytvidid;
           // The above URL gets redirected to https://www.youtube.com/embed/bNcWVUfwmS4&autoplay=1#at=6
@@ -85,7 +91,6 @@
              window.open(flink,"YoutubePopout","menubar=no,location=no,resizable=yes,status=no,toolbar=no,personalbar=no");
           }
        }
-
     }
 
-})();
+}, 4000);
