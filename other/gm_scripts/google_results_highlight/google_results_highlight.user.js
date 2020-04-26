@@ -27,7 +27,9 @@
 
 sites = [
 	'en\.wikipedia\.org',
-	'imdb\.com'
+	'imdb\.com',
+	'webshule\.com',
+	'shule\.webshule\.com'
 ];
 
 regex = [];
