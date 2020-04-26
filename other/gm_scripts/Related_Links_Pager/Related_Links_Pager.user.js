@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.2
+// @version        1.4.3
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -537,7 +537,9 @@ function runRelatedLinksPager() {
       return false;
     }
 
-    var leaveHashUrlsAlone = !canPassPacketByGM(link, []);
+    var willUseHashToPassSiblings = !canPassPacketByGM(link, []);
+
+    var leaveHashUrlsAlone = willUseHashToPassSiblings;
 
     // What about links to #s in other pages?  I decided in the end to leave them
     // alone by default (preserve the existing hash string).
@@ -552,7 +554,7 @@ function runRelatedLinksPager() {
       return false;
     }
 
-    if (beFrugal && !canPassPacketByGM(link, []) && document.location.host.indexOf("google") === -1) {
+    if (beFrugal && willUseHashToPassSiblings && document.location.host.indexOf("google") === -1) {
       return false;
     }
 
@@ -576,7 +578,7 @@ function runRelatedLinksPager() {
 
     var siteWillComplain = googleWillComplain || youtubeWillComplain;
 
-    if (siteWillComplain) {
+    if (willUseHashToPassSiblings && siteWillComplain) {
       return false;
     }
 
