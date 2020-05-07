@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Calm Quora's annoying red notification dots
 // @namespace    joeytwiddle
-// @version      1.0.17
+// @version      1.1.0
 // @license      MIT
 // @description  The red notifications dots on Quora are annoying, so let's make them grey.  Also hide the popups, separate adverts from content, don't keep opening new tabs, and add some whitespace for readability.
 // @author       joeytwiddle
@@ -28,14 +28,16 @@ var increaseSeparationOfAnswers2 = true;
 
 function afterPageLoad (callback) {
     //setTimeout(callback, 400);
-    document.addEventListener('DOMContentLoaded', callback);
+    document.addEventListener('DOMContentLoaded', () => setTimeout(callback, 2000));
 }
 
 if (makeRedNotificationsGrey) {
     // Make the red notification dots grey instead
-    GM_addStyle('.SiteHeaderBadge, .WriteNavbadge, .red_badge, .ui_unread_badge_with_count, .site_header_badge_wrapper .ui_count_badge { background: #ddd !important; background-color: #ddd !important; color: #444 !important; opacity: 0.5; }');
+    //GM_addStyle('.SiteHeaderBadge, .WriteNavbadge, .red_badge, .ui_unread_badge_with_count, .site_header_badge_wrapper .ui_count_badge { background: #ddd !important; background-color: #ddd !important; color: #444 !important; opacity: 0.5; }');
     // This was causing the circle to turn into a rounded square: transform: scale(0.8);
     // Although if we wanted, we could apply it to the parent: .site_header_badge_wrapper { transform: scale(0.8); }
+    //GM_addStyle('.qu-bg--red { filter: saturate(0%); }');
+    GM_addStyle('.q-absolute.qu-top--tiny .qu-bg--red { background-color: #ccc; }');
 }
 
 if (!showPopups) {
@@ -45,7 +47,8 @@ if (!showPopups) {
 // Just make the whole damn header grey!
 // As requested by Keeni: https://greasyfork.org/en/forum/discussion/37380/x
 if (makeTheHeaderGray) {
-    GM_addStyle('.SiteHeader, .questions_to_answer_icon { filter: saturate(0%); }');
+    //GM_addStyle('.SiteHeader, .questions_to_answer_icon { filter: saturate(0%); }');
+    GM_addStyle('.q-fixed.qu-top--0.qu-fullX { filter: saturate(0%); }');
 }
 
 if (deemphasiseAds) {
@@ -60,6 +63,7 @@ if (deemphasiseAds) {
         // No background, just de-emphasise.  The padding is not strictly necessary but it can help to differentiate.
         //var cssForAdverts = { opacity: 0.3, padding: '1em' };
         //var cssForAdverts = { opacity: 0.1, padding: '0em' };
+        /*
         //jQuery('.advertiser_endpoint').closest('.outer_content_box').css(cssForAdverts)
         // jQuery isn't always loaded at this point of time, so let's use DOM instead.
         Array.from(document.querySelectorAll('.advertiser_endpoint')).map(ad => ad.closest('.outer_content_box')).forEach(elem => elem && Object.assign(elem.style, cssForAdverts));
@@ -67,6 +71,11 @@ if (deemphasiseAds) {
         // '.PromptsList'
         Array.from(document.querySelectorAll('.AdStory')).forEach(elem => elem && Object.assign(elem.style, cssForAdverts));
         Array.from(document.querySelectorAll('.dismissed_msg_wrapper')).map(elem => (elem.parentNode || {}).parentNode).forEach(elem => elem && Object.assign(elem.style, cssForAdverts));
+        */
+        // 2020
+        //.q-text.qu-mb--tiny.qu-bold.qu-color--gray_dark_dim.qu-passColorToLinks.TitleText___StyledText-sc-1hpb63h-0.kfJcxX
+        //.q-text.qu-mb--tiny.qu-bold -> closest('.spacing_log_question_page_ad') oh
+        Array.from(document.querySelectorAll('.spacing_log_question_page_ad')).forEach(elem => elem && Object.assign(elem.style, cssForAdverts));
     });
 }
 
