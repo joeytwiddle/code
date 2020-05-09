@@ -43,6 +43,13 @@
           /* The !important is needed to overwrite the padding in .im_grouped_short .im_content_message_wrap (when the local user sends multiple messages) */
           margin-left: auto !important;
         }
+        /* Since there is no avatar on grouped messages, and right alignment on outgoing messages, we don't need to leave space on the left */
+        .im_grouped_short .im_message_out .im_message_body,
+        .im_grouped .im_message_out .im_message_body,
+        .im_grouped_fwd .im_message_out .im_message_body,
+        .im_grouped_fwd_short .im_message_out .im_message_body {
+          margin-left: 12px;
+        }
       }
     `);
   }
