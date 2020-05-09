@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Telegram Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.0.3
+// @version      0.0.2
 // @description  Make Telegram Web nicer to use (layout, design)
 // @author       joeytwiddle
 // @match        https://web.telegram.org/*
@@ -16,6 +16,8 @@
   const alignMyselfToRight = true;
 
   const makeTextBubbles = true;
+
+  const useWideFont = true;
 
   if (useFullWidth) {
     GM_addStyle(`
@@ -62,6 +64,16 @@
           /* margin: 4px; */
           border-radius: 25px;
           padding: 5px 10px 5px 5px;
+      }
+    `);
+  }
+
+  if (useWideFont) {
+    // On Linux there are some nice wide fonts, like OSX
+    // We can try those before falling back to Microsoft fonts
+    GM_addStyle(`
+      body.non_osx {
+        font: 12px/18px "Bitstream Vera Sans",'Open Sans',"Lucida Grande","Lucida Sans Unicode",sans,Tahoma,Arial,Helvetica,Verdana,sans-serif;
       }
     `);
   }
