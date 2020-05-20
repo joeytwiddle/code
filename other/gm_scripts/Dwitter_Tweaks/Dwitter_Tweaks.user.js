@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dwitter Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.3
+// @version      0.1.4
 // @description  Tweak Dwitter with extreme dark theme
 // @author       joeytwiddle
 // @license      ISC
@@ -16,8 +16,8 @@
   // But in practice is causes my retinas to open, which then get overwhelmed by the bright white of the default canvas!
   // So a somewhat lighter dark theme can help to keep my eyes prepared.
 
-  const hue = 208;
-  const sat = 25;
+  const hue = 210;
+  const sat = 30;
 
   // 6, 11, 8
   // 9, 13, 11
@@ -31,17 +31,17 @@
     }
     */
     .App {
-      background: hsl(${hue}, ${sat}%, 9%) !important;
+      background: hsl(${hue}, ${sat}%, 11%) !important;
     }
     .App > header, .card {
-      background: hsl(${hue}, ${sat}%, 14%);
+      background: hsl(${hue}, ${sat}%, 20%);
     }
     /* Code textarea */
     .card .mb-3+div,
     input.form-control, input.form-control[readonly],
     /* "Theme challenge of the month" */
     .card.text-center.mb-3.px-3 > div {
-      background: hsl(${hue}, ${sat}%, 11%) !important;
+      background: hsl(${hue}, ${sat}%, 15%) !important;
     }
     input.form-control, input.form-control[readonly] {
       border: 0;
