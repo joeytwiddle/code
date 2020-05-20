@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dwitter Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.1
+// @version      0.1.2
 // @description  Tweak Dwitter with extreme dark theme
 // @author       joeytwiddle
 // @license      ISC
@@ -46,11 +46,17 @@
     input.form-control, input.form-control[readonly] {
       border: 0;
     }
-    .btn-primary, .btn-secondary,
-	.btn-primary.disabled, .btn-primary:disabled,
-	.btn-secondary.disabled, .btn-secondary:disabled {
-      background-color: #123a66;
-      border-color: #123a66;
+    /* Inside the comment box, use a nice dull blue for the button */
+    .card > form > div > div > .btn-secondary,
+    .card > form > div > div > .btn-secondary.disabled,
+    .card > form > div > div > .btn-secondary:disabled,
+    .card > form > div > div > .btn-primary,
+    .card > form > div > div > .btn-primary.disabled,
+    .card > form > div > div > .btn-primary:disabled,
+    /* And also for the awesomed Awesome button */
+    .btn-primary {
+      background-color: hsl(211, 70%, 24%);
+      border-color: hsl(211, 70%, 24%);
     }
     .shadow-primary {
       box-shadow: none !important;
