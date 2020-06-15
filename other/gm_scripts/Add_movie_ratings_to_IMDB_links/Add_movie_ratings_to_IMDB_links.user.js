@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Add movie ratings to IMDB links
-// @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
+// @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-11-joeytwiddle
+// @version      2015-11-24-12-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -154,6 +154,7 @@ function prependIMDB_Rating (resp, targetLink) {
                justrate = ratingM[1].substr(0, ratingM[1].indexOf("/"));
 
                var votes = votesM[1];
+               //console.log('votes:', votes);
                var votesNum = Number( votes.replace(/,/,'','') );
                var commas_found = votes.match(/,/,'g');
                if (commas_found && commas_found.length === 1) {
