@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.5.0
+// @version        1.6.0
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -56,7 +56,9 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 var isEcosia = document.location.hostname === 'www.ecosia.org' || document.location.hostname === 'ecosia.org';
 var isStartpage = document.location.host.match(/\bstartpage\b/);
 
-var bypassCSP = isEcosia || isStartpage;
+//var bypassCSP = isEcosia || isStartpage;
+// Enable it for all sites.  I think it's more secure for us to fetch the icon by GM_xhr rather than injecting it into the page.
+var bypassCSP = true;
 
 if (isEcosia) {
 	iconSize = iconSize * 0.6;
@@ -109,6 +111,7 @@ function createFaviconFor (url) {
 	var img = document.createElement('IMG');
 	//img.src = protocol + '://'+host+'/favicon.ico';
 	//img.src = '//g.etfv.co/http://" + host; // As suggested by decembre
+	//img.src = 'http://api.byi.pw/favicon?url=' + protocol + "://" + host; // Another service suggested by decembre
 	//img.width = '16';
 	//img.height = '16';
 	img.className = 'favicon';
@@ -128,12 +131,12 @@ function createFaviconFor (url) {
 			};
             a.readAsDataURL(blob);
 		};
-		var tryNextUrlNoCors = function () {
+		var tryNextUrlNoCors = () => {
 			if (urlsToTry.length === 0) {
 				return;
 			}
 			var url = 'https:' + urlsToTry.shift();
-			console.log('url:', url);
+			//console.log('url:', url);
 			GM_xmlhttpRequest({
 				method: 'GET',
 				url: url,
