@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Add movie ratings to IMDB links
 // @description  Adds movie ratings and number of voters to any imdb link. Modified version of http://userscripts.org/scripts/show/96884
-// @author         StackOverflow community (especially Brock Adams)
-// @version        2015-11-24-10-joeytwiddle
-// @license        MIT
+// @author       StackOverflow community (especially Brock Adams)
+// @version      2015-11-24-11-joeytwiddle
+// @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
@@ -12,13 +12,14 @@
 // ==/UserScript==
 // Special Thanks to Brock Adams for this script: http://stackoverflow.com/questions/23974801/gm-xmlhttprequest-data-is-being-placed-in-the-wrong-places/23992742
 
-var maxLinksAtATime     = 100; //-- pages can have 100's of links to fetch. Don't spam server or browser.
-var fetchedLinkCnt      = 0;
-var skipEpisodes        = true; //-- I only want to see ratings for movies or TV shows, not TV episodes
-
-var addRatingToTitle    = true; //-- Bonus feature: Put the rating in the browser's title bar (should also appear in bookmarks)
+var maxLinksAtATime     = 100;   //-- pages can have 100's of links to fetch.  Don't spam server or browser.
+var skipEpisodes        = true;  //-- I only want to see ratings for movies or TV shows, not TV episodes
+var showAsStar          = false; //-- Add IMDB stars instead of a colored pills.  Looks more consistent with the site, but provides less info.
+var addRatingToTitle    = true;  //-- Puts the rating in the browser's title bar (thus rating will be kept in any bookmarks you make)
 
 var $ = unsafeWindow.$;
+
+var fetchedLinkCnt = 0;
 
 function processIMDB_Links () {
     //--- Get only links that could be to IMBD movie/TV pages.
@@ -148,7 +149,7 @@ function prependIMDB_Rating (resp, targetLink) {
                 colnumber = 0;
         } else {
            if (ratingM  &&  ratingM.length > 1  &&  votesM  &&  votesM.length > 1) {
-            isError     = false;
+               isError = false;
 
                justrate = ratingM[1].substr(0, ratingM[1].indexOf("/"));
 
@@ -161,9 +162,9 @@ function prependIMDB_Rating (resp, targetLink) {
                    votes = votes.replace(/,.*,.*/, 'M');
                }
 
-           // ratingTxt   = ratingM[1] + " - " + votesM[1];
-           ratingTxt   = "<strong>" + justrate + "</strong>" + " / " + votes;
-           colnumber = Math.round(justrate);
+               // ratingTxt   = ratingM[1] + " - " + votesM[1];
+               ratingTxt   = "<strong>" + justrate + "</strong>" + " / " + votes;
+               colnumber = Math.round(justrate);
            }
         }
     }
@@ -192,6 +193,20 @@ function prependIMDB_Rating (resp, targetLink) {
     // I wanted vertical padding 1px but then the element does not fit in the "also liked" area, causing the top border to disappear!  Although reducing the font size to 70% is an alternative.
     resltSpan.innerHTML = '&nbsp;<font style="font-weight: normal;font-size: 80%;opacity: '+opacity+';border-radius: 3px;padding: 0.1em 0.6em;border: rgba(0,0,0,0.1) solid 1px; background-color:' + color[colnumber] + ';color: black;">' + '' + ratingTxt + '</font>';
 
+    if (showAsStar) {
+        resltSpan.innerHTML = `
+            <div class="ipl-rating-star" style="font-weight: normal">
+                <span class="ipl-rating-star__star">
+                    <svg class="ipl-icon ipl-star-icon  " xmlns="http://www.w3.org/2000/svg" fill="#000000" height="24" viewBox="0 0 24 24" width="24">
+                        <path d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                        <path d="M0 0h24v24H0z" fill="none"></path>
+                    </svg>
+                </span>
+                <span class="ipl-rating-star__rating">${justrate}</span>
+            </div>
+        `;
+    }
 
     if (isError)
         resltSpan.style.color = 'red';
