@@ -14,8 +14,9 @@
 // @include        https://*/*
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // @exclude        http://neuralyte.org/~joey/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
+// @exclude        http://joeytwiddle.github.io/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // @grant          none
-// @version        1.2.7
+// @version        1.2.8
 // ==/UserScript==
 
 // BUG: We had (i%32) in a userscript (DLT) but when this was turned into a bookmarklet and dragged into Chrome, the debugger showed it had become (i2), causing the script to error with "i2 is not defined".  Changing the code to (i % 32) worked around the problem.
@@ -65,7 +66,8 @@ var defaultScripts = [];
 var includeGMCompat = addGreasemonkeyLibToBookmarklets;
 if (includeGMCompat) {
 	// defaultScripts.push("http://hwi.ath.cx/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
-	defaultScripts.push("//neuralyte.org/~joey/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
+	// defaultScripts.push("//neuralyte.org/~joey/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
+	defaultScripts.push("//joeytwiddle.github.io/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
 }
 
 function buildLiveBookmarklet(url) {
@@ -251,6 +253,7 @@ function buildStaticBookmarklet(url) {
 
 	var newLink = document.createElement("a");
 	newLink.textContent = getNameFromFilename(url);
+	newLink.style.cursor = 'pointer';
 
 	var newContainer = document.createElement("div");
 	// newContainer.style.whiteSpace = 'nowrap';
