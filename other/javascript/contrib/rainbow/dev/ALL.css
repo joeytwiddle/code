@@ -1,0 +1,964 @@
+/**
+ * All Hallows Eve theme
+ *
+ * Adapted from Ultraviolet RubyGem
+ *
+ * @author Flinn Mueller
+ * @version 1.0.1
+ */
+code {
+    background: #000;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+    color: #9933CC;
+}
+
+code .constant {
+    color: #3387CC;
+}
+
+code .storage {
+    color: #CC7833;
+}
+
+code .string {
+    color: #66CC33;
+}
+
+code .keyword, code .selector {
+    color: #CC7833;
+}
+
+code .inherited-class {
+    font-style: italic;
+}
+
+code .support {
+    color: #C83730;
+}
+/**
+ * Blackboard theme
+ *
+ * Adapted from Domenico Carbotta's TextMate theme of the same name
+ *
+ * @author Domenico Carbotta
+ * @author Craig Campbell
+ * @version 1.0.2
+ */
+code {
+    background: #0B1022;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+    color: #727272;
+}
+
+code .constant {
+    color: #D8FA3C;
+}
+
+code .storage {
+    color: #FBDE2D;
+}
+
+code .string, code .comment.docstring {
+    color: #61CE3C;
+}
+
+code .string.regexp, code .support.tag.script, code .support.tag.style {
+    color: #fff;
+}
+
+code .keyword, code .selector {
+    color: #FBDE2D;
+}
+
+code .inherited-class {
+    font-style: italic;
+}
+
+code .entity {
+    color: #FF6400;
+}
+
+code .support, *[data-language="c"] .function.call {
+    color: #8DA6CE;
+}
+
+code .variable.global, code .variable.class, code .variable.instance {
+    color: #FF6400;
+}
+/**
+ * Espresso Libre theme
+ *
+ * Adapted from Ultraviolet RubyGem
+ *
+ * @author Flinn Mueller
+ * @version 1.0
+ */
+code {
+    background-color: #2a211c;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #bdae9d;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .support.class, code .support.type {
+    color: #6d79de;
+}
+
+code .support.constant {
+    color: #00af0e;
+}
+
+code .constant.language {
+    color: #585cf6;
+}
+
+code .support.function {
+    font-weight: bold;
+    color: #7290d9;
+}
+
+code .string {
+    color: #049b0a;
+}
+
+code .constant.numeric {
+    color: #44aa43;
+}
+
+code .keyword, code .storage {
+    color: #43a8ed;
+}
+
+code .entity.function {
+    color: #ff9358;
+}
+
+code .comment {
+    color: #0066ff;
+    font-style: italic;
+}
+
+code .constant.symbol {
+    color:#c5656b;
+}
+
+code .variable.instance, code .variable.language, code .constant {
+    color: #318495;
+}
+/**
+ * GitHub theme
+ *
+ * @author Craig Campbell
+ * @version 1.0.4
+ */
+code {
+    border: 1px solid #ccc;
+    word-wrap: break-word;
+    padding: 6px 10px;
+    line-height: 19px;
+    margin-bottom: 20px;
+}
+
+code {
+    border: 1px solid #eaeaea;
+    margin: 0px 2px;
+    padding: 0px 5px;
+    font-size: 12px;
+}
+
+code code {
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+    -moz-border-radius: 0px;
+    -webkit-border-radius: 0px;
+    border-radius: 0px;
+}
+
+code, code {
+    font-family: Consolas, 'Liberation Mono', Courier, monospace;
+    color: #333;
+    background: #f8f8f8;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+}
+
+code, code code {
+    font-size: 13px;
+}
+
+code .comment {
+    color: #998;
+}
+
+code .support {
+    color: #0086B3;
+}
+
+code .tag, code .tag-name {
+    color: navy;
+}
+
+code .keyword, code .css-property, code .vendor-prefix, code .sass, code .class, code .id, code .css-value, code .entity.function, code .storage.function {
+    font-weight: bold;
+}
+
+code .css-property, code .css-value, code .vendor-prefix, code .support.namespace {
+    color: #333;
+}
+
+code .constant.numeric, code .keyword.unit, code .hex-color {
+    font-weight: normal;
+    color: #099;
+}
+
+code .entity.class {
+    color: #458;
+}
+
+code .entity.id, code .entity.function {
+    color: #900;
+}
+
+code .attribute, code .variable {
+    color: teal;
+}
+
+code .string, code .support.value  {
+    font-weight: normal;
+    color: #d14;
+}
+
+code .regexp {
+    color: #009926;
+}
+/**
+ * Obsidian theme
+ *
+ * Adapted from a theme based on:
+ * http://studiostyl.es/schemes/son-of-obsidian
+ *
+ * @author Dan Stewart <dan@stewshack.com>
+ * @version 1.0
+ */
+code {
+    background: #22282A;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #F1F2F3;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+	color: #66747B;
+}
+
+code .constant {
+	color: #EC7600;
+}
+
+code .storage {
+	color: #EC7600;
+}
+
+code .string, code .comment.docstring {
+	color: #EC7600;
+}
+
+code .string.regexp, code .support.tag.script, code .support.tag.style {
+    color: #fff;
+}
+
+
+code .keyword, code .selector {
+	color: #93C763;
+}
+
+code .inherited-class {
+    font-style: italic;
+}
+
+code .entity {
+	color: #93C763;
+}
+
+code .integer {
+	color: #FFCD22;
+}
+
+code .support, *[data-language="csharp"] .function.call {
+	color: #FACD22;
+}
+
+code .variable.global, code .variable.class, code .variable.instance {
+	color: #CCC;
+}
+
+/* C# specific rule */
+code .preprocessor {
+	color: #66747B;
+}
+/**
+ * Pastie theme
+ *
+ * @author pygments.org
+ * @author pastie.org
+ * @author Simon Potter
+ * @version 1.0
+ */
+
+code {
+    /* original is white background with no border */
+    background-color: #F8F8FF;
+    border: 1px solid #DEDEDE;
+    word-wrap: break-word;
+    margin: 0;
+    padding: 0;
+    color: #000;
+    font-size: 13px;
+    line-height: 16px;
+    margin-bottom: 20px
+}
+
+code, code {
+    font-family: monospace;
+}
+
+code .comment {
+    color: #888;
+}
+
+code .keyword, code .selector, code .storage.module, code .storage.class, code .storage.function {
+    color: #080;
+    font-weight: bold;
+}
+
+code .keyword.operator {
+    color: #000;
+    font-weight: normal;
+}
+
+code .constant.language {
+    color: #038;
+    font-weight:bold;
+}
+
+code .constant.symbol, code .class, code .constant {
+    color: #036;
+    font-weight: bold;
+}
+
+code .keyword.namespace, code .entity.name.class {
+    color: #B06;
+    font-weight: bold;
+}
+
+code .constant.numeric {
+    color: #00D;
+    font-weight: bold;
+}
+
+code .string, code .comment.docstring {
+    color: #D20;
+    background-color: #FFF0F0;
+}
+
+code .string.regexp {
+    background-color: #FFF0FF;
+    color: #808;
+}
+
+code .variable.instance {
+    color: #33B;
+}
+
+code .entity.name.function {
+    color: #06B;
+    font-weight: bold;
+}
+
+code .support.tag-name, code .entity.tag.script, code .entity.tag.style {
+    color: #070;
+}
+
+code .support.attribute {
+    color: #007;
+    font-style: italic;
+}
+
+code .entity.name.tag, code .storage.type {
+    color: #070;
+    font-weight: bold;
+}
+
+code .variable.self, code .support.function {
+    color: #038;
+    font-weight: bold;
+}
+
+code .entity.function, code .support.magic, code.support.method {
+    color: #C00;
+    font-weight: bold;
+}
+/**
+ * Solarized Dark theme
+ *
+ * Adaptation of Solarized Dark from ethanschoonover.com/solarized
+ *
+ * @author Ethan Schoonover
+ * @author David Litmark
+ * @version 1.0.0
+ */
+code {
+    background: #002b36; /* base03 */
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #839496; /* base0 */
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+    color: #586e75; /* base01 */
+}
+
+code .constant {
+    color: #839496; /* base0 */
+}
+
+code .constant.language {
+    color: #268bd2; /* blue */
+}
+
+code .constant.regexp {
+    color: #2aa198; /* cyan */
+}
+
+code .storage {
+    color: #268bd2; /* blue */
+}
+
+code .string, code .comment.docstring {
+    color: #2aa198; /* cyan */
+}
+
+code .support.tag.script, code .support.tag.style {
+    color: #2aa198; /* cyan */
+}
+
+code .string.regexp {
+    color: #2aa198; /* cyan */
+}
+
+code .string.regexp.open, code .string.regexp.close {
+    color: #2aa198; /* cyan */
+}
+
+code .keyword, code .selector {
+    color: #859900; /* green */
+}
+
+code .inherited-class {
+    font-style: italic;
+}
+
+code .entity {
+    color: #b58900; /* yellow */
+}
+
+code .support, *[data-language="c"] .function.call {
+    color: #859900; /* green */
+}
+
+code .support.method {
+    color: #839496; /* base0 */
+}
+
+code .support.property {
+    color: #839496; /* base0 */
+}
+
+code .variable.global, code .variable.class, code .variable.instance {
+    color: #839496; /* base0 */
+}
+/**
+ * Solarized Light theme
+ *
+ * Adaptation of Solarized Light from ethanschoonover.com/solarized
+ *
+ * @author Ethan Schoonover
+ * @author David Litmark
+ * @version 1.0.0
+ */
+code {
+    background: #fdf6e3; /* base3 */
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #657b83; /* base00 */
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+    color: #93a1a1; /* base1 */
+}
+
+code .constant {
+    color: #657b83; /* base00 */
+}
+
+code .constant.language {
+    color: #268bd2; /* blue */
+}
+
+code .constant.regexp {
+    color: #2aa198; /* cyan */
+}
+
+code .storage {
+    color: #268bd2; /* blue */
+}
+
+code .string, code .comment.docstring {
+    color: #2aa198; /* cyan */
+}
+
+code .support.tag.script, code .support.tag.style {
+    color: #2aa198; /* cyan */
+}
+
+code .string.regexp {
+    color: #2aa198; /* cyan */
+}
+
+code .string.regexp.open, code .string.regexp.close {
+    color: #2aa198; /* cyan */
+}
+
+code .keyword, code .selector {
+    color: #859900; /* green */
+}
+
+code .inherited-class {
+    font-style: italic;
+}
+
+code .entity {
+    color: #b58900; /* yellow */
+}
+
+code .support, *[data-language="c"] .function.call {
+    color: #859900; /* green */
+}
+
+code .support.method {
+    color: #657b83; /* base00 */
+}
+
+code .support.property {
+    color: #657b83; /* base00 */
+}
+
+code .variable.global, code .variable.class, code .variable.instance {
+    color: #657b83; /* base00 */
+}
+/**
+ * Sunburst theme
+ *
+ * Adapted from the Textmate Sunburst theme by Stanley Rost
+ *
+ * @author Stanley Rost
+ * @author Rachel Baker
+ * @version 1.0.0
+ */
+code {
+    background-color: #000;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+    color: #AEAEAE; font-style: italic;
+}
+
+code .constant {
+    color: #3387CC;
+}
+
+code .storage {
+    color: #99CF50;
+}
+
+code .string, code .entity.name.class, code .comment.docstring {
+color: #65B042;
+/* green */
+}
+
+code .string.regexp {
+ color: #E9C062;
+    }
+
+code .string.constant {
+    color: #DDF2A4;
+}
+
+code .constant.hex-color {
+    color: #DD7B3B;
+    /* orange */
+}
+code .support, code .tag.script, code .function.call {
+    color: #dad085;
+}
+code .support.css-property {
+    color: #C5AF75;
+}
+code .support.tag.style {
+    color: #fff;
+}
+code .keyword, code .selector {
+    color: #E28964;
+    /* dark pink */
+}
+
+code .keyword.namespace {
+    color: #3387CC;
+    font-weight: bold;
+}
+
+code .inherited-class {
+    font-style: italic;
+}
+
+code .entity, code .variable.instance, code .support.namespace, code .support.tag, code .support.tag-name {
+    color: #89BDFF;
+}
+
+code .entity.name.id {
+    color: #8693A5;
+}
+
+*[data-language="c"] .function.call {
+    color: #8DA6CE;
+}
+
+code .variable, code .variable.global {
+    color: #3E87E3;
+    }
+code .variable.class {
+
+    }
+
+/**
+ * Tomorrow Night theme
+ *
+ * @author Chris Kempson
+ * @author skim
+ * @version 1.0.0
+ */
+code {
+    background-color: #1d1f21;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0 10px;
+    color: #c5c8c6;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+    color: #969896;
+}
+
+code .variable.global, code .variable.class, code .variable.instance {
+    color: #cc6666; /* red */
+}
+
+code .constant.numeric, code .constant.language, code .constant.hex-color, code .keyword.unit {
+    color: #de935f; /* orange */
+}
+
+code .constant, code .entity, code .entity.class, code .support {
+    color: #f0c674; /* yellow */
+}
+
+code .constant.symbol, code .string {
+    color: #b5bd68; /* green */
+}
+
+code .entity.function, code .support.css-property, code .selector {
+    color: #81a2be; /* blue */
+}
+
+code .keyword, code .storage {
+    color: #b294bb; /* purple */
+}
+/**
+ * Tricolore theme
+ *
+ * @author Jean Nicolas
+ * @version 1.0.1
+ */
+code {
+    background: #FFF;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #000;
+    font-size: 12px;
+    margin-bottom: 20px;
+	line-height: 16px;
+}
+
+code, code {
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+code .comment {
+    color: #7E7E7E;
+	font-style: italic;
+}
+
+code .constant {
+    color: #18838A;
+	font-weight: bold;
+}
+
+code .storage {
+    color: #0000A1;
+}
+
+code .string {
+    color: #8E0022;
+}
+
+code .keyword, code .selector {
+    color: #0000A1;
+	font-weight: bold;
+}
+
+code .inherited-class {
+    font-style: italic;
+}
+
+code .entity {
+    color: #3E853F;
+}
+
+code .support {
+    color: #192140;
+}
+
+code .variable.global, code .variable.class, code .variable.instance {
+    color: #3E853F;
+}
+/**
+ * Twilight theme
+ *
+ * Adapted from Michael Sheets' TextMate theme of the same name
+ *
+ * @author Michael Sheets
+ * @author Jesse Farmer <jesse@20bits.com>
+ * @version 1.0.1
+ */
+code {
+    background: #141414;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #F8F8F8;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+    color: #5F5A60;
+}
+
+code .constant.numeric {
+    color: #D87D50;
+}
+
+code .constant {
+    color: #889AB4;
+}
+
+code .constant.symbol, code .constant.language {
+    color: #D87D50;
+}
+
+code .storage {
+    color: #F9EE98;
+}
+
+code .string {
+    color: #8F9D6A;
+}
+
+code .string.regexp {
+    color: #E9C062;
+}
+
+code .keyword, code .selector, code .storage {
+    color: #CDA869;
+}
+
+code .inherited-class {
+    color: #9B5C2E;
+}
+
+code .entity {
+    color: #FF6400;
+}
+
+code .support {
+    color: #9B859D;
+}
+
+code .support.magic {
+    color: #DAD69A;
+}
+
+code .variable {
+    color: #7587A6;
+}
+
+code .function, code .entity.class {
+    color: #9B703F;
+}
+
+code .support.class-name, code .support.type {
+    color: #AB99AC;
+}
+/**
+ * Zenburnesque theme
+ *
+ * Adapted from Ultraviolet RubyGem
+ *
+ * @author Flinn Mueller
+ * @version 1.0
+ */
+code {
+    background: #404040;
+    word-wrap: break-word;
+    margin: 0px;
+    padding: 0px;
+    padding: 10px;
+    color: #dedede;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+code, code {
+    font-family: 'Monaco', courier, monospace;
+}
+
+code .comment {
+    color: #709070;
+    font-style: italic;
+}
+
+code .integer {
+    color: #22C0FF;
+}
+
+code .storage {
+    color: #6080FF;
+}
+
+/* This includes regexes */
+code .string {
+    color: #FF2020;
+}
+
+code .keyword, code .selector {
+    color: #ffffa0;
+}
+
+code .inherited-class {
+    font-style: italic;
+}
+
+code .entity {
+  color: #F09040;
+}
+
+code .support {
+    color: #C83730;
+}
+
+code .variable.class {
+  color: #FF8000;
+}
