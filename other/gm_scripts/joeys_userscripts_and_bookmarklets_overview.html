@@ -8,6 +8,7 @@
 		body {
 			background-color: white;
 			color: black;
+			padding: 4px 8px;
 		}
 		tt {
 			background-color: #dde;
@@ -16,6 +17,10 @@
 		p {
 			/* This avoids the tt padding from overlapping with neighbouring lines. */
 			line-height: 1.25rem;
+		}
+		body > div {
+			max-width: 1024px;
+			margin: 0 auto;
 		}
 	</style>
 </HEAD>
@@ -27,16 +32,28 @@
 	<span>v <a href="#the_scripts">Jump down to scripts</a> v</span>
 	<span>^ <a id="hide_intro" href='#'>Hide Intro</a> ^</span>
 </p>
-<div id="intro" style='padding: 0px 10%;'>
+<div id="intro">
 	<hr>
 	<h2>Userscripts</h2>
 	<p id="intro_para">This is a list of my favourite userscripts, along with Bookmarklets to run them on-demand.  Hover over the "Install Userscript" links to see what each script does.</p>
 	<p>Installing a Userscript will ask your browser to <i>automatically</i> run it whenever you visit its <i>related websites</i> (check its <tt>@includes</tt>).  <!-- <small>(Firefox users will need to install the Greasemonkey addon first.)</small> --> </p>
-	<div id="chrome_warning" style="display:none"><center><div style="width:70%; background-color: #ffeecc; padding: 2px 12px;"><small><p>Google Chrome / Chromium users: Recent versions of Chrome disallow installation of userscripts from developer websites.</p><p>Now the easiest way to install userscripts is to first install the <a href="http://www.chromeextensions.org/appearance-functioning/tampermonkey">TamperMonkey extension</a> (which is great because it also provides cross-domain GM_xmlHttpRequest).</p><p>Alternatively, you can open Chrome's Settings -&gt; Extensions, enable "Developer Mode" and then drag any userscripts you want into that window to install them.</p><p>Or another option is to pass <span style="white-space:nowrap"><code>--enable-easy-off-store-extension-install</code></span> as a command-line parameter when you start your browser.</p></small></div></center></div>
+	<div id="chrome_warning" style="display:none">
+		<center>
+			<div style="width:70%; background-color: #ffeecc; padding: 2px 12px;">
+				<small>
+					<p>Google Chrome / Chromium users: Recent versions of Chrome disallow installation of userscripts from developer websites.</p>
+					<p>Now the easiest way to install userscripts is to first install the <a href="http://www.chromeextensions.org/appearance-functioning/tampermonkey">TamperMonkey extension</a> (which is great because it also provides cross-domain GM_xmlHttpRequest).</p>
+					<p>Alternatively, you can open Chrome's Settings -&gt; Extensions, enable "Developer Mode" and then drag any userscripts you want into that window to install them.</p>
+					<p>Or another option is to pass <span style="white-space:nowrap"><code>--enable-easy-off-store-extension-install</code></span> as a command-line parameter when you start your browser.</p>
+					<p>Unfortunately side-loading of scripts is <a href="https://tinyurl.com/y9tnoar6">no longer supported</a> but you may <a href="https://stackoverflow.com/questions/5258989/manually-adding-a-userscript-to-google-chrome">find a solution here</a>.</p>
+				</small>
+			</div>
+		</center>
+	</div>
 	<h2>Bookmarklets</h2>
 	<p>Alternatively, you can drag one of the Bookmarklets into your Bookmarks or Toolbar, and then run it later <i>on any page</i>!  (Table of Contents Everywhere and Storage Viewer are good ones to try.)</p>
 	<ul>
-		<li>Each <b>Live Bookmarklet</b> injects a <tt>&lt;script&gt;</tt> tag to load the userscript directly from this webserver.  You will always be running the latest version, which may or may not be a good thing!</li>
+		<li>Each <b>Live Bookmarklet</b> injects a <tt>&lt;script&gt;</tt> tag to load the userscript directly from this webserver.  You will always be running the latest version, which may or may not be a good thing! <small><i>Note: Live bookmarklets might not work on modern websites which use CSP restrictions.</i></small></li>
 		<li>Each <b>Static Bookmarklet</b> holds an entire copy of the userscript, so it will run on <tt>https</tt> pages or even offline.  However this is a new feature and does not format all scripts correctly. <small>(E.g. they get upset by missing semi-colons.)</small></li>
 	</ul>
 	<p><small>The bookmarklets also preload <a href="fallbackgmapi/fallbackgmapi.user.js" data-make-bookmarklet="false">FallbackGMAPI.user.js</a>, so that calls to <tt>GM_</tt> functions from userscripts will not fail. (In future this could be automatically skipped for scripts with <tt>@grant none</tt>.)</small></p>
@@ -113,57 +130,30 @@ function addScript(url) {
 	// console.log("script elements = "+document.getElementsByTagName("script").length);
 // }
 
-/* XHR */
-
-if (this.XMLHttpRequest) {
+function grabUrl(url, callback) {
+	if (!this.XMLHttpRequest) {
+		alert("This page requires XMLHttpRequest.");
+	}
 
 	function once(f) {
 		var done = false;
 		return function() {
 			if (!done) {
-				f();
+				//f();
+				f.apply(this, arguments);
 				done = true;
 			}
 		};
 	}
 
-	function gotIt() {
-		// alert("Got responseText: "+req.responseText);
-		//while (document.body.firstChild) {
-			//document.body.removeChild(document.body.firstChild);
-		//}
-
-		var div = document.createElement("div");
-		div.innerHTML = req.responseText;
-		while (div.childNodes.length) {
-			document.body.appendChild(div.childNodes[0]);
-		}
-		setTimeout(function(){
-			addScript("make_bookmarklet_from_us/make_bookmarklet_from_us.user.js?dummy="+Math.random());
-			// addScript("http://hwi.ath.cx/javascript/focus.js");
-			//// This is slow, so let's run it a bit later...
-			//// Argh but it can also change the layout a bit.  So we don't leave it too long, or the user might click the wrong thing!
-			setTimeout(function(){
-				addScript("Convert_Dates_to_Ages/Convert_Dates_to_Ages.user.js?dummy="+Math.random());
-			},100);
-		},100);
-	}
-
-	var gotItOnce = once(gotIt);
+	var gotItOnce = once(callback);
 
 	var req = new XMLHttpRequest();
-
-	// Adopt current query params, or default to most-recent-at-top
-	// Old: var query = ( document.location.search ? document.location.search : "?M=D" );
-	var query = ( document.location.search ? document.location.search : "?C=M;O=D" );
-
-	// Avoid caching (don't think this has ever been needed)
-	// query += "&dummy="+new Date().getTime();
 
 	var sync = true;
 	// false (non-synchronized) fails in FF 3.5.15 and Konq 3.5.10
 
-	req.open("GET", "./"+query, sync);
+	req.open("GET", url, sync);
 	req.send(null);
 
 	// if (sync) {
@@ -184,10 +174,73 @@ if (this.XMLHttpRequest) {
 	};
 
 	// document.body.appendChild(document.createTextNode("Loading..."));
-
-} else {
-	alert("This page requires XMLHttpRequest.");
 }
+
+function grabFromApache() {
+	// Adopt current query params, or default to most-recent-at-top
+	// Old: var query = ( document.location.search ? document.location.search : "?M=D" );
+	var query = ( document.location.search ? document.location.search : "?C=M;O=D" );
+
+	// Avoid caching (don't think this has ever been needed)
+	// query += "&dummy="+new Date().getTime();
+
+	grabUrl("./" + query, function(req) {
+		// alert("Got responseText: "+req.responseText);
+		//while (document.body.firstChild) {
+			//document.body.removeChild(document.body.firstChild);
+		//}
+
+		var div = document.createElement("div");
+		div.innerHTML = req.responseText;
+		while (div.childNodes.length) {
+			document.body.appendChild(div.childNodes[0]);
+		}
+
+		setupPage();
+	});
+}
+
+function grabFromGitHub() {
+	//var url = 'https://github.com/joeytwiddle/code/tree/master/other/gm_scripts';
+	var url = 'https://api.github.com/repos/joeytwiddle/code/contents/other/gm_scripts';
+
+	grabUrl(url, function(req) {
+		var data = JSON.parse(req.responseText);
+		console.log("[joeys_userscripts_and_bookmarklets_overview.html] data:", data);
+		var container = document.createElement('div');
+		//container.style.width = 'fit-content';
+		//container.style.margin = '0 auto';
+		data.forEach(entry => {
+			if (entry.type === "dir") {
+				const div = document.createElement('div');
+				div.innerHTML = '<a></a>';
+				var relativePath = entry.path.replace('other/gm_scripts/', '') + '/';
+				div.querySelector('a').href = relativePath;
+				div.querySelector('a').textContent = relativePath;
+				container.appendChild(div);
+			}
+		});
+		document.body.appendChild(container);
+
+		setupPage();
+	});
+}
+
+function setupPage() {
+	setTimeout(function(){
+		addScript("make_bookmarklet_from_us/make_bookmarklet_from_us.user.js?dummy="+Math.random());
+		// addScript("http://hwi.ath.cx/javascript/focus.js");
+		//// This is slow, so let's run it a bit later...
+		//// Argh but it can also change the layout a bit.  So we don't leave it too long, or the user might click the wrong thing!
+		setTimeout(function(){
+			addScript("Convert_Dates_to_Ages/Convert_Dates_to_Ages.user.js?dummy="+Math.random());
+		},100);
+	},100);
+}
+
+// I used to host these files on Apache
+//grabFromApache();
+setTimeout(grabFromGitHub, 1000);
 
 	</script>
 
@@ -200,10 +253,13 @@ if (this.XMLHttpRequest) {
 	<script src="/assets/js/language/generic.js"></script>
 	<script src="/assets/js/language/javascript.js"></script>
 	<script src="/javascript/contrib/rainbow/rainbow-custom.min.js"></script>
-	-->
 	<script src="/javascript/contrib/rainbow/dev/rainbow.js"></script>
 	<script src="/javascript/contrib/rainbow/dev/language/generic.js"></script>
 	<script src="/javascript/contrib/rainbow/dev/language/javascript.js"></script>
+	-->
+	<script src="https://joeytwiddle.github.io/code/other/javascript/contrib/rainbow/dev/rainbow.js"></script>
+	<script src="https://joeytwiddle.github.io/code/other/javascript/contrib/rainbow/dev/language/generic.js"></script>
+	<script src="https://joeytwiddle.github.io/code/other/javascript/contrib/rainbow/dev/language/javascript.js"></script>
 
 </BODY>
 </HTML>
