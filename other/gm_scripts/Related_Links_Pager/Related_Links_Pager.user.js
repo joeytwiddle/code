@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.3
+// @version        1.4.4
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -42,7 +42,7 @@ var useClassnamesInXPath = false;
 var groupLinksByClass    = true;
 // CONSIDER TODO: A better compromise for all sites might be groupLinksWhichShareAtLeastOneClass.  This would reject links which do not share any classes with the focused link.
 
-var showGroupCountInLinkTitle = true;    // Updates hovered links' titles to show number of siblings.
+var showGroupCountInLinkTitle = false;   // Updates hovered links' titles to show number of siblings (as a tooltip).
 var showPageNumberInWindowTitle = false; // Updates title of current page to show current "page" number.
 
 var enableOnCtrlClick  = true;
