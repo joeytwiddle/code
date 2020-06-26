@@ -9,7 +9,7 @@
 // @icon            https://raw.githubusercontent.com/tumpio/gmscripts/master/Scroll_Everywhere/large.png
 // @include         *
 // @grant           none
-// @version         0.3f
+// @version         0.3g
 // @license         MIT
 // ==/UserScript==
 
@@ -61,6 +61,18 @@ if (window.top === window.self) {
     document.body.appendChild(cursorMask);
 
     window.addEventListener("mousedown", rightMbDown, false);
+}
+
+if (mouseBtn === 2) {
+	// If you use middle button on Linux, then you might be sending a paste event every time you use this scroller
+	// Depending on the contents of your clipboard, that could be a privacy leak!
+	// Therefore we disable pasting.
+	document.body.addEventListener('paste', (e) => {
+		console.log('Pasting:', (event.clipboardData || window.clipboardData).getData('text'));
+		e.preventDefault();
+		e.stopPropagation();
+		return false;
+	}, true);
 }
 
 function rightMbDown(e) {
