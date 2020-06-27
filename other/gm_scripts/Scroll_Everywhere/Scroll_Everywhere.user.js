@@ -9,7 +9,7 @@
 // @icon            https://raw.githubusercontent.com/tumpio/gmscripts/master/Scroll_Everywhere/large.png
 // @include         *
 // @grant           none
-// @version         0.3g
+// @version         0.3h
 // @license         MIT
 // ==/UserScript==
 
@@ -28,6 +28,8 @@ var mouseBtn, reverse, stopOnSecondClick, verticalScroll, startAnimDelay, cursor
 var middleIsStart, startX, startY, startScrollTop, startScrollLeft, lastScrollHeight;
 
 var relativeScrolling, lastX, lastY, scaleX, scaleY, power, offsetMiddle;
+
+var lastMiddleClickTime;
 
 // NOTE: Do not run on iframes
 if (window.top === window.self) {
@@ -60,22 +62,12 @@ if (window.top === window.self) {
     cursorMask.setAttribute("style", "position: fixed; width: 100%; height: 100%; zindex: 5000; top: 0px; left: 0px; cursor: " + cursorStyle + "; background: none; display: none;");
     document.body.appendChild(cursorMask);
 
-    window.addEventListener("mousedown", rightMbDown, false);
+    window.addEventListener("mousedown", handleMouseDown, false);
+    window.addEventListener("mouseup", handleMouseUp, false);
+	window.addEventListener('paste', handlePaste, true);
 }
 
-if (mouseBtn === 2) {
-	// If you use middle button on Linux, then you might be sending a paste event every time you use this scroller
-	// Depending on the contents of your clipboard, that could be a privacy leak!
-	// Therefore we disable pasting.
-	document.body.addEventListener('paste', (e) => {
-		console.log('Pasting:', (event.clipboardData || window.clipboardData).getData('text'));
-		e.preventDefault();
-		e.stopPropagation();
-		return false;
-	}, true);
-}
-
-function rightMbDown(e) {
+function handleMouseDown(e) {
     if (e.which == mouseBtn) {
         if (!down) {
             down = true;
@@ -91,6 +83,30 @@ function rightMbDown(e) {
             stop();
         }
     }
+}
+
+function handleMouseUp(e) {
+    if (e.which == 2) {
+		lastMiddleClickTime = Date.now();
+	}
+}
+
+function handlePaste(e) {
+	var timeSinceLastMiddleClick = Date.now() - lastMiddleClickTime;
+	//console.log("Pasting (" + timeSinceLastMiddleClick + "ms):", (event.clipboardData || window.clipboardData).getData('text'));
+
+	// If you use middle button for scrolling on Linux, then you might be sending a paste event every time you use this scroller.
+	// Depending on the contents of your clipboard, that could be a privacy leak!
+	// Therefore we disable paste events if they come after a middle click (if the user uses middle click for scrolling).
+	//
+	// Note this solution is still not entirely safe.  There could be an event listener registered before us, which would see the paste.
+	// Another option is to disable middle-click but this also isn't trivial to do universally: https://askubuntu.com/questions/4507
+
+	if (mouseBtn == 2 && timeSinceLastMiddleClick < 200) {
+		e.preventDefault();
+		e.stopPropagation();
+		return false;
+	}
 }
 
 function setStartData(e) {
