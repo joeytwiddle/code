@@ -87,26 +87,28 @@ function handleMouseDown(e) {
 
 function handleMouseUp(e) {
     if (e.which == 2) {
-		lastMiddleClickTime = Date.now();
-	}
+        lastMiddleClickTime = Date.now();
+    }
 }
 
 function handlePaste(e) {
-	var timeSinceLastMiddleClick = Date.now() - lastMiddleClickTime;
-	//console.log("Pasting (" + timeSinceLastMiddleClick + "ms):", (event.clipboardData || window.clipboardData).getData('text'));
+        var timeSinceLastMiddleClick = Date.now() - lastMiddleClickTime;
+        //console.log("Pasting (" + timeSinceLastMiddleClick + "ms):", (event.clipboardData || window.clipboardData).getData('text'));
 
-	// If you use middle button for scrolling on Linux, then you might be sending a paste event every time you use this scroller.
-	// Depending on the contents of your clipboard, that could be a privacy leak!
-	// Therefore we disable paste events if they come after a middle click (if the user uses middle click for scrolling).
-	//
-	// Note this solution is still not entirely safe.  There could be an event listener registered before us, which would see the paste.
-	// Another option is to disable middle-click but this also isn't trivial to do universally: https://askubuntu.com/questions/4507
+        // If you use middle button for scrolling on Linux, then you might be sending a paste event every time you use this scroller.
+        // Depending on the contents of your clipboard, that could be a privacy leak!
+        // Therefore we disable paste events if they come after a middle click (if the user uses middle click for scrolling).
+        //
+        // Note this solution is still not entirely safe.  There could be an event listener registered before us, which would see the paste.
+        // Another option is to disable middle-click but this also isn't trivial to do universally: https://askubuntu.com/questions/4507
+        //
+        // TODO: It would be better to check if this was a middle-click drag (i.e. a scroll).  A plain short middle-click we could interpret as a paste.
 
-	if (mouseBtn == 2 && timeSinceLastMiddleClick < 200) {
-		e.preventDefault();
-		e.stopPropagation();
-		return false;
-	}
+        if (mouseBtn == 2 && timeSinceLastMiddleClick < 200) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
 }
 
 function setStartData(e) {
