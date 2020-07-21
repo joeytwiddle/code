@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name          theguardian
+// @name          theguardian [fork]
 // @namespace     http://userstyles.org
 // @description	  Make the guardian great again!
 // @author        coxmichael
@@ -13,7 +13,7 @@
 // @include       http://*.www.theguardian.com/*
 // @include       https://*.www.theguardian.com/*
 // @do-not-run-at document-start
-// @version       0.20180116142410-joey15
+// @version       0.20180116142410-joey16
 // ==/UserScript==
 
 // An example of the old site, for reference:

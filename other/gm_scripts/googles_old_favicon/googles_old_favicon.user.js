@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name          Google's Old Favicon
+// @name          Google's Old Favicon [fork]
 // @description   Brings back the old Google favicon
 // @version       2.21
 // @author        !user

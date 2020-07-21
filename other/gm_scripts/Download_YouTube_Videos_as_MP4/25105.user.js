@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name Download YouTube Videos as MP4
+// @name Download YouTube Videos as MP4 [fork]
 // @description Adds a button that lets you download YouTube videos.
 // @homepageURL https://github.com/gantt/downloadyoutube
 // @author Gantt
 // @contributor nanojin
 // @contributor joeytwiddle
-// @version 1.8.8.2-joey
+// @version 1.8.8.2-joey2
 // @date 2016-09-02
 // @namespace http://googlesystem.blogspot.com
 // @include http://www.youtube.com/*

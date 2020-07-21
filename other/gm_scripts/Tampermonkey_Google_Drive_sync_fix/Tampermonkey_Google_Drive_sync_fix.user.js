@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Tampermonkey Google Drive sync fix
+// @name         Tampermonkey Google Drive sync fix [adopted]
 // @namespace    https://github.com/Tampermonkey/tampermonkey/issues/904
 // @version      0.1.2
 // @description  Tampermonkey keeps asking us to select an account when we open the browser.  But this script by Jack'lul will do it for us!

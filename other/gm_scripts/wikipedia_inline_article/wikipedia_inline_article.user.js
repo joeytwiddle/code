@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name          Wikipedia Inline Article Viewer
+// @name          Wikipedia Inline Article Viewer [adopted]
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.16
+// @version       1.2.17
 //// http:
 // @include       http://*wiki*
 // @include       http://wikipedia.org/*

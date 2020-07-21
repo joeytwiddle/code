@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name          Tab size
+// @name          Tab size [fork]
 // @namespace     http://nv.github.com/tab-size.js/
 // @include       *
 // @description   Replace all tab characters with two spaces (or something else)

@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name          Auto Scroll Mouse
+// @name          Auto Scroll Mouse [fork]
 // @namespace     http://www.marcbelmont.com
 // @description   No mousewheel?  No problem!  This script will scroll the page if you place your mouse near the top or bottom of the window and wiggle it.
-// @version       2.1.9
+// @version       2.1.10
 // @license       ISC
 // @include       http://*/*
 // @include       https://*/*

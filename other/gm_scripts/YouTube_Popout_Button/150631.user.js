@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name           YouTube Popout Button
+// @name           YouTube Popout Button [mashup]
 // @description    Provides a button to pop out the YouTube video in a separate window.
-// @version        1.1.2
+// @version        1.1.3
 // @author         joeytwiddle
 // @contributor    Alek_T, tehnicallyrite
 // @license        ISC

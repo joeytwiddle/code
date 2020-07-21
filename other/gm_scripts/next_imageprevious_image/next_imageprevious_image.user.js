@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name Next Image/Previous Image
+// @name Next Image/Previous Image [adopted]
 // @author arty <me@arty.name>
 // @namespace http://arty.name/
-// @version 2.1.0
+// @version 2.1.1
 // @description  Quick scroll to next/previous image on a page with n/p buttons
 // @include *
 // ==/UserScript==

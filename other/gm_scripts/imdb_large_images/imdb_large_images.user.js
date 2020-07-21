@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         iMDB Large Images
-// @version      1.0.11-joey1
+// @name         IMDB Large Images [fork]
+// @version      1.0.11-joey2
 // @description  Large iMDB images when you hover over them.
 // @namespace    https://greasyfork.org/en/scripts/11249-imdb-large-images
 // @homepage     https://greasyfork.org/en/scripts/11249-imdb-large-images

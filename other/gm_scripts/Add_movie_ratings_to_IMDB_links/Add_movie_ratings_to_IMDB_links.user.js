@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Add movie ratings to IMDB links
+// @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-12-joeytwiddle
+// @version      2015-11-24-13-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest

@@ -5,10 +5,10 @@
  * http://www.wtfpl.net/ for more details. */
 
 // ==UserScript==
-// @name            Fade In and Out
+// @name            Fade In and Out [fork]
 // @namespace       http://userscripts.org/users/12
 // @description     Adds fade out effect when the page is unloaded
-// @version         3.1
+// @version         3.1-joey5
 // @author          LouCypher
 // @license         WTFPL http://www.wtfpl.net/
 // @homepageURL     https://userscripts.org/scripts/show/135732
