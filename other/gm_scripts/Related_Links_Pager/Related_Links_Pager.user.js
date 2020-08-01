@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.4
+// @version        1.4.5
 // @license        AGPL-3.0; http://www.gnu.org/licenses/agpl.txt
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -41,6 +41,7 @@ var maximumGroupSize   = 250;         // Some webservers restrict long URLs, res
 var useClassnamesInXPath = false;
 var groupLinksByClass    = true;
 // CONSIDER TODO: A better compromise for all sites might be groupLinksWhichShareAtLeastOneClass.  This would reject links which do not share any classes with the focused link.
+var ignoreLinksWithoutText = false;   // We used to ignore these because thumbnails often have no text, but are followed by an identical link with text.  But now we have a more comprehensive strategy for that.
 
 var showGroupCountInLinkTitle = false;   // Updates hovered links' titles to show number of siblings (as a tooltip).
 var showPageNumberInWindowTitle = false; // Updates title of current page to show current "page" number.
@@ -277,6 +278,17 @@ function seekLinkInAncestry(startElem) {
   return startElem;
 }
 
+function getTextFrom(link) {
+  return link.textContent && link.textContent.trim() || (!showGroupCountInLinkTitle && link.title && link.title.trim());
+}
+
+function limitStringLength(str, maxLength) {
+  if (str.length > maxLength - 3) {
+    return str.splice(0, maxLength - 3) + "...";
+  }
+  return str;
+}
+
 
 // We grab the data as early as possible, in case any other scripts decide to
 // change the #.  We delay running anything else for a little while.
@@ -496,13 +508,23 @@ function runRelatedLinksPager() {
         continue;
       }
       var xpath = getGroupSignature(link);
-      if (xpath === seekXPath) {
-        if (link.href !== lastLink) {
-          // CONSIDER TODO: If no textContent, invent one?  Otherwise this will never group links of e.g. thumbnails.
-          if (link.textContent && link.textContent.trim()) {   // ignore if no title
-            collected.push(link);
-            lastLink = link.href;
-          }
+      var isRelated = xpath === seekXPath;
+      if (isRelated) {
+        // If a link has no text, it is often an image.
+        // Sometimes images are followed by a text link that goes to the same URL.
+        // In such cases, we want to replace the previous "non-text" link with the better "has text" link.
+        var matchesLast = lastLink && link.href === lastLink.href;
+        var lastLinkHadNoText = lastLink && !getTextFrom(lastLink);
+        var thisLinkHasText = !!getTextFrom(link);
+        var replaceLast = matchesLast && lastLinkHadNoText && thisLinkHasText;
+        var skipBecauseEmpty = ignoreLinksWithoutText && !thisLinkHasText;
+        var addLink = !matchesLast && !skipBecauseEmpty;
+        if (replaceLast) {
+          collected.pop();
+        }
+        if (addLink || replaceLast) {
+          collected.push(link);
+          lastLink = link;
         }
       }
     }
@@ -619,7 +641,7 @@ function runRelatedLinksPager() {
       var linksInGroup = collectLinksInSameGroupAs(link);
       // Convert from links to records:
       var siblings = linksInGroup.map(function(l) {
-        var record = [l.textContent, l.href];
+        var record = [getTextFrom(l), l.href];
 
         // On Google search, now the <a> link contains both the page title and the URL, which messes up the textContent we extracted
         // We only want the title, so let's look for the h3 inside it.
@@ -926,7 +948,7 @@ function runRelatedLinksPager() {
       numElem.textContent = String(i + 1) + '.';
       row.appendChild(numElem);
       var record = siblings[i];
-      var text = record[0] || record[1];   // use address if no title
+      var text = limitStringLength(record[0] || record[1], 200);   // use address if no title
       var link = createLinkFromRecord(record, text);
       // if (record[1] === seekURL) {
       // if (record[1].replace(hashPart, '') === seekURL) {
