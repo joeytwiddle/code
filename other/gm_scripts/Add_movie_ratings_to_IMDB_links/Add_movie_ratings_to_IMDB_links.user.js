@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-13-joeytwiddle
+// @version      2015-11-24-14-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -12,10 +12,10 @@
 // ==/UserScript==
 // Special Thanks to Brock Adams for this script: http://stackoverflow.com/questions/23974801/gm-xmlhttprequest-data-is-being-placed-in-the-wrong-places/23992742
 
-var maxLinksAtATime     = 100;   //-- pages can have 100's of links to fetch.  Don't spam server or browser.
-var skipEpisodes        = true;  //-- I only want to see ratings for movies or TV shows, not TV episodes
-var showAsStar          = false; //-- Add IMDB stars instead of a colored pills.  Looks more consistent with the site, but provides less info.
-var addRatingToTitle    = true;  //-- Puts the rating in the browser's title bar (thus rating will be kept in any bookmarks you make)
+var maxLinksAtATime     = 100;   //-- Pages can have 100's of links to fetch. Don't spam server or browser.
+var skipEpisodes        = true;  //-- I only want to see ratings for movies or TV shows, not TV episodes.
+var showAsStar          = false; //-- Use IMDB star instead of colored div, less info but more consistent with the rest of the site.
+var addRatingToTitle    = true;  //-- Adds the rating to the browser's title bar (so rating will appear in browser bookmarks).
 
 var $ = unsafeWindow.$;
 
@@ -44,7 +44,7 @@ function processIMDB_Links () {
         }
 
         // Skip thumbnails in the six recommendations area of a title page
-        if ($(currentLink).closest('.rec_item').length) {
+        if ($(currentLink).closest('.rec_item, .rec_poster').length) {
             continue;
         }
 
@@ -65,6 +65,12 @@ function processIMDB_Links () {
 
         // Skip thumbnails in "Known For" section of actor pages
         if ($(currentLink).closest('.known-for').length && $(currentLink).find('img').length) {
+            continue;
+        }
+
+        // Skip links to character pages
+        // || currentLink.href.includes('/characters/')
+        if ($(currentLink).closest('td.character').length) {
             continue;
         }
 
