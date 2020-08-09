@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer [adopted]
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.17
+// @version       1.2.18
 //// http:
 // @include       http://*wiki*
 // @include       http://wikipedia.org/*
@@ -537,7 +537,8 @@ var hoverTimer, hoverTarget;
 function isSuitableLink(evt) {
 	var target = evt.target || evt.sourceElement;
 	target = findMatchingParent(target, "A");
-	return (target && target.href && target.href.indexOf("/wiki/") >= 0);
+	// Most MediaWikis use /wiki/ArticleName but some (e.g. ArchWiki) use /index.php/ArticleName
+	return (target && target.href && target.href.match("(/wiki/|/index.php/)"));
 	// Alternative: '//div[@id="content"]//a[starts-with(@href,"/wiki/")]',
 }
 function onMouseOver(evt) {
