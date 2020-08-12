@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-16-joeytwiddle
+// @version      2015-11-24-17-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -64,7 +64,7 @@ function processIMDB_Links () {
         }
 
         // Skip thumbnails in "Known For" section of actor pages
-        if ($(currentLink).closest('.known-for').length && $(currentLink).find('img').length) {
+        if ($(currentLink).closest('.known-for, .knownfor-title').length && $(currentLink).find('img').length) {
             continue;
         }
 
