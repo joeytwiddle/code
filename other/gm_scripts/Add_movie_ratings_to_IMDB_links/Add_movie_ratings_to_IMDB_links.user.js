@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-15-joeytwiddle
+// @version      2015-11-24-16-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -180,7 +180,7 @@ function prependIMDB_Rating (resp, targetLink) {
     // NOTE: I switched from <b> to <strong> simply because on Season pages, the rating injected after episode titles was getting uglified by an IMDB CSS rule: .list_item .info b { font-size: 15px; }
     targetLink.setAttribute("title", "Rated " + ratingTxt.replace(/<\/*strong>/g,'').replace(/\//,'by') + " users." );
 
-    if (justrate < 5) {
+    if (!(justrate > 0)) {
         return;
     }
 
@@ -193,12 +193,15 @@ function prependIMDB_Rating (resp, targetLink) {
     //opacity = Math.round(opacity * 10000) / 10000;
     opacity = opacity.toFixed(3);
 
-    var color = ["#Faa", "#Faa","#Faa", "#Faa","#Faa", "#F88","#Faa", "#ff7","#7e7", "#5e5", "#0e0", "#ddd"];
+    var colors = ["#Faa", "#Faa","#Faa", "#Faa","#Faa", "#F88","#Faa", "#ff7","#7e7", "#5e5", "#0e0", "#ddd"];
+    var bgCol = colors[colnumber];
+    //var hue = justrate <= 5 ? 0 : justrate <= 8 ? 120 * (justrate - 5) / 3 : 120;
+    //var bgCol = `hsla(${hue}, 100%, 60%, ${opacity})`;
     var resltSpan       = document.createElement ("span");
     // resltSpan.innerHTML = '<b><font style="border-radius: 5px;padding: 1px;border: #575757 solid 1px; background-color:' + color[colnumber] + ';">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
     // resltSpan.innerHTML = '<b><font style="background-color:' + justrate + '">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
     // I wanted vertical padding 1px but then the element does not fit in the "also liked" area, causing the top border to disappear!  Although reducing the font size to 70% is an alternative.
-    resltSpan.innerHTML = '&nbsp;<font style="font-weight: normal;font-size: 80%;opacity: '+opacity+';border-radius: 3px;padding: 0.1em 0.6em;border: rgba(0,0,0,0.1) solid 1px; background-color:' + color[colnumber] + ';color: black;">' + '' + ratingTxt + '</font>';
+    resltSpan.innerHTML = '&nbsp;<font style="font-weight: normal;font-size: 80%;opacity: '+opacity+';border-radius: 3px;padding: 0.1em 0.6em;border: rgba(0,0,0,0.1) solid 1px; background-color:' + bgCol + ';color: black;">' + '' + ratingTxt + '</font>';
 
     if (showAsStar) {
         resltSpan.innerHTML = `
