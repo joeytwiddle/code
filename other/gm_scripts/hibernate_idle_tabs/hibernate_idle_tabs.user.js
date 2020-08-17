@@ -2,7 +2,7 @@
 // @name           Hibernate Idle Tabs
 // @namespace      HIT
 // @description    If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions.
-// @version        1.2.0
+// @version        1.3.0
 // @downstreamURL  http://userscripts.org/scripts/source/123252.user.js
 // @include        *
 // ==/UserScript==
@@ -25,12 +25,14 @@ var restoreTime = 0.5; // in seconds
 // If you have a blank page somewhere on the net, belonging to an admin you
 // trust, I recommend using that instead.
 //
-var holdingPage = "http://www.google.com/hibernated_tab";
+var holdingPage = "https://www.google.com/hibernated_tab";
+// Throws error: Not allowed to navigate top frame to data URL
+//var holdingPage = "data:text/html,<html><head><title>Hibernate Idle Tabs</title></head><body></body></html>";
 
 // If you do change the holding, put the old one here, so that any existing
 // hibernated tabs still on the old page will be able to unhibernate.
 //
-var oldHoldingPage = "http://neuralyte.org/~joey/hibernated_tab.html";
+var oldHoldingPages = ["http://neuralyte.org/~joey/hibernated_tab.html", "http://www.google.com/hibernated_tab", "https://www.google.com/hibernated_tab"];
 
 var passFaviconToHoldingPage = true;
 var fadeHibernatedFavicons = true;
@@ -87,9 +89,11 @@ var onHoldingPage = document.location.href.match(holdingPage+"?") != null;
 
 // If you change holding page, this keeps the old one working for a while, for
 // the sake of running browsers or saved sessions.
-if (!onHoldingPage && oldHoldingPage) {
-	onHoldingPage = document.location.href.match(oldHoldingPage+"?") != null;
-}
+oldHoldingPages.forEach(oldHoldingPage => {
+	if (document.location.href.match(oldHoldingPage+"?")) {
+		onHoldingPage = true;
+	}
+});
 
 function handleNormalPage() {
 
