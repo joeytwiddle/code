@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2020, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.2.3
+// @version        1.2.4
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -238,10 +238,13 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 		}
 		*/
 		/* These buttons don't work.  Let's keep them visible, but make them appear disabled. */
+		/* We got them partially working now. */
+		/*
 		.notifications-dropdown .notification-list-item-actions {
 		  opacity: 0.3;
 		  pointer-events: none;
 		}
+		*/
 		.notifications-dropdown .notifications-list {
 		  margin-bottom: 0 !important;
 		}
@@ -361,6 +364,41 @@ function textNode(text) {
 	return document.createTextNode(text);
 }
 
+function listenForActionClicks() {
+	$('body').on('click', '.notifications-dropdown .notifications-list .js-notification-action button', function(evt) {
+		var $button = $(this);
+		var $form = $button.closest('form');
+
+		$.ajax({
+			type: $form.attr('method') || 'POST',
+			url: $form.attr('action'),
+			data: $form.serialize(),
+			//or your custom data either as object {foo: "bar", ...} or foo=bar&...
+			success: function(response) {
+				if ($form.attr('data-status') === 'archived') {
+					hideThisNotification();
+				} else {
+					// We don't know what action to take
+				}
+			},
+		});
+
+		// Disable the button, now that it has been used
+		$button.css({ opacity: 0.5, pointerEvents: 'none' });
+
+		evt.preventDefault();
+
+		function hideThisNotification() {
+			// We don't hide it, we just grey it out
+			$form.closest('.notifications-list-item').css({
+				opacity: 0.5,
+				// Apart from this, we also get some free grey from the container behind, when we set the opacity
+				backgroundColor: '#f6f8fa !important',
+			});
+		}
+	});
+}
+
 
 // Init
 listenForNotificationClick();
@@ -403,3 +441,5 @@ if (document.location.pathname === mainNotificationsPath) {
 		);
 	}
 }
+
+listenForActionClicks();
