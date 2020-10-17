@@ -2,6 +2,7 @@
 // @name          Wikimedia Page History in Sidebar [adopted]
 // @description   Add History box at wikimedia's leftmost column
 // @version       1.2.4
+// @license       ISC
 // @downstreamURL http://userscripts.org/scripts/source/124389.user.js
 // @include       http://*.wikipedia.org/*
 // @include       http://*.wikimedia.org/wiki/*
