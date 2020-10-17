@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Wikimedia Page History in Sidebar [adopted]
 // @description   Add History box at wikimedia's leftmost column
-// @version       1.2.3
+// @version       1.2.4
 // @downstreamURL http://userscripts.org/scripts/source/124389.user.js
 // @include       http://*.wikipedia.org/*
 // @include       http://*.wikimedia.org/wiki/*
@@ -178,8 +178,8 @@ setTimeout(function()
    function myEscape(str) {
       return str.replace('"','&quot;','g').replace('<','&lt;','g').replace('>','&gt;','g');
    }
-   var listItem = function(href,name) { return '<li><a href="' + myEscape(href) + '">' + myEscape(name) + '</a></li>\n'; }
-   var s = '<h3 role="navigation">Recent Pages</h3><div class="vector-menu-content"><ul class="vector-menu-content-list">';
+   var listItem = function(href,name) { return '<li><a href="' + myEscape(href) + '">' + myEscape(name || href.replace(/.*\//, '')) + '</a></li>\n'; }
+   var s = '<h3 role="navigation">Recent Pages</h3><div class="vector-menu-content _ pBody"><ul class="vector-menu-content-list">';
    // for(var x in hist)
    for(var x=0; x<numToShow; x++)
    {
@@ -210,7 +210,7 @@ setTimeout(function()
    var e = document.createElement ("nav");
    e.innerHTML = s;
    e.id = "p-history";
-   e.className = "mw-portlet mw-portlet-interaction vector-menu vector-menu-portal portal";
+   e.className = "mw-portlet mw-portlet-interaction vector-menu vector-menu-portal portal _ portlet";
    var panel = document.getElementById("mw-panel") ||
       document.getElementById("column-one") || document.getElementById("panel")
       || document.getElementById("jq-interiorNavigation");
