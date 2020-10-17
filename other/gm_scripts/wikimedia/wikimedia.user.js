@@ -38,8 +38,8 @@ var alwaysUseLocalStorage = true;   // I find this preferable because it acts pe
 // 21-Mar-2007: Multiple occurrences of the same page (&edit, #section) eliminated
 // 22-Mar-2007: Multiple occurrences due to a printable version of the page eliminated
 // 24-Mar-2007: If no left column is present, exit quietly
-// 31-May-2008: 
-//    (a) Firefox 3.0 compatibility 
+// 31-May-2008:
+//    (a) Firefox 3.0 compatibility
 //    (b) Removed the edit links that were (by definition) part of the history
 //    (c) Renamed the new box to "Wikimedia+"
 // 19-Nov-2010: Updates to wikipedia's css style.
@@ -75,7 +75,7 @@ if (alwaysUseLocalStorage || typeof GM_getValue !== 'function' || (""+GM_test).i
 }
 
 setTimeout(function()
-{    
+{
    var pref = "userscripts.org.wikimediaplus.history";
    var titleKey = pref + ".title.";
    var urlKey = pref + ".url.";
@@ -111,12 +111,12 @@ setTimeout(function()
             o.date = 0;
          }
          GM_setValue(titleKey + i, o.title);
-         GM_setValue(urlKey + i, o.url);            
-         GM_setValue(dateKey + i, ""+o.date);            
+         GM_setValue(urlKey + i, o.url);
+         GM_setValue(dateKey + i, ""+o.date);
       }
    };
    var addHist = function(url, title, date, a)
-   {         
+   {
       var o = new Object();
       o.url = url;
       o.title = title;
@@ -136,17 +136,17 @@ setTimeout(function()
          if(!found)
             b.push(o);
       }
-      return b;         
+      return b;
    };
-   var strValue = function(o) 
+   var strValue = function(o)
    {
       if(o)
         return o.toString();
       return "";
    }
-   var normalizeUrl = function(loc) 
-   {      
-      return strValue(loc.protocol) + "//" + strValue(loc.hostname) 
+   var normalizeUrl = function(loc)
+   {
+      return strValue(loc.protocol) + "//" + strValue(loc.hostname)
          + strValue(loc.port) + strValue(loc.pathname) + strValue(loc.search);
    };
    var recordDatesDifferEnough = function(newer,older) {
@@ -257,7 +257,7 @@ setTimeout(function()
    }
    // Uncomment next three lines if you want to remove the copy warning message from the bottom of the edit page
    // var warn = document.getElementById("editpage-copywarn");
-   // if(warn) 
+   // if(warn)
    //   warn.parentNode.removeChild(warn);
 
    function AppendCategoryTreeToSidebar() {
