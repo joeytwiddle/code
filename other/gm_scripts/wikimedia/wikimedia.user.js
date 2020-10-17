@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Wikimedia Page History in Sidebar [adopted]
 // @description   Add History box at wikimedia's leftmost column
-// @version       1.2.2
+// @version       1.2.3
 // @downstreamURL http://userscripts.org/scripts/source/124389.user.js
 // @include       http://*.wikipedia.org/*
 // @include       http://*.wikimedia.org/wiki/*
@@ -179,7 +179,7 @@ setTimeout(function()
       return str.replace('"','&quot;','g').replace('<','&lt;','g').replace('>','&gt;','g');
    }
    var listItem = function(href,name) { return '<li><a href="' + myEscape(href) + '">' + myEscape(name) + '</a></li>\n'; }
-   var s = '<h3 role="navigation">Recent Pages</h3><div class="body" style="display:block;"><ul>';
+   var s = '<h3 role="navigation">Recent Pages</h3><div class="vector-menu-content"><ul class="vector-menu-content-list">';
    // for(var x in hist)
    for(var x=0; x<numToShow; x++)
    {
@@ -207,10 +207,10 @@ setTimeout(function()
    var useScrollbarForHistory = 'div#mw-panel div.portal div.body ul { max-height: 90vh; overflow: auto; }';
    s += '<style type="text/css">' + softenOurHRSeparators + useScrollbarForHistory + '</style>';
 
-   var e = document.createElement ("div");
+   var e = document.createElement ("nav");
    e.innerHTML = s;
    e.id = "p-history";
-   e.className = "portal expanded";
+   e.className = "mw-portlet mw-portlet-interaction vector-menu vector-menu-portal portal";
    var panel = document.getElementById("mw-panel") ||
       document.getElementById("column-one") || document.getElementById("panel")
       || document.getElementById("jq-interiorNavigation");
@@ -224,9 +224,9 @@ setTimeout(function()
 
       if (hist.length > numToShow) {
          var openMore = document.createElement("li");
-         openMore.style = "text-align: center";
+         //openMore.style = "text-align: center";
          var openMoreLink = document.createElement("a");
-         openMoreLink.textContent = "More...";
+         openMoreLink.textContent = "See more...";
          openMoreLink.href = "#";
          openMore.appendChild(openMoreLink);
          var targetUL = e.getElementsByTagName("ul")[0];
