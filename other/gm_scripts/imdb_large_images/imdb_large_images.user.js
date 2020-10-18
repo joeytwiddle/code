@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         IMDB Large Images [fork]
-// @version      1.0.11-joey2
+// @version      1.0.11-joey3
 // @description  Large iMDB images when you hover over them.
 // @namespace    https://greasyfork.org/en/scripts/11249-imdb-large-images
 // @homepage     https://greasyfork.org/en/scripts/11249-imdb-large-images
@@ -154,7 +154,9 @@ z-index: 1000; \
 
   function checkImages() {
     $("img[src*='_V1']").not("img[src*='_ZA']").not(".imageDone").each(function() {
-      $(this).addClass('imageDone').css('cursor','crosshair').hoverIntent( hoverInFunction, function(){} );
+      // For thumbnails in the recommended "More Like This" section, we need to give IMDB time to select the item and show the overview, before we overlay the large image.
+      var interval = $(this).closest('.rec_item').length ? 300 : 100;
+      $(this).addClass('imageDone').css('cursor','crosshair').hoverIntent({ over: hoverInFunction, interval: interval });
     });
     window.setTimeout(checkImages, 1000);
   }
