@@ -232,7 +232,7 @@
 			otherInput.max = det.max;
 			otherInput.step = step;
 			setValue(otherInput,currentValue);
-			otherInput.addEventListener("change",update,true);
+			otherInput.addEventListener("input",update,true);
 			td = document.createElement("td");
 			td.appendChild(otherInput);
 			tr.appendChild(td);
