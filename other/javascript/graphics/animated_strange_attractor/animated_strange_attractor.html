@@ -568,7 +568,16 @@
 
 		updateConstants();
 
+		var virtualTimeBefore = virtualTime;
 		virtualTime += options.animationSpeed;
+
+		if (virtualTime === virtualTimeBefore) {
+			// The number has got so large that it's no longer increasing!
+			// This results in aimation freezing
+			// Let's reset the number, so that animation resumes
+			console.warn('Resetting virtualTime because it got stuck at:', virtualTime);
+			virtualTime = 0;
+		}
 
 		updateParameters();
 
