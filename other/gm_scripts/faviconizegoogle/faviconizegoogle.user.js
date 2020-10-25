@@ -1,14 +1,15 @@
 // ==UserScript==
 // @name           FaviconizeGoogle
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
-// @description    Adds favicons next to Google search results.  Also works for Ecosia.
+// @description    Adds favicons next to Google search results.  Also works for Ecosia and Searx.
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.6.1
+// @version        1.6.2
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
+// @include        /https?:\/\/searx\..*\/.*
 // @grant          GM_xmlhttpRequest
 // @connect        *
 // ==/UserScript==
@@ -30,6 +31,7 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 // - https://greasyfork.org/en/scripts/12395-google-favicons (works with Endless Google)
 // - https://gist.github.com/Sir-Cumference/223d36cbec6473b0e6927e5c50c11568 (very short code, @match works with Greasemonkey)
 
+// 2020-10-25 Added support for some of the searx sites (provided they have 'searx' in the domain).
 // 2020-04-21 Re-enabled for Ecosia and StartPage, bypass CSP by fetching the images using GM_xmlhttpRequest.
 // 2020-02-02 Reenabled Google again, because Google has stopped showing favicons.
 // 2020-01-22 Disabled Google, because Google is now displaying favicons itself.
@@ -55,6 +57,7 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 
 var isEcosia = document.location.hostname === 'www.ecosia.org' || document.location.hostname === 'ecosia.org';
 var isStartpage = document.location.host.match(/\bstartpage\b/);
+var isSearx = document.location.host.match(/\bsearx\b/);
 
 //var bypassCSP = isEcosia || isStartpage;
 // Enable it for all sites.  I think it's more secure for us to fetch the icon by GM_xhr rather than injecting it into the page.
@@ -143,6 +146,10 @@ function createFaviconFor (url) {
 				responseType: 'blob',
 				onload: (res) => {
 					//console.log('response:', res.response);
+					if (!res.response) {
+						console.warn(`No content returned for url=${url}`);
+						tryNextUrlNoCors();
+					}
 					blobToDataURL(res.response, (dataUrl) => {
 						//console.log('dataUrl:', dataUrl);
 						const isImage = dataUrl.startsWith('data:application/octet-stream;') || dataUrl.startsWith('data:image/');
@@ -212,6 +219,11 @@ function getGoogleResultsLinks () {
 	if (links.length === 0) {
 		// We use .result-body to avoid getting deep links (which were producing an unwanted second large favicon)
 		links = document.querySelectorAll('.result-body .result-title');
+	}
+
+	// For searx
+	if (links.length === 0) {
+		links = document.querySelectorAll('.result_header a');
 	}
 
 	// Remove any links which contain only one image
@@ -292,6 +304,11 @@ function updateFavicons () {
 			link.parentNode.style.whiteSpace = 'nowrap';
 		}
 
+		if (isSearx && placeFaviconOffTheLeft) {
+			findClosest(link, 'h4').style.position = 'relative';
+		}
+
+		//console.log(`Placing favicon %o by %o`, img, targetNode);
 		if (placeFaviconInsideLink) {
 			if (placeFaviconAfter) {
 				targetNode.appendChild(img);
