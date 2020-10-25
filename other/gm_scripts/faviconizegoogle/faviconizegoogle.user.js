@@ -1,15 +1,26 @@
 // ==UserScript==
 // @name           FaviconizeGoogle
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
-// @description    Adds favicons next to Google search results.  Also works for Ecosia and Searx.
+// @description    Adds favicons next to Google search results.  Also works for Ecosia, StartPage and Searx.
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.6.2
+// @version        1.6.3
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
 // @include        /https?:\/\/searx\..*\/.*
+// These are some popular searx sites which don't have 'searx' in the domain:
+// @match          https://spot.ecloud.global/*
+// @match          https://search.disroot.org/*
+// @match          https://search.stinpriza.org/*
+// @match          https://zoek.anchel.nl/*
+// @match          https://search.mdosch.de/*
+// @match          https://metasearch.nl/*
+// @match          https://suche.uferwerk.org/*
+// @match          https://search.snopyta.org/*
+// @match          https://www.gruble.de/*
+// End popular searx sites.
 // @grant          GM_xmlhttpRequest
 // @connect        *
 // ==/UserScript==
@@ -57,7 +68,7 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 
 var isEcosia = document.location.hostname === 'www.ecosia.org' || document.location.hostname === 'ecosia.org';
 var isStartpage = document.location.host.match(/\bstartpage\b/);
-var isSearx = document.location.host.match(/\bsearx\b/);
+var isSearx = document.location.host.match(/\bsearx\b/) || document.querySelector('.searx-navbar');
 
 //var bypassCSP = isEcosia || isStartpage;
 // Enable it for all sites.  I think it's more secure for us to fetch the icon by GM_xhr rather than injecting it into the page.
