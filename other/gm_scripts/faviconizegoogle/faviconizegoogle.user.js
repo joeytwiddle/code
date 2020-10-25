@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.6.3
+// @version        1.6.4
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -68,7 +68,7 @@ var centraliseIconVertically = iconSize < 2;   // For smaller icon sizes, we cen
 
 var isEcosia = document.location.hostname === 'www.ecosia.org' || document.location.hostname === 'ecosia.org';
 var isStartpage = document.location.host.match(/\bstartpage\b/);
-var isSearx = document.location.host.match(/\bsearx\b/) || document.querySelector('.searx-navbar');
+var isSearx = document.location.host.match(/\bsearx\b/) || document.querySelector('.searx-navbar') || document.querySelector('script[src*=searx]');
 
 //var bypassCSP = isEcosia || isStartpage;
 // Enable it for all sites.  I think it's more secure for us to fetch the icon by GM_xhr rather than injecting it into the page.
@@ -264,6 +264,10 @@ if (isEcosia) {
 style.innerHTML = ".favicon { box-sizing: content-box; margin-" + marginSide + ": 0.3em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
 document.getElementsByTagName('head')[0].appendChild(style);
 
+// TODO: On search.disroot.org Chrome says: Refused to apply inline style because it violates the following Content Security Policy directive: "default-src 'self'"
+//       This happens even if I use GM_addStyle
+//       At present, the only workaround I can imagine is to apply the styles directly to the elements, rather than using CSS.
+
 function updateFavicons () {
 	var links = getGoogleResultsLinks();
 
@@ -316,7 +320,8 @@ function updateFavicons () {
 		}
 
 		if (isSearx && placeFaviconOffTheLeft) {
-			findClosest(link, 'h4').style.position = 'relative';
+			//findClosest(link, 'h4').style.position = 'relative';
+			link.parentNode.style.position = 'relative';
 		}
 
 		//console.log(`Placing favicon %o by %o`, img, targetNode);
