@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Engineers.SG Tweaks
 // @namespace    https://github.com/joeytwiddle/code/blob/master/other/gm_scripts/engineers.sg_tweaks/engineers.sg_tweaks.user.js
-// @version      0.5
+// @version      1.0
 // @description  Small visual improvements to the engineers.sg website
 // @author       joeytwiddle
 // @match        https://engineers.sg/events
@@ -14,6 +14,9 @@
     const removeLeadingZeros = true;
     const displayEventsAsCards = true;
     const compressEventBoxes = true;
+    // Useful if one of the groups annoys you, so you want to hide it
+    // (Can also be used if you are looking for groups to add to accept/rejectlists, and want to hide the ones you have already handled)
+    const clickToHideGroup = false;
 
     if (removeLeadingZeros) {
         // Remove leading '0' from times.  E.g. '06:00pm' -> '6:00pm'
@@ -90,5 +93,20 @@
                 min-height: 8.7em;
             }
         `);
+    }
+
+    if (clickToHideGroup) {
+        const groupNameElements = document.querySelectorAll('.event-item blockquote');
+        for (const groupNameElem of groupNameElements) {
+            groupNameElem.style.cursor = 'not-allowed';
+            groupNameElem.addEventListener('click', function() {
+                const groupName = this.textContent;
+                const allOccurrences = Array.from(document.querySelectorAll('.event-item blockquote')).filter(elem => elem.textContent === groupName);
+                for (const occurrence of allOccurrences) {
+                    const container = occurrence.parentNode.parentNode;
+                    container.parentNode.removeChild(container);
+                }
+            });
+        }
     }
 })();
