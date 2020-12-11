@@ -1,0 +1,105 @@
+<html>
+	<body>
+		<script>
+			(function () {
+				const statusElement = document.body;
+
+				function setStatus() {
+					console.log.apply(this, arguments);
+					const text = Array.prototype.slice.call(arguments, 0).join(' ');
+					statusElement.textContent = text;
+				}
+
+				const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+				if (!SpeechRecognition) {
+					console.error(`Could not find SpeechRecognition API`);
+					console.info(
+						`If you are on Firefox, please go to about:config and switch the flags media.webspeech.recognition.enable and media.webspeech.recognition.force_enable to true`,
+					);
+					return;
+				}
+
+				// Actually this doesn't matter, since we rerequest them each time before we spead
+				speechSynthesis.onvoiceschanged = () => {
+					console.log(`Voices loaded`);
+				};
+
+				function say(text, callback) {
+					const voices = speechSynthesis.getVoices();
+					console.log('voices:', voices);
+
+					const utterance = new SpeechSynthesisUtterance(text);
+
+					utterance.rate = 0.7;
+					utterance.pitch = 0.8;
+					const preferredVoice = voices.find(voice => voice.name.includes('English Male'));
+					if (preferredVoice) {
+						utterance.voice = preferredVoice;
+					}
+
+					console.log('utterance:', utterance);
+					speechSynthesis.speak(utterance);
+
+					if (callback) {
+						var waitForCompletion = function () {
+							if (speechSynthesis.speaking) {
+								setTimeout(() => waitForCompletion(), 1000);
+							} else {
+								callback();
+							}
+						};
+						waitForCompletion();
+					}
+				}
+
+				function listenForNextQuery() {
+					const recognition = new SpeechRecognition();
+
+					recognition.onstart = function () {
+						setStatus('Listening');
+					};
+
+					recognition.onerror = function (event) {
+						setStatus('Error starting recognition:', event.error);
+					};
+
+					recognition.onspeechend = function () {
+						recognition.stop();
+						setStatus('');
+					};
+
+					recognition.onresult = function (event) {
+						console.log('event.results:', event.results);
+						const transcript = event.results[0][0].transcript;
+						const confidence = event.results[0][0].confidence;
+						console.log('confidence:', confidence);
+						console.log('transcript:', transcript);
+
+						const leadText =
+							confidence > 0.9
+								? 'You said'
+								: Math.random() < 0.5
+								? 'I think you said'
+								: 'I heard you say';
+
+						const text = `${leadText} ${transcript}.  I'm sorry Dave, I can't do that.`;
+
+						say(text, () => {
+							console.log(`Speech finished`);
+							listenForNextQuery();
+						});
+					};
+
+					console.log(`Initialising recognition...`);
+					recognition.start();
+				}
+
+				window.onclick = () => {
+					setStatus('');
+					say('Hello human, how may I help you?', listenForNextQuery);
+				};
+				setStatus('Click to start');
+			})();
+		</script>
+	</body>
+</html>
