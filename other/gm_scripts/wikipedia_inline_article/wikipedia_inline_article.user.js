@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer [adopted]
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.18
+// @version       1.2.17
 //// http:
 // @include       http://*wiki*
 // @include       http://wikipedia.org/*
@@ -258,17 +258,17 @@ function createNewInlineWindow(event, href, link, windowID){
 	if (ypos < 4) {
 		ypos = 4;
 	}
-	
+
 	var container = document.createElement('div');
 	container.id = windowFullID;
 	container.className = "inline-window";
-	
+
 	var cssBoxWidth = Math.round((windowWidth - (windowPadding+windowBorderSize)*2)/document.body.clientWidth*100);
 	var cssBoxHeight = windowHeight - (windowPadding+windowBorderSize*2);
 
 	// Some sites (especially Wikia) set a custom background colour.
 	// Let's try to copy the colour that the site is using, otherwise fall back to white.
-	var backgroundElement = document.querySelector('.WikiaPageBackground') || link;
+	var backgroundElement = document.querySelector('.WikiaPageBackground') || document.querySelector('.WikiaPageContentWrapper') || link;
 	var backgroundColor = getComputedStyle(backgroundElement).backgroundColor;
 	if (backgroundColor === 'rgba(0, 0, 0, 0)') {
 		backgroundColor = 'white';
