@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Calm Quora's annoying red notification dots
 // @namespace    joeytwiddle
-// @version      1.1.0
+// @version      1.2.0
 // @license      MIT
 // @description  The red notifications dots on Quora are annoying, so let's make them grey.  Also hide the popups, separate adverts from content, don't keep opening new tabs, and add some whitespace for readability.
 // @author       joeytwiddle
@@ -12,8 +12,9 @@
 
 var makeRedNotificationsGrey = true;
 var makeTheHeaderGray = false;
-var showPopups = false;
+var hidePopups = true;
 
+// Not removing adverts or promotions, but at least don't make them look like answers. 🙄
 var deemphasiseAds = true;
 var distinguishPromotedAnswers = true;
 
@@ -28,7 +29,7 @@ var increaseSeparationOfAnswers2 = true;
 
 function afterPageLoad (callback) {
     //setTimeout(callback, 400);
-    document.addEventListener('DOMContentLoaded', () => setTimeout(callback, 2000));
+    document.addEventListener('DOMContentLoaded', () => setTimeout(callback, 4000));
 }
 
 if (makeRedNotificationsGrey) {
@@ -37,18 +38,20 @@ if (makeRedNotificationsGrey) {
     // This was causing the circle to turn into a rounded square: transform: scale(0.8);
     // Although if we wanted, we could apply it to the parent: .site_header_badge_wrapper { transform: scale(0.8); }
     //GM_addStyle('.qu-bg--red { filter: saturate(0%); }');
-    GM_addStyle('.q-absolute.qu-top--tiny .qu-bg--red { background-color: #ccc; }');
-}
-
-if (!showPopups) {
-    GM_addStyle('.Growl { display: none !important; }');
+    //GM_addStyle('.q-absolute.qu-top--tiny .qu-bg--red { background-color: #ccc; }');
+    GM_addStyle('.qu-zIndex--header .qu-bg--red { background-color: #ccc; }');
 }
 
 // Just make the whole damn header grey!
 // As requested by Keeni: https://greasyfork.org/en/forum/discussion/37380/x
 if (makeTheHeaderGray) {
     //GM_addStyle('.SiteHeader, .questions_to_answer_icon { filter: saturate(0%); }');
-    GM_addStyle('.q-fixed.qu-top--0.qu-fullX { filter: saturate(0%); }');
+    //GM_addStyle('.q-fixed.qu-top--0.qu-fullX { filter: saturate(0%); }');
+    GM_addStyle('.qu-zIndex--header { filter: saturate(0%); }');
+}
+
+if (hidePopups) {
+    GM_addStyle('.Growl { display: none !important; }');
 }
 
 if (deemphasiseAds) {
@@ -75,13 +78,23 @@ if (deemphasiseAds) {
         // 2020
         //.q-text.qu-mb--tiny.qu-bold.qu-color--gray_dark_dim.qu-passColorToLinks.TitleText___StyledText-sc-1hpb63h-0.kfJcxX
         //.q-text.qu-mb--tiny.qu-bold -> closest('.spacing_log_question_page_ad') oh
-        Array.from(document.querySelectorAll('.spacing_log_question_page_ad')).forEach(elem => elem && Object.assign(elem.style, cssForAdverts));
+        //Array.from(document.querySelectorAll('.spacing_log_question_page_ad')).forEach(elem => elem && Object.assign(elem.style, cssForAdverts));
+        // 2021, promoted questions
+        Array.from(document.querySelectorAll('.q-box.qu-borderBottom'))
+            .filter(elem => elem.textContent.startsWith('Sponsored by '))
+            .forEach(elem => Object.assign(elem.style, cssForAdverts));
     });
 }
 
 if (distinguishPromotedAnswers) {
-    // These are sometimes more relevant to the question than standard adverts, so let's not deemphasise them quite so much
-    GM_addStyle('.promoted_answer_wrapper { background-color: #f4f4f4; opacity: 0.7; padding: 1em; border: 1px solid #bbb; }');
+    afterPageLoad(function () {
+        // These are sometimes more relevant to the question than standard adverts, so let's not deemphasise them quite so much
+        //GM_addStyle('.promoted_answer_wrapper { background-color: #f4f4f4; opacity: 0.7; padding: 1em; border: 1px solid #bbb; }');
+        var cssForPromotions = { backgroundColor: '#f4f4f4', opacity: 0.7, padding: '1em', border: '1px solid #bbb' };
+        Array.from(document.querySelectorAll('.q-box.qu-borderBottom'))
+            .filter(elem => elem.textContent.startsWith('Promoted by '))
+            .forEach(elem => Object.assign(elem.style, cssForPromotions));
+    });
 }
 
 // Beautify avatars
