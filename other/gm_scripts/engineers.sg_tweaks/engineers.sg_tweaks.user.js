@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Engineers.SG Tweaks
 // @namespace    https://github.com/joeytwiddle/code/blob/master/other/gm_scripts/engineers.sg_tweaks/engineers.sg_tweaks.user.js
-// @version      1.0
+// @version      1.0.1
 // @description  Small visual improvements to the engineers.sg website
 // @author       joeytwiddle
 // @match        https://engineers.sg/events
@@ -12,11 +12,11 @@
     'use strict';
 
     const removeLeadingZeros = true;
-    const displayEventsAsCards = true;
+    const displayEventsAsCards = false;
     const compressEventBoxes = true;
     // Useful if one of the groups annoys you, so you want to hide it
     // (Can also be used if you are looking for groups to add to accept/rejectlists, and want to hide the ones you have already handled)
-    const clickToHideGroup = false;
+    const clickToHideGroup = true;
 
     if (removeLeadingZeros) {
         // Remove leading '0' from times.  E.g. '06:00pm' -> '6:00pm'
@@ -37,6 +37,7 @@
                 margin-right: -2em;
             }
 
+            / Add a shadow behind each event */
             .events-list .event-item {
                 /* border: 1px solid #0001; */
                 margin: 1.2em 0;
@@ -52,7 +53,7 @@
     }
 
     if (compressEventBoxes) {
-        // Put some data on the right of the card, so it can become shorter
+        // Move some data to the right of the card, so it can become shorter.
         // As you can see there is a lot of CSS here.  This is a bit fragile.
         GM_addStyle(`
             .events-list .event-item > div {
@@ -96,6 +97,7 @@
     }
 
     if (clickToHideGroup) {
+        // If the user clicks on the group's name, we will hide all events from that group
         const groupNameElements = document.querySelectorAll('.event-item blockquote');
         for (const groupNameElem of groupNameElements) {
             groupNameElem.style.cursor = 'not-allowed';
