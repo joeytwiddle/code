@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.10
+// @version        1.4.11
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -387,6 +387,9 @@ function addPagerStyles() {
     + "#linkGroupPager:hover { box-shadow: 0px 2px 12px 0px rgba(0,0,0,0.1); }"
     + "#linkGroupPager       { opacity: 0.4; }"
     + "#linkGroupPager:hover { opacity: 1.0; }"
+    // But when YouTube goes fullscreen, make the idle state invisible
+    + "body.no-scroll #linkGroupPager       { opacity: 0.0; }"
+    + "body.no-scroll #linkGroupPager:hover { opacity: 1.0; }"
     + "#linkGroupPager       { transition: all 200ms linear 200ms; }"
     + "#linkGroupPager:hover { transition: all 200ms linear; }"
     + "#linkGroupPager > *         { opacity: 0.0; }"
@@ -406,7 +409,7 @@ function addPagerStyles() {
     + "#linkGroupPager .related-link-index { display: inline-block; width: 1.5em; text-align: right; }"
     + "#linkGroupPager .related-link-index { opacity: 0.2; transform: scale(0.8); }"
     // When YouTube goes fullscreen, disappear
-    + "body.no-scroll #linkGroupPager { display: none }"
+    //+ "body.no-scroll #linkGroupPager { display: none }"
   );
 }
 
