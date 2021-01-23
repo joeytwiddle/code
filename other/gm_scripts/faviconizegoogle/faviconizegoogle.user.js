@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.6.4
+// @version        1.7.0
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -22,6 +22,7 @@
 // @match          https://www.gruble.de/*
 // End popular searx sites.
 // @grant          GM_xmlhttpRequest
+// @grant          GM_addStyle
 // @connect        *
 // ==/UserScript==
 
@@ -94,6 +95,15 @@ if ((isEcosia || isStartpage) && (window.innerWidth < 1000)) {
 	// At lower widths, these website collapse their layout so there is no margin on the left, in which case we don't want to float the favicon out of view.
 	// We dare not do this for Google, as this isn't working right now!
 	placeFaviconOffTheLeft = false;
+}
+
+if (!this.GM_addStyle) {
+	this.GM_addStyle = function(css) {
+		var s = document.createElement("style");
+		s.type = 'text/css';
+		s.innerHTML = css;
+		document.getElementsByTagName("head")[0].appendChild(s);
+	};
 }
 
 function findClosest (elem, tagName) {
@@ -248,7 +258,6 @@ function getGoogleResultsLinks () {
 	return links;
 }
 
-var style = document.createElement('STYLE');
 var marginSide = (placeFaviconAfter ? 'left' : 'right');
 var leftPadding = 1.2 * iconSize + 0.6 - 0.3 * isEcosia;
 // We can try to centralise the icon with the text
@@ -261,8 +270,8 @@ if (isEcosia) {
 	extra += ' margin-top: ' + (-topMargin) + 'em;';
 }
 // If we are using placeFaviconOffTheLeft, then we don't need the paddings or alignment here
-style.innerHTML = ".favicon { box-sizing: content-box; margin-" + marginSide + ": 0.3em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
-document.getElementsByTagName('head')[0].appendChild(style);
+const style = ".favicon { box-sizing: content-box; margin-" + marginSide + ": 0.3em; vertical-align: middle; width: " + iconSize + "em; height: " + iconSize + "em; padding-bottom: 0.2em; " + extra + "}";
+GM_addStyle(style);
 
 // TODO: On search.disroot.org Chrome says: Refused to apply inline style because it violates the following Content Security Policy directive: "default-src 'self'"
 //       This happens even if I use GM_addStyle
