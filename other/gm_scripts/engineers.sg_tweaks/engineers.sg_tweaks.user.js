@@ -1,16 +1,17 @@
 // ==UserScript==
 // @name         Engineers.SG Tweaks
 // @namespace    https://github.com/joeytwiddle/code/blob/master/other/gm_scripts/engineers.sg_tweaks/engineers.sg_tweaks.user.js
-// @version      1.0.1
+// @version      1.1.0
 // @description  Small visual improvements to the engineers.sg website
 // @author       joeytwiddle
-// @match        https://engineers.sg/events
+// @match        https://engineers.sg/*
 // @grant        GM_addStyle
 // ==/UserScript==
 
 (function() {
     'use strict';
 
+    // Options for events page
     const removeLeadingZeros = true;
     const displayEventsAsCards = false;
     const compressEventBoxes = true;
@@ -18,14 +19,21 @@
     // (Can also be used if you are looking for groups to add to accept/rejectlists, and want to hide the ones you have already handled)
     const clickToHideGroup = true;
 
-    if (removeLeadingZeros) {
+    // Options for organisations page
+    const increaseSpacingBetweenOrganisations = false;
+    const addBordersAroundOrganisations = true;
+
+    const onEventsPage = document.location.pathname.startsWith('/events');
+    const onOrganisationsPage = document.location.pathname.startsWith('/organizations');
+
+    if (onEventsPage && removeLeadingZeros) {
         // Remove leading '0' from times.  E.g. '06:00pm' -> '6:00pm'
         Array.from(document.querySelectorAll('.event-item > div > p > strong')).forEach(elem => {
             elem.textContent = elem.textContent.replace(/0(\d:\d\d [AP]M)/i, '$1');
         });
     }
 
-    if (displayEventsAsCards) {
+    if (onEventsPage && displayEventsAsCards) {
         // More like Material Design
         GM_addStyle(`
 
@@ -52,7 +60,7 @@
         `);
     }
 
-    if (compressEventBoxes) {
+    if (onEventsPage && compressEventBoxes) {
         // Move some data to the right of the card, so it can become shorter.
         // As you can see there is a lot of CSS here.  This is a bit fragile.
         GM_addStyle(`
@@ -96,7 +104,7 @@
         `);
     }
 
-    if (clickToHideGroup) {
+    if (onEventsPage && clickToHideGroup) {
         // If the user clicks on the group's name, we will hide all events from that group
         const groupNameElements = document.querySelectorAll('.event-item blockquote');
         for (const groupNameElem of groupNameElements) {
@@ -110,5 +118,35 @@
                 }
             });
         }
+    }
+
+    if (onOrganisationsPage && increaseSpacingBetweenOrganisations) {
+        GM_addStyle(`
+            .container > .row > .col.s6 {
+                margin-top: 25px;
+                margin-bottom: 25px;
+            }
+        `);
+    }
+
+    if (onOrganisationsPage && addBordersAroundOrganisations) {
+        GM_addStyle(`
+            .container > .row > .col.s6 {
+                //box-shadow: 0 0px 6px #0001;
+            }
+            .container > .row,
+            .container > .row > .col.s6 {
+                border: 1px solid #eee;
+            }
+            .container > .row > .col.s6 {
+                padding: 12px;
+            }
+            h5.truncate {
+                text-align: center;
+            }
+            .thumbnail {
+                margin: auto;
+            }
+        `);
     }
 })();
