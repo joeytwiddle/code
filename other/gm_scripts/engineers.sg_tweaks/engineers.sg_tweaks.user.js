@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Engineers.SG Tweaks
 // @namespace    https://github.com/joeytwiddle/code/blob/master/other/gm_scripts/engineers.sg_tweaks/engineers.sg_tweaks.user.js
-// @version      1.1.0
+// @version      1.1.1
 // @description  Small visual improvements to the engineers.sg website
 // @author       joeytwiddle
 // @match        https://engineers.sg/*
@@ -13,7 +13,7 @@
 
     // Options for events page
     const removeLeadingZeros = true;
-    const displayEventsAsCards = false;
+    const displayEventsAsCards = true;
     const compressEventBoxes = true;
     // Useful if one of the groups annoys you, so you want to hide it
     // (Can also be used if you are looking for groups to add to accept/rejectlists, and want to hide the ones you have already handled)
@@ -45,11 +45,11 @@
                 margin-right: -2em;
             }
 
-            / Add a shadow behind each event */
+            /* Add a shadow behind each event */
             .events-list .event-item {
                 /* border: 1px solid #0001; */
                 margin: 1.2em 0;
-                box-shadow: 0 0px 6px #0001;
+                box-shadow: 0 0px 9px #0001;
             }
 
             /* Don't make the headers wider than the cards (it looks weird) */
