@@ -13,7 +13,7 @@
 // @exclude        https://*.google.*/images*
 // @exclude        https://google.*/images*
 // @exclude        https://images.google.*/*
-// @version        2014.09.06
+// @version        2021-02-17
 // @grant          GM_addStyle
 // @grant          GM_log
 // ==/UserScript==
@@ -247,6 +247,7 @@ function initPreview() {
 
 		previewFrame = document.createElement('IFRAME');
 		previewFrame.id = 'Google_Preview_Pane';
+		previewFrame.sandbox="allow-scripts allow-same-origin allow-popups";
 		previewFrame.style.backgroundColor = '#eeeeee';
 		if (!panelHasBorder)
 			previewFrame.style.border = '0px solid white';
@@ -346,6 +347,9 @@ function initPreview() {
 		// filling the whole width!
 		GM_addStyle(".big #center_col, .big #foot { margin-left: 0px; }");
 		GM_addStyle(".mdm #center_col, .mdm #foot { margin-left: 0px; }");
+
+		// Hide the right panel, if it exists
+		GM_addStyle("#rhs { display: none; }");
 
 		// If the user has run the Google Search Sidebar userscript, we must
 		// remove that from the preview area; so we add it to the results column.
