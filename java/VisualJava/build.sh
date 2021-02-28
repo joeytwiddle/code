@@ -1,17 +1,29 @@
-del classes
+#!/usr/bin/env bash
+set -e
 
-cd src
+rm -rf ./classes/
 
-find . -name "*.java" | notindir CVS | withalldo javac
-# find . -name "*.java" | notindir CVS | withalldo jikes
+. get_classpath.shlib
+
+cd src/
+
+#find . -name "*.java" | notindir CVS | withalldo jikes
+find . -name "*.java" | xargs -d '\n' javac
 
 find . -name "*.class" |
-while read CLASSFILE
+while read classfile
 do
-	mkdir -p ../classes/"`dirname \"$CLASSFILE\"`" || exit
-	mv "$CLASSFILE" ../classes/"$CLASSFILE"
+	mkdir -p ../classes/"$(dirname "$classfile")"
+	mv "$classfile" ../classes/"$classfile"
 done
 
-cp -a META-INF ../classes
+find . -name "*.png" |
+while read resourcefile
+do
+	mkdir -p ../classes/"$(dirname "$resourcefile")"
+	cp -a "$resourcefile" ../classes/"$resourcefile"
+done
+
+cp -a META-INF ../classes/
 
 cd ..

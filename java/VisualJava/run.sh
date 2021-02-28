@@ -1,8 +1,8 @@
-# jtop="$HOME/j/code/java"
-jtop="`realpath ..`"
+#!/usr/bin/env bash
+set -e
 
-export CLASSPATH="$CLASSPATH:$jtop/DLang/bin:$jtop/web/CommonUtils/bin:$jtop/VisualJava/lib/xstream-1.1.2.jar"
+. get_classpath.shlib
 
-cd bin
+#cd bin
+cd classes
 java visualjava.VisualJava "$@"
-

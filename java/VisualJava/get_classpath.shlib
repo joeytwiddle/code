@@ -1,0 +1,6 @@
+#CLASSPATH="$CLASSPATH:$PWD/../DLang/bin:$PWD/../web/CommonUtils/bin:$PWD/../VisualJava/lib/xstream-1.1.2.jar"
+for lib in "$PWD"/lib/*
+do CLASSPATH="$CLASSPATH:$lib"
+done
+
+export CLASSPATH
