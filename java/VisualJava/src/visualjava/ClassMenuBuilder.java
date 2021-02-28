@@ -9,6 +9,10 @@ import java.util.jar.JarFile;
 
 import org.neuralyte.Logger;
 
+//import java.util.List;
+//import com.openpojo.reflection.PojoClass;
+//import com.openpojo.reflection.impl.PojoClassFactory;
+
 public class ClassMenuBuilder {
 
 	public static void printClassListFromResource(final PrintWriter writer,
@@ -133,6 +137,10 @@ public class ClassMenuBuilder {
 					}
 				}
 			}
+
+			// Failed with: com.openpojo.reflection.exception.ReflectionException: Package [java.lang] is not valid
+			//final List<PojoClass> pojoClasses = PojoClassFactory.getPojoClassesRecursively("java.lang", null);
+			//org.neuralyte.Logger.log(pojoClasses);
 
 		} catch (IOException e) {
 			org.neuralyte.Logger.error(e);
