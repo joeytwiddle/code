@@ -2,7 +2,7 @@
 // @name           StackExchange Tweaks
 // @namespace      SET
 // @description    Minor visual tweaks to StackExchange (remove the new sidebar from Q/A pages, for classic look)
-// @version        1.0.15
+// @version        1.1.0
 // @license        MIT
 // @include        https://stackoverflow.com/*
 // @include        https://*.stackoverflow.com/*
@@ -12,6 +12,7 @@
 // @include        https://askubuntu.com/*
 // @include        https://mathoverflow.net/*
 // @include        https://stackapps.com/*
+// @run-at         document-start
 // @grant          GM_addStyle
 // ==/UserScript==
 
@@ -36,6 +37,10 @@ var noShadows = true;
 // Lighten the new stats above the question, if you find them distracting
 //
 var deemphasiseStats = true;
+
+// Ensure we can see which questions we have already viewed in the past
+//
+var makeVisitedLinksClearer = true;
 
 // ==/Options==
 
@@ -76,5 +81,19 @@ if (noShadows) {
 
 if (deemphasiseStats) {
     // There isn't a clear ID or class for the stats, so I used this monstrosity
-    GM_addStyle('#question-header + .grid.fw-wrap.bb { opacity: 0.7; font-size: 0.9em; }');
+    GM_addStyle('#question-header + .grid.fw-wrap.bb { opacity: 0.5; font-size: 0.9em; }');
+}
+
+if (makeVisitedLinksClearer) {
+    setTimeout(() => {
+        // Because this needs to work on multiple websites, I opted for a classic dark magenta
+        GM_addStyle('.question-hyperlink:visited, .answer-hyperlink:visited { color: #481691; }');
+        // I thought it might be a problem that the links in the search results had params which were removed when we visited the page, but apparently that wasn't a problem.
+        /*
+        const links = document.querySelectorAll('a');
+        for (const link of links) {
+            link.href = link.href.replace(/r=SearchResults/, '').replace(/\?$/, '');
+        }
+        */
+    }, 1000);
 }
