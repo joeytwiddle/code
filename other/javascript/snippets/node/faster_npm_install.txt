@@ -1,0 +1,1 @@
+Instead of `npm i` try `npx cipm` or `yarn` (Dec 2 2017)

@@ -1,0 +1,10 @@
+<sillyslux> n> 7.1235.toFixed(3)
+<jellobot> (okay) '7.123'
+
+<joeytwiddle> If you're presenting a number to humans, toFixed() gets you half-way there, but toLocaleString(options) gets you the commas also
+<joeytwiddle> n> 7.1235.toLocaleString(undefined, {minimiumFractionDigits: 3, maximumFractionDigits: 3})
+<jellobot> (okay) '7.124'
+<joeytwiddle> n> 1007.1235.toLocaleString(undefined, {minimiumFractionDigits: 3, maximumFractionDigits: 3})
+<jellobot> (okay) '1,007.124'
+<joeytwiddle> n> 859.385.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+<jellobot> (okay) '859.39'

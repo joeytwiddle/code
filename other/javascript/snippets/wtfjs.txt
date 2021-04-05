@@ -1,0 +1,14 @@
+<grr12314> n> Object.create(Object(42)) instanceof Number
+
+Call a function without using parens
+<ETHproductions> top[Symbol.hasInstance]=alert;"Hello, World!"instanceof top
+
+// This function is a syntax error
+f = () => {foo: 3, bar: 4}
+// But this one is not
+f = () => {foobar: 5}
+// Why?  Well neither is creating an object with properties inside.  In both cases, the {...} denote the body block of the function.  In there, foobar is a named label (which can be used with `break` or `continue` like a GOTO!)
+
+// This looks like is should complain that no variable 'sausage' exists, but actually it runs ok
+x = "test".join(() => sausage)
+

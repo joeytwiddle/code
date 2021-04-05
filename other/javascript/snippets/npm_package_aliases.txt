@@ -1,0 +1,7 @@
+How to alias/redirect a reference to package foo-lib to a different package of your choice, say bar-lib?
+
+npm link (which creates symlinks)
+Or you can reference a local folder direct from package.json: https://stackoverflow.com/questions/14381898/local-dependency-in-package-json/14387210#14387210
+ooh looks like yarn can do it out of the box: https://twitter.com/sebmck/status/873958247304232961
+Or there is this one weird hack, that overrides how `require` works: https://www.npmjs.com/package/module-alias
+Or babel can do it: https://www.npmjs.com/package/babel-plugin-module-resolver

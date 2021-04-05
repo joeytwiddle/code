@@ -1,0 +1,1 @@
+[].slice.call(document.querySelector('.old-items')).forEach(elem => elem.parentNode.removeChild(elem)) // but you might not need jQuery

@@ -1,2 +1,0 @@
-<iaincarsberg> so why qunit > jasmine?
-<hughfdjackson> i saw some test cases in qunit, and they were nice and terse

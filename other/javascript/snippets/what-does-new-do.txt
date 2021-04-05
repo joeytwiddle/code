@@ -1,0 +1,3 @@
+<Twelve-60> the "new" keyword does little more than, const obj {}; Object.setPrototypeOf(obj, Constructor.prototype); return obj;
+
+(The only other thing I can think is that it calls the constructor function.  Is the prototype set before or after, or both?!)

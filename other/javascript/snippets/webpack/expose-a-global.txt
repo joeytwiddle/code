@@ -1,0 +1,3 @@
+Sep 28 05:43:52 <elsheepo>	when using create-react-app, and you want to expose jquery globally, simply add this to the webpack config
+Sep 28 05:44:49 <elsheepo>	to the plugins block -> new webpack.ProvidePlugin({$:"jquery",jQuery: "jquery"})
+Sep 28 05:46:04 <elsheepo>	ProvidePlugin FTW!

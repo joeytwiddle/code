@@ -1,0 +1,34 @@
+<dysfigured> migrating to sanctuary and fluture from ramda, quality of life improving
+<dysfigured> jaawerth: its great, its like ramda with runtime type checking (that you can disable)
+https://github.com/sanctuary-js/sanctuary
+https://github.com/fluture-js/Fluture
+
+Full conversation:
+
+<dysfigured> migrating to sanctuary and fluture from ramda, quality of life improvinh
+<dysfigured> my typing apparently isnt
+<sumyunseal1> when u grab my tail
+<jaawerth> I've been meaning to try sanctuary
+<jaawerth> lemme know how it goes
+<sumyunseal1> my head is .........................here :D
+<jaawerth> dysfigured: ^
+<dysfigured> jaawerth: its great, its like ramda with runtime type checking (tjat you can disable)
+<jaawerth> yeah that's what I saw, just wasn't sure how well that would fly in a practical application
+<jaawerth> but I read through the docs and tinkered a bit, and it seems great. just hard to judge until I've tried to use it in a real project
+<sumyunseal1> whens the last time u saw a practical nerd
+<jaawerth> (or talk to somebody who has)
+<dysfigured> theres not a huge overlap with ramda (looking at the intersection of the keys from each default export) it seems like they complement each other rather than replacing
+<jaawerth> I dunno there seems to be a lot of crossover
+<jaawerth> no lenses yet though
+<jaawerth> then again, I kinda want those in a self-contained module
+<jaawerth> sanctuary lenses would be great, though, since they could use sanctuary's Maybe
+<dysfigured> 74 fns with the same name, ramda exports 246 fns, sanctuary 168
+<jaawerth> sure, but how may of the missing ones do you use in ramda?
+<jaawerth> ramda has a LOT and some of them are aliases - personally I don't use all of ramda's API
+<jaawerth> a lot of the logical and combinator stuff, yeah, plus lenses and mappers/data manipulation
+<dysfigured> a few, i dont think id be able to remove it, yeah i use lenses (with over) a lot
+<systemfault> Everytime I try to do hardcore FP with JS, I regret it.
+<systemfault> (Or even with TypeScript)
+<dysfigured> but im appreciating what sanctuary offers while i try it
+<sumyunseal1> exactly
+<jaawerth> systemfault: yeah I'm usually happier when compromising - it's easier to turn your code unreadable if you go too hardcore on composition and fantasyland and such

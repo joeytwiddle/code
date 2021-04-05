@@ -1,0 +1,3 @@
+<JaredCE> if you have a private gitlab, and you create a unpublished npm module on that gitlab... you can include it via npm install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/path-to-module/module.git
+<JaredCE> if that module also contains a dependency to another private gitlab module... how do you go about installing that module
+<JaredCE> so private gitlab app A requires private gitlab module B, private gitlab module B requires private gitlab module C

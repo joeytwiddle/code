@@ -1,0 +1,2 @@
+<ljharb> 7GHABCWAW: JSDocs are worse than nothing
+<ljharb> 7GHABCWAW: comments aren't enforced, and thus can drift, and thus have no value.

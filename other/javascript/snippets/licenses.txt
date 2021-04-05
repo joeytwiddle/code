@@ -1,0 +1,7 @@
+Use MIT (or perhaps ISC?)
+
+GPL is bad because it's viral
+<theskillwithin> if you make a WordPress theme,  that has to be GPL as well
+<theskillwithin> because WordPress is GPL
+
+WTFPL is not enforcable in court.  As a result, many companies cannot use the code.

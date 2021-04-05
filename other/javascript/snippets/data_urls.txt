@@ -1,0 +1,5 @@
+Data URL for #XSS: data:text/html,<h1>hey hi</h1><script>alert('hi')</script>
+
+Data URL for quick notepad: data:text/html,<html contenteditable></html>
+
+Pro tip by @feross

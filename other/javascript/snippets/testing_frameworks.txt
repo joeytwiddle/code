@@ -1,3 +1,8 @@
+## 2013
+
+<iaincarsberg> so why qunit > jasmine?
+<hughfdjackson> i saw some test cases in qunit, and they were nice and terse
+
 @eddiemoore 16:19
 @sneakertack nyc is good for coverage. istanbul is not really being updated. haven’t tried blanket. mocha is ok. tape is really good. jest is really good too. i used to use ava for testing, was good for small stuff but as soon as you got to big projects it basically stalled my fairly new macbook for over a minute
 
@@ -5,7 +10,8 @@
 
 ----
 
-<ljharb> darkjeepers: tape, mocha, or jest.
+2020: <ljharb> darkjeepers: tape, mocha, or jest.
+2021: <ljharb> qswz: jest for apps, tape for libs
 
 If you are using mocha, this article: https://www.codementor.io/codementorteam/javascript-testing-framework-comparison-jasmine-vs-mocha-8s9k27za3
 recommends using chai for assertions
