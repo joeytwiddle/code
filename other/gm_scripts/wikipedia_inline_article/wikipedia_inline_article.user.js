@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer [adopted]
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.17
+// @version       1.2.18
 //// http:
 // @include       http://*wiki*
 // @include       http://wikipedia.org/*
@@ -273,6 +273,8 @@ function createNewInlineWindow(event, href, link, windowID){
 	if (backgroundColor === 'rgba(0, 0, 0, 0)') {
 		backgroundColor = 'white';
 	}
+	// If it has alpha, remove it.  Converts blah(1,2,3,4) -> blah(1,2,3)
+	backgroundColor = backgroundColor.replace(/\(([0-9.]+,\s*[0-9.]+,\s*[0-9.]+),\s*[0-9.]+\)/, '($1)');
 
 	container.innerHTML = '<div style="' +
 		'position: absolute; '+
