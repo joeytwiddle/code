@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-18-joeytwiddle
+// @version      2015-11-24-19-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -26,7 +26,7 @@ function processIMDB_Links () {
     var linksToIMBD_Shows   = document.querySelectorAll ("a[href*='/title/']");
 
     for (var J = 0, L = linksToIMBD_Shows.length;  J < L;  J++) {
-        var currentLink = linksToIMBD_Shows[J];
+        const currentLink = linksToIMBD_Shows[J];
 
         /*--- Strict tests for the correct IMDB link to keep from spamming the page
             with erroneous results.
@@ -92,7 +92,11 @@ function processIMDB_Links () {
                 break;
             }
 
-            fetchTargetLink (currentLink); //-- AJAX-in the ratings for a given link.
+            //fetchTargetLink (currentLink); //-- AJAX-in the ratings for a given link.
+
+            // Stagger the fetches, so we don't overwhelm IMDB's servers (or trigger any throttles they might have)
+            // Needs currentLink to be a const, or a closure around it
+            setTimeout(() => fetchTargetLink(currentLink), 300 * fetchedLinkCnt);
 
             //---Mark the link with a data attribute, so we know it's been fetched.
             currentLink.setAttribute ("data-gm-fetched", "true");
@@ -103,6 +107,8 @@ function processIMDB_Links () {
 
 function fetchTargetLink (linkNode) {
     //--- This function provides a closure so that the callbacks can work correctly.
+
+    //console.log("Fetching " + linkNode.href + ' for ', linkNode);
 
     /*--- Must either call AJAX in a closure or pass a context.
         But Tampermonkey does not implement context correctly!
@@ -142,11 +148,29 @@ function prependIMDB_Rating (resp, targetLink) {
         var doc = document.createElement('div');
         doc.innerHTML = resp.responseText;
         var elem = doc.querySelector('.title-overview .vital .ratingValue strong');
-        var title = elem && elem.title || '';
 
-        var ratingT = title.replace(/ based on .*$/, '');
-        var votesT  = title.replace(/.* based on /, '').replace(/ user ratings/, '');
+        var ratingT, votesT;
+        if (elem) {
+            var title = elem && elem.title || '';
 
+            ratingT = title.replace(/ based on .*$/, '');
+            votesT  = title.replace(/.* based on /, '').replace(/ user ratings/, '');
+        } else {
+            var ratingElem = doc.querySelector('.ipc-button > div > div > div > div > span');
+            ratingT = ratingElem && ratingElem.textContent || '';
+
+            var votesElem = doc.querySelector('.ipc-button > div > div > div > div:last-child');
+            votesT = votesElem && votesElem.textContent || '';
+
+            //console.log('ratingElem', ratingElem);
+            //console.log('votesElem', votesElem);
+
+            if (votesT.slice(-1) == 'K') {
+                votesT = String(1000 * votesT.slice(0, -1));
+            } else if (votesT.slice(-1) == 'M') {
+                votesT = String(1000000 * votesT.slice(0, -1));
+            }
+        }
         // The code below expects arrays (originally returned by string match)
         var ratingM = [ratingT, ratingT + "/10"];
         var votesM  = [votesT, votesT];
@@ -154,7 +178,10 @@ function prependIMDB_Rating (resp, targetLink) {
         //console.log('ratingM', ratingM);
         //console.log('votesM', votesM);
 
-        if (/\(awaiting \d+ votes\)|\(voting begins after release\)|in development,/i.test (resp.responseText) ) {
+        // This doesn't work on the new version of the site
+        //if (/\(awaiting \d+ votes\)|\(voting begins after release\)|in development,/i.test (resp.responseText) ) {
+        // hopefully this will work better
+        if (ratingT == '' || votesT == '') {
                 ratingTxt   = "NR";
                 isError     = false;
                 colnumber = 0;
@@ -181,6 +208,8 @@ function prependIMDB_Rating (resp, targetLink) {
         }
     }
 
+    //console.log('ratingTxt', ratingTxt);
+    //console.log('justrate', justrate);
 
     // NOTE: I switched from <b> to <strong> simply because on Season pages, the rating injected after episode titles was getting uglified by an IMDB CSS rule: .list_item .info b { font-size: 15px; }
     targetLink.setAttribute("title", "Rated " + ratingTxt.replace(/<\/*strong>/g,'').replace(/\//,'by') + " users." );
