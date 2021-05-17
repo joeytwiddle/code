@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-19-joeytwiddle
+// @version      2015-11-24-20-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -20,6 +20,9 @@ var addRatingToTitle    = true;  //-- Adds the rating to the browser's title bar
 var $ = unsafeWindow.$;
 
 var fetchedLinkCnt = 0;
+
+const ratingSelectorNew = '.ipc-button > div > div > div > div > span';
+const voteCountSelectorNew = '.ipc-button > div > div > div > div:last-child';
 
 function processIMDB_Links () {
     //--- Get only links that could be to IMBD movie/TV pages.
@@ -151,15 +154,17 @@ function prependIMDB_Rating (resp, targetLink) {
 
         var ratingT, votesT;
         if (elem) {
+            // Old site
             var title = elem && elem.title || '';
 
             ratingT = title.replace(/ based on .*$/, '');
             votesT  = title.replace(/.* based on /, '').replace(/ user ratings/, '');
         } else {
-            var ratingElem = doc.querySelector('.ipc-button > div > div > div > div > span');
+            // New site
+            var ratingElem = doc.querySelector(ratingSelectorNew);
             ratingT = ratingElem && ratingElem.textContent || '';
 
-            var votesElem = doc.querySelector('.ipc-button > div > div > div > div:last-child');
+            var votesElem = doc.querySelector(voteCountSelectorNew);
             votesT = votesElem && votesElem.textContent || '';
 
             //console.log('ratingElem', ratingElem);
@@ -278,7 +283,8 @@ processIMDB_Links ();
 
 if (addRatingToTitle) {
     setTimeout(function () {
-        var foundRating = document.querySelectorAll('.ratingValue [itemprop=ratingValue]');
+        // Selectors for old site and new site
+        var foundRating = document.querySelectorAll('.ratingValue [itemprop=ratingValue], ' + ratingSelectorNew);
         if (foundRating.length === 1) {
             var rating = foundRating[0].textContent;
             if (rating.match(/^[0-9]\.[0-9]$/)) {
