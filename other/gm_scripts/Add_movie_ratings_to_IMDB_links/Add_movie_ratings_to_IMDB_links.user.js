@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-20-joeytwiddle
+// @version      2015-11-24-21-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -175,6 +175,9 @@ function prependIMDB_Rating (resp, targetLink) {
             } else if (votesT.slice(-1) == 'M') {
                 votesT = String(1000000 * votesT.slice(0, -1));
             }
+            // Add in commas (to match old format)
+            votesT = votesT.replace(/(\d)(\d\d\d)(\d\d\d)$/, '$1,$2,$3').replace(/(\d)(\d\d\d$)/, '$1,$2');
+            //console.log('votesT:', votesT);
         }
         // The code below expects arrays (originally returned by string match)
         var ratingM = [ratingT, ratingT + "/10"];
@@ -197,13 +200,12 @@ function prependIMDB_Rating (resp, targetLink) {
                justrate = ratingM[1].substr(0, ratingM[1].indexOf("/"));
 
                var votes = votesM[1];
-               //console.log('votes:', votes);
-               var votesNum = Number( votes.replace(/,/,'','') );
-               var commas_found = votes.match(/,/,'g');
-               if (commas_found && commas_found.length === 1) {
-                   votes = votes.replace(/,.../, 'k');
-               } else if (commas_found && commas_found.length === 2) {
-                   votes = votes.replace(/,.*,.*/, 'M');
+               var votesNum = Number(votes.replace(',', '', 'g'));
+               var commas_found = (votes.match(/,/g) || []).length;
+               if (commas_found === 1) {
+                   votes = votes.replace(/,\d\d\d$/, 'k');
+               } else if (commas_found === 2) {
+                   votes = votes.replace(/,\d\d\d,\d\d\d$/, 'M');
                }
 
                // ratingTxt   = ratingM[1] + " - " + votesM[1];
