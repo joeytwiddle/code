@@ -2,11 +2,12 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-22-joeytwiddle
+// @version      2015-11-24-23-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
+// @require      http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // @namespace    https://greasyfork.org/users/8615
 // @derived-from https://greasyfork.org/en/scripts/2033-add-imdb-rating-votes-next-to-all-imdb-movie-series-links-improved
 // ==/UserScript==
@@ -17,7 +18,10 @@ var skipEpisodes        = true;  //-- I only want to see ratings for movies or T
 var showAsStar          = false; //-- Use IMDB star instead of colored div, less info but more consistent with the rest of the site.
 var addRatingToTitle    = true;  //-- Adds the rating to the browser's title bar (so rating will appear in browser bookmarks).
 
-var $ = unsafeWindow.$;
+// The old iMDB site exposed jQuery, but the new one does not
+//var $ = unsafeWindow.$;
+// This was exposed by the @require
+var $ = jQuery;
 
 var fetchedLinkCnt = 0;
 
