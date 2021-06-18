@@ -2,7 +2,7 @@
 // @name          Wikipedia Inline Article Viewer [adopted]
 // @namespace     http://projects.apathyant.com/wikipediainline/
 // @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
-// @version       1.2.18
+// @version       1.2.19
 //// http:
 // @include       http://*wiki*
 // @include       http://wikipedia.org/*
@@ -374,7 +374,7 @@ function createNewInlineWindow(event, href, link, windowID){
 
 function populateInnerWindow(href,windowID) {
 	
-	printHref = document.location.protocol + '//' + document.location.host + (document.location.port ? ':' + document.location.port : '');
+	var printHref = document.location.protocol + '//' + document.location.host + (document.location.port ? ':' + document.location.port : '');
 	printHref += href + (href.indexOf('?') > -1 ? '&' : '?' ) + 'printable=yes';
 
 	GM_xmlhttpRequest({
