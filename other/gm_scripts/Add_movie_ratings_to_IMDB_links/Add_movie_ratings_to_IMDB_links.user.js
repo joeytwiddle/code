@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-24-joeytwiddle
+// @version      2015-11-24-25-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -17,6 +17,7 @@ var maxLinksAtATime     = 100;   //-- Pages can have 100's of links to fetch. Do
 var skipEpisodes        = true;  //-- I only want to see ratings for movies or TV shows, not TV episodes.
 var showAsStar          = false; //-- Use IMDB star instead of colored div, less info but more consistent with the rest of the site.
 var addRatingToTitle    = true;  //-- Adds the rating to the browser's title bar (so rating will appear in browser bookmarks).
+var showMetaScore       = false; //-- When the metascore is available, show it
 
 // The old iMDB site exposed jQuery, but the new one does not
 //var $ = unsafeWindow.$;
@@ -210,6 +211,13 @@ function prependIMDB_Rating (resp, targetLink) {
 
                justrate = ratingM[1].substr(0, ratingM[1].indexOf("/"));
 
+               // Let's try the metascore instead
+               // Not all movied have a metascore
+               var metaScoreElem = showMetaScore && doc.querySelector('.score-meta');
+               //var metaScore = metaScoreElem && (Number(metaScoreElem.textContent) / 10).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+               var metaScore = metaScoreElem && metaScoreElem.textContent;
+               var metaScoreColor = metaScoreElem && metaScoreElem.style.backgroundColor;
+
                var votes = votesM[1];
                var votesNum = Number(votes.replace(',', '', 'g'));
                var commas_found = (votes.match(/,/g) || []).length;
@@ -221,7 +229,16 @@ function prependIMDB_Rating (resp, targetLink) {
 
                // ratingTxt   = ratingM[1] + " - " + votesM[1];
                ratingTxt   = "<strong>" + justrate + "</strong>" + " / " + votes;
+               //ratingTxt   = "<strong>" + (metaScoreElem ? metaScore : justrate) + "</strong>" + " / " + votes;
+               //ratingTxt   = "<strong>" + (metaScoreElem ? metaScore : justrate) + "</strong>" + " / " + votes + (metaScoreElem ? " (" + justrate + "i)" : "" );
+               //ratingTxt   = "<strong>" + justrate + "</strong>" + " / " + votes + (metaScoreElem ? " (<strong>" + metaScore + "</strong> meta)" : "" );
                colnumber = Math.round(justrate);
+               // If metaScore was found, use that for the colour instead of the IMDB rating.  But since metascores are lower than imdb scores, add 1.5.
+               //colnumber = Math.round(metaScoreElem ? metaScore / 10 + 1.5 : justrate);
+
+               //if (metaScoreElem) {
+               //    justRate = metaScore / 10;
+               //}
            }
         }
     }
@@ -278,6 +295,21 @@ function prependIMDB_Rating (resp, targetLink) {
 
     //targetLink.parentNode.insertBefore (resltSpan, targetLink);
     targetLink.parentNode.insertBefore (resltSpan, targetLink.nextSibling);
+
+    if (metaScoreElem) {
+        // I am reluctant to move an element from another document into this one, multiple times.
+        // Therefore we create a new element, like the original.
+        var newMetaScoreElem = document.createElement(metaScoreElem.tagName);
+        //newMetaScoreElem.outerHTML = metaScoreElem.outerHTML;
+        newMetaScoreElem.className = metaScoreElem.className;
+        newMetaScoreElem.textContent = metaScoreElem.textContent;
+        newMetaScoreElem.style.backgroundColor = metaScoreElem.style.backgroundColor;
+        // Missing despite the class.  It seems some pages don't include the .score-meta CSS
+        newMetaScoreElem.style.color = 'white';
+        newMetaScoreElem.style.padding = '2px';
+        resltSpan.parentNode.insertBefore (newMetaScoreElem, resltSpan.nextSibling);
+        resltSpan.parentNode.insertBefore (document.createTextNode(' '), resltSpan.nextSibling);
+    }
 }
 
 //--- Create the continue button
