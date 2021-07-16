@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-26-joeytwiddle
+// @version      2015-11-24-27-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -18,11 +18,10 @@ var maxLinksAtATime     = 100;   //-- Pages can have 100's of links to fetch. Do
 var skipEpisodes        = true;  //-- I only want to see ratings for movies or TV shows, not TV episodes.
 var showAsStar          = false; //-- Use IMDB star instead of colored div, less info but more consistent with the rest of the site.
 var addRatingToTitle    = true;  //-- Adds the rating to the browser's title bar (so rating will appear in browser bookmarks).
-var showMetaScore       = false; //-- When the metascore is available, show it
-var useLightBackground  = false; //-- If you prefer the site to have a light background
+var showMetaScore       = true;  //-- When the metascore is available, show it
+var useLightBackground  = false; //-- If you prefer the site to have a light grey background
 
 if (useLightBackground) {
-
     GM_addStyle('.ipc-page-background { background: #e3e2dd !important; color: black !important; }');
     // You could also try #262626 for a dark grey but not black background
 }
@@ -236,7 +235,8 @@ function prependIMDB_Rating (resp, targetLink) {
                }
 
                // ratingTxt   = ratingM[1] + " - " + votesM[1];
-               ratingTxt   = "<strong>" + justrate + "</strong>" + " / " + votes;
+               // We use the element style to override IMDB's reset
+               ratingTxt   = "<strong style=\"font-weight: bolder\">" + justrate + "</strong>" + " / " + votes;
                //ratingTxt   = "<strong>" + (metaScoreElem ? metaScore : justrate) + "</strong>" + " / " + votes;
                //ratingTxt   = "<strong>" + (metaScoreElem ? metaScore : justrate) + "</strong>" + " / " + votes + (metaScoreElem ? " (" + justrate + "i)" : "" );
                //ratingTxt   = "<strong>" + justrate + "</strong>" + " / " + votes + (metaScoreElem ? " (<strong>" + metaScore + "</strong> meta)" : "" );
@@ -301,8 +301,13 @@ function prependIMDB_Rating (resp, targetLink) {
     //var targetLink      = resp.context;
     //console.log ("targetLink: ", targetLink);
 
-    //targetLink.parentNode.insertBefore (resltSpan, targetLink);
-    targetLink.parentNode.insertBefore (resltSpan, targetLink.nextSibling);
+    // The "More like this" cards have a vertical flowing grid, so if we want rating and metascore to appear next to each other, they will need a container
+    var container = document.createElement('div');
+    container.style.display = 'inline-block';
+    container.appendChild(resltSpan);
+
+    //targetLink.parentNode.insertBefore (container, targetLink);
+    targetLink.parentNode.insertBefore (container, targetLink.nextSibling);
 
     if (metaScoreElem) {
         // I am reluctant to move an element from another document into this one, multiple times.
@@ -315,8 +320,10 @@ function prependIMDB_Rating (resp, targetLink) {
         // Missing despite the class.  It seems some pages don't include the .score-meta CSS
         newMetaScoreElem.style.color = 'white';
         newMetaScoreElem.style.padding = '2px';
-        resltSpan.parentNode.insertBefore (newMetaScoreElem, resltSpan.nextSibling);
-        resltSpan.parentNode.insertBefore (document.createTextNode(' '), resltSpan.nextSibling);
+        //resltSpan.parentNode.insertBefore (newMetaScoreElem, resltSpan.nextSibling);
+        //resltSpan.parentNode.insertBefore (document.createTextNode(' '), resltSpan.nextSibling);
+        container.appendChild(document.createTextNode(' '));
+        container.appendChild(newMetaScoreElem);
     }
 }
 
