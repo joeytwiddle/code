@@ -272,7 +272,7 @@ function prependIMDB_Rating (resp, targetLink) {
 
     var colors = ["#Faa", "#Faa","#Faa", "#Faa","#Faa", "#F88","#Faa", "#ff7","#7e7", "#5e5", "#0e0", "#ddd"];
     var bgCol = colors[colnumber];
-    //var hue = justrate <= 5 ? 0 : justrate <= 8 ? 120 * (justrate - 5) / 3 : 120;
+    //var hue = justrate <= 6 ? 0 : justrate <= 8 ? 120 * (justrate - 6) / 2 : 120;
     //var bgCol = `hsla(${hue}, 100%, 60%, ${opacity})`;
     var resltSpan       = document.createElement ("span");
     // resltSpan.innerHTML = '<b><font style="border-radius: 5px;padding: 1px;border: #575757 solid 1px; background-color:' + color[colnumber] + ';">' + ' [' + ratingTxt + '] </font></b>&nbsp;';
