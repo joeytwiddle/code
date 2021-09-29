@@ -2,7 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
-// @version        1.1.5
+// @version        1.1.6
 // @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
@@ -79,7 +79,8 @@ function isSuitableLink(elem) {
 		link
 		&& typeof link.tagName === 'string'
 		&& link.tagName.toUpperCase() === "A"
-		&& link.pathname.indexOf("/watch") >= 0
+		&& link.pathname.match(/[/]watch\b/)
+		&& link.className.match(/video-renderer/)
 		// But not if it's the same page:
 		&& link.href.replace(/#.*/, '') !== document.location.href.replace(/#.*/, '')
 	);
@@ -382,7 +383,7 @@ function startSpamming(evt) {
 		var link = ls[i];
 		if (link.href !== lastUrlDone && isSuitableLink(link)) {
 			num++;
-			queueLink(link, 200 * Math.pow(1.2 + 1.2 * num, 1.5));
+			queueLink(link, 1000 * Math.pow(num, 1.4));
 			lastUrlDone = link.href;
 		}
 	}
