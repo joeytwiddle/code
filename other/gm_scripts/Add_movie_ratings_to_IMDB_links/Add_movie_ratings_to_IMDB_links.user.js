@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-29-joeytwiddle
+// @version      2015-11-24-30-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -255,7 +255,8 @@ function prependIMDB_Rating (resp, targetLink) {
     //console.log('justrate', justrate);
 
     // NOTE: I switched from <b> to <strong> simply because on Season pages, the rating injected after episode titles was getting uglified by an IMDB CSS rule: .list_item .info b { font-size: 15px; }
-    targetLink.setAttribute("title", "Rated " + ratingTxt.replace(/<\/*strong>/g,'').replace(/\//,'by') + " users." );
+    //targetLink.setAttribute("title", "Rated " + ratingTxt.replace(/<\/*strong>/g,'').replace(/\//,'by') + " users." );
+    targetLink.setAttribute("title", `Rated ${justrate} by ${votes} users.`);
 
     if (!(justrate > 0)) {
         return;
@@ -345,7 +346,7 @@ if (addRatingToTitle) {
     setTimeout(function () {
         // Selectors for old site and new site
         var foundRating = document.querySelectorAll('.ratingValue [itemprop=ratingValue], ' + ratingSelectorNew);
-        if (foundRating.length === 1) {
+        if (foundRating.length >= 1) {
             var rating = foundRating[0].textContent;
             if (rating.match(/^[0-9]\.[0-9]$/)) {
                 document.title = `(${rating}) ` + document.title;
