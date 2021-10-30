@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         IMDB Large Images [fork]
-// @version      1.0.11-joey5
+// @version      1.0.11-joey6
 // @description  Large iMDB images when you hover over them.
 // @namespace    https://greasyfork.org/en/scripts/11249-imdb-large-images
 // @homepage     https://greasyfork.org/en/scripts/11249-imdb-large-images
@@ -53,7 +53,7 @@ z-index: 1000; \
 
     //console.log("[imdb_large_images.user.js] Hover detected", mouseX, mouseY);
 
-    var hoveredImage = this.src ? this : $(this).find('img').get(0);
+    var hoveredImage = this.src ? this : $(this).find('img').get(0) || $(this).closest('.ipc-avatar').find('img').get(0);
     hoveredImage.style.cursor = 'progress';
 
     $('div#largeImagePopover, div.largeImagePopover').remove();
@@ -156,7 +156,11 @@ z-index: 1000; \
     $("img[src*='_V1']").not("img[src*='_ZA']").not(".imageDone").each(function() {
       // For thumbnails in the recommended "More Like This" section, we need to give IMDB time to select the item and show the overview, before we overlay the large image.
       var interval = $(this).closest('.rec_item').length ? 300 : 100;
-      $(this).addClass('imageDone').css('cursor','crosshair').hoverIntent({ over: hoverInFunction, interval: interval });
+      // The 2021 layout introduced a separate `a.ipc-lockup-overlay` which blocks focus of the img
+      // We could target the `.ipc-avatar` container but targetting the overlay itself makes the crosshair appear how we expect
+      //var target = $(this).closest('.ipc-avatar')[0] || this;
+      var target = $(this).closest('.ipc-avatar').find('a.ipc-lockup-overlay')[0] || this;
+      $(target).addClass('imageDone').css('cursor','crosshair').hoverIntent({ over: hoverInFunction, interval: interval });
     });
     window.setTimeout(checkImages, 1000);
   }
