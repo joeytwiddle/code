@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.8.2
+// @version        1.8.3
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -138,9 +138,14 @@ function createFaviconFor (url) {
 	// We may fail to access favicons, e.g. if the site only offers http, or due to CORS restrictions.
 	// But it is still worth tryiing, because the fallback (google's s2) offers only low-res icons.
 	var urlsToTry = [
+		// Hitting each site directly means exposing our IP to them, even if we don't visit their site.
+		// I think it would be preferable to use DuckDuckGo's service, because they claim to discard our data.
+		// However, it doesn't provide good results for all websites.  So until it improves, I don't plan to make it the default.
+		// TODO: We could try DDG first, but if they return their fallback icon, then we could try the other URLs.
 		'//' + host + '/favicon.ico',
 		'//' + host + '/favicon.png',
 		'//www.google.com/s2/favicons?domain=' + host,
+		`//icons.duckduckgo.com/ip3/${host}.ico`,
 	];
 	// Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
 	var img = document.createElement('IMG');
