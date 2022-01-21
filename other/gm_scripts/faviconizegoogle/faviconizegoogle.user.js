@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.8.0
+// @version        1.8.1
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -115,6 +115,16 @@ function findClosest (elem, tagName) {
 		}
 	}
 	return null;
+}
+
+function alreadyContainsFavicon(link) {
+	// On Google's News tab, they already show favicons
+	// We will try to detect that
+	const images = Array.from(link.querySelectorAll('g-img img'));
+	// RIP semantic web.  The classes for these favicons are "rISBZc zr758c"
+	//const looksLikeFavicon = (img) => img.getAttribute('width') === '16' && img.getAttribute('height') === '16';
+	const looksLikeFavicon = (img) => img.width == 16 && img.height == 16 || img.className == "rISBZc zr758c";
+	return images.some(looksLikeFavicon);
 }
 
 function createFaviconFor (url) {
@@ -294,6 +304,9 @@ function updateFavicons () {
 		// if (link.href.match('^javascript:') || link.href.match('^#')) {
 			// continue;
 		// }
+		if (alreadyContainsFavicon(link)) {
+			continue;
+		}
 
 		var targetUrl = link.getAttribute('data-href') || link.href;
 
