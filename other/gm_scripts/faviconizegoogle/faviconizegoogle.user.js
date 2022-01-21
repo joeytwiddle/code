@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.8.1
+// @version        1.8.2
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -289,6 +289,11 @@ GM_addStyle(style);
 //       At present, the only workaround I can imagine is to apply the styles directly to the elements, rather than using CSS.
 
 function updateFavicons () {
+	// On Google's News and Images tabs, do nothing
+	if (document.location.search.match(/[&?]tbm=isch\b/) || document.location.search.match(/[&?]tbm=nws\b/)) {
+		return;
+	}
+
 	var links = getGoogleResultsLinks();
 
 	// Allows it to work on any sites:
