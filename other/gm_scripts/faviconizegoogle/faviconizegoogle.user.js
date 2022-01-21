@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.7.0
+// @version        1.8.0
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -109,7 +109,8 @@ if (!this.GM_addStyle) {
 function findClosest (elem, tagName) {
 	// eslint-disable-next-line no-cond-assign
 	while (elem = elem.parentNode) {
-		if (elem.tagName && elem.tagName.toLowerCase() === tagName.toLowerCase()) {
+		//if (elem.tagName && elem.tagName.toLowerCase() === tagName.toLowerCase()) {
+		if (elem.classList && elem.classList.contains(tagName)) {
 			return elem;
 		}
 	}
@@ -320,7 +321,8 @@ function updateFavicons () {
 		link.setAttribute("data-faviconized", "yes");
 		var img = createFaviconFor(targetUrl);
 		// <cite> is for google, .url is for startpage
-		var targetNode = (placeFaviconByUrl && link.parentNode.parentNode.querySelector('cite, .url') || link);
+		// For Google 2022, putting the img inside the container but pushed out to the left makes it invisible.  So we go up to the container, and put it just inside that
+		var targetNode = (placeFaviconByUrl && link.parentNode.parentNode.querySelector('cite, .url') || findClosest(link, 'g')?.firstChild || link);
 
 		if (isEcosia && !placeFaviconOffTheLeft) {
 			// With the default `display: block` the link will break onto a separate line from the favicon, so we do this
@@ -333,7 +335,19 @@ function updateFavicons () {
 			link.parentNode.style.position = 'relative';
 		}
 
+		// Some result blocks contain multiple links.
+		// But now we are placing the favicon on the parent block, we don't want multiple favicons on top of each other!
+		// (Of course it would be more efficient if we didn't generate an <img> at all for these sub-links.)
+		if (targetNode.getAttribute("data-target-faviconized") || targetNode.classList.contains("favicon")) {
+			continue;
+		}
+		targetNode.setAttribute("data-target-faviconized", "yes");
+
 		//console.log(`Placing favicon %o by %o`, img, targetNode);
+		if (placeFaviconOffTheLeft) {
+			const realTargetNode = placeFaviconInsideLink ? targetNode : targetNode.parentNode;
+			realTargetNode.style.position = 'relative';
+		}
 		if (placeFaviconInsideLink) {
 			if (placeFaviconAfter) {
 				targetNode.appendChild(img);
