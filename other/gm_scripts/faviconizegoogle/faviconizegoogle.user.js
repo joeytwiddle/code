@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.8.3
+// @version        1.8.4
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -110,7 +110,7 @@ function findClosest (elem, tagName) {
 	// eslint-disable-next-line no-cond-assign
 	while (elem = elem.parentNode) {
 		//if (elem.tagName && elem.tagName.toLowerCase() === tagName.toLowerCase()) {
-		if (elem.classList && elem.classList.contains(tagName)) {
+		if ((' ' + elem.className + ' ').indexOf(' ' + tagName + ' ') >= 0) {
 			return elem;
 		}
 	}
@@ -145,7 +145,7 @@ function createFaviconFor (url) {
 		'//' + host + '/favicon.ico',
 		'//' + host + '/favicon.png',
 		'//www.google.com/s2/favicons?domain=' + host,
-		`//icons.duckduckgo.com/ip3/${host}.ico`,
+		'//icons.duckduckgo.com/ip3/' + host + '.ico',
 	];
 	// Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
 	var img = document.createElement('IMG');
@@ -345,7 +345,7 @@ function updateFavicons () {
 		var img = createFaviconFor(targetUrl);
 		// <cite> is for google, .url is for startpage
 		// For Google 2022, putting the img inside the container but pushed out to the left makes it invisible.  So we go up to the container, and put it just inside that
-		var targetNode = (placeFaviconByUrl && link.parentNode.parentNode.querySelector('cite, .url') || findClosest(link, 'g')?.firstChild || link);
+		var targetNode = (placeFaviconByUrl && link.parentNode.parentNode.querySelector('cite, .url') || (findClosest(link, 'g') || {}).firstChild || link);
 
 		if (isEcosia && !placeFaviconOffTheLeft) {
 			// With the default `display: block` the link will break onto a separate line from the favicon, so we do this
