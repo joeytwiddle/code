@@ -3,8 +3,8 @@
 // @namespace      joeytwiddle
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
-// @copyright      2014-2020, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.2.4
+// @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
+// @version        1.3.0
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -38,6 +38,8 @@ var notificationDotStyle = '';
 //var notificationDotStyle = 'linear-gradient(hsla(35, 90%, 65%, 1), hsla(35, 90%, 40%, 1))';
 // Gentle green dot
 //var notificationDotStyle = 'linear-gradient(hsla(120, 50%, 65%, 1), hsla(120, 50%, 40%, 1))';
+
+var hideQuodAIWarning = true;
 
 // ==/Options==
 
@@ -443,3 +445,22 @@ if (document.location.pathname === mainNotificationsPath) {
 }
 
 listenForActionClicks();
+
+if (hideQuodAIWarning) {
+	setTimeout(() => {
+		var quodContainer = jQuery('#toci-container');
+		if (quodContainer[0] && quodContainer[0].textContent.match(/This file is currently not supported/)) {
+			// We cannot .hide() it because its own CSS overrides ours
+			// So we remove it
+			quodContainer.remove();
+			// But removing it breaks the layout, so we adjust that CSS as well!
+			// This doesn't quite match GitHub's default behaviour (which uses a max-width and large margins) but it will do for now.
+			GM_addStyle(`
+				#toci-wrapper {
+					display: grid;
+					grid-template-columns: 100%;
+				}
+			`);
+		}
+	}, 4000);
+}
