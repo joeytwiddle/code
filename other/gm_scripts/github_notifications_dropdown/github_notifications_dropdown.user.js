@@ -429,7 +429,7 @@ if (typeof notificationDotStyle !== 'undefined' && notificationDotStyle) {
 if (document.location.pathname === mainNotificationsPath) {
 	// Inform the user if the list of repositories has (likely) been truncated
 	var reposList = $('.js-notification-sidebar-repositories ul.filter-list');
-	var reposInList = document.querySelectorAll('.js-notification-sidebar-repositories ul.filter-list > li');
+	var reposInList = $('.js-notification-sidebar-repositories ul.filter-list > li');
 	if (reposInList.length === 25) {
 		reposList.append(
 			jQuery('<li>')
