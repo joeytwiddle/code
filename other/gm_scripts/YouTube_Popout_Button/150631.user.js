@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           YouTube Popout Button [mashup]
 // @description    Provides a button to pop out the YouTube video in a separate window.
-// @version        1.1.3
+// @version        1.2.0
 // @author         joeytwiddle
 // @contributor    Alek_T, tehnicallyrite
 // @license        ISC
@@ -10,6 +10,7 @@
 // @include        https://*.youtube.com/watch*
 // @include        https://youtube.com/watch*
 // @grant          none
+// @namespace      https://greasyfork.org/users/8615
 // ==/UserScript==
 
 // This is a combination of two scripts I found:
@@ -28,7 +29,7 @@ setTimeout(function() {
    divWatchHeadline = divWatchHeadline || document.getElementById("watch7-secondary-actions");
    divWatchHeadline = divWatchHeadline || document.getElementById("watch8-secondary-actions");
    divWatchHeadline = divWatchHeadline || document.querySelector("#menu .ytd-video-primary-info-renderer");
-   //divWatchHeadline = divWatchHeadline || document.querySelector("#top-level-buttons");
+   divWatchHeadline = divWatchHeadline || document.querySelector("#top-level-buttons");
 
    var buttonPopout = document.createElement("button");
    buttonPopout.title = "Pop-out Video";
