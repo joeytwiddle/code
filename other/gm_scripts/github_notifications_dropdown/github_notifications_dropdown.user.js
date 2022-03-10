@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.3.0
+// @version        1.3.1
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -138,7 +138,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 		  /* If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap. */
 		  /* margin-bottom: 20px; */
 		  /* To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues */
-		  z-index: 50;
+		  z-index: 9999;
 		}
 		.notifications-dropdown > .css-truncate, .notifications-dropdown .list-group-item-name a {
 		  max-width: ${minWidth - 300}px !important;
