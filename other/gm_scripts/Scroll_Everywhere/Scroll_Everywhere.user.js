@@ -10,11 +10,11 @@
 // @include         *
 // @grant           none
 // @run-at          document-body
-// @version         0.3j
+// @version         0.3k
 // @license         MIT
 // ==/UserScript==
 
-// This is a version of tumpio's script which defaults to middle-click drag and will do a relative scroll of the entire page.  I find this more intuitive.
+// This is a version of tumpio's script which defaults to left-click drag after a long press, and will do a relative scroll of the entire page.  I find this more intuitive.
 
 /* jshint multistr: true, strict: false, browser: true, devel: true */
 /* global escape: true,GM_getValue: true,GM_setValue: true,GM_addStyle: true,GM_xmlhttpRequest: true */
@@ -68,16 +68,13 @@ if (window.top === window.self) {
 
     window.addEventListener("mousedown", handleMouseDown, false);
     window.addEventListener("mouseup", handleMouseUp, false);
-	window.addEventListener('paste', handlePaste, true);
+    window.addEventListener('paste', handlePaste, true);
 }
 
 function handleMouseDown(e) {
     if (e.which == mouseBtn) {
         if (startAfterLongPress) {
-            cancelLongPress();
-			eventBeforeLongPress = e;
-            longPressTimer = setTimeout(longPressDetected, 500);
-            window.addEventListener("mousemove", cancelLongPress, false);
+            startLongPress(e);
         } else {
             if (!down) {
                 start(e);
@@ -117,19 +114,29 @@ function handlePaste(e) {
     }
 }
 
+function startLongPress(e) {
+    cancelLongPress();
+    eventBeforeLongPress = e;
+    longPressTimer = setTimeout(longPressDetected, 500);
+    window.addEventListener("mousemove", cancelLongPress, false);
+}
+
 function longPressDetected() {
-	if (mouseBtn == 1) {
-		// After a long press with the left mouse button, the browser will start selecting text, which will get messy when we scroll
-		// So we try to cancel that selection
-		selectNoText();
-	}
+    // Cleanup
+    cancelLongPress();
+    if (mouseBtn == 1) {
+        // After a long press with the left mouse button, the browser will start selecting text, which will get messy when we scroll
+        // So we try to cancel that selection
+        selectNoText();
+    }
     start(eventBeforeLongPress);
-	// Give the user a visual indication that scrolling mode has started
-	cursorMask.style.display = "";
+    // Give the user a visual indication that scrolling mode has started
+    cursorMask.style.display = "";
 }
 
 function cancelLongPress() {
     clearTimeout(longPressTimer);
+    window.removeEventListener("mousemove", cancelLongPress);
 }
 
 function start(e) {
