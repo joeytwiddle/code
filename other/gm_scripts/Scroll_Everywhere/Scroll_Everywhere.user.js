@@ -8,9 +8,9 @@
 // @supportURL      https://github.com/tumpio/gmscripts
 // @icon            https://raw.githubusercontent.com/tumpio/gmscripts/master/Scroll_Everywhere/large.png
 // @include         *
-// @grant           none
+// @grant           GM_addStyle
 // @run-at          document-body
-// @version         0.3k
+// @version         0.3l
 // @license         MIT
 // ==/UserScript==
 
@@ -32,7 +32,7 @@ var relativeScrolling, lastX, lastY, scaleX, scaleY, power, offsetMiddle;
 
 var lastMiddleClickTime;
 
-var startAfterLongPress, longPressTimer, eventBeforeLongPress;
+var startAfterLongPress, longPressTimer, eventBeforeLongPress, longPressStylesAdded;
 
 // NOTE: Do not run on iframes
 if (window.top === window.self) {
@@ -132,6 +132,39 @@ function longPressDetected() {
     start(eventBeforeLongPress);
     // Give the user a visual indication that scrolling mode has started
     cursorMask.style.display = "";
+    // A stronger indication: a ripple effect starting from the mouse location
+    // This is especially useful when our pointer change is overriden by the page's CSS
+    // Based on: https://css-tricks.com/how-to-recreate-the-ripple-effect-of-material-design-buttons/
+    if (!longPressStylesAdded) {
+        GM_addStyle(`
+            #scroll-anywhere-ripple-animation {
+                position: fixed;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 600ms ease-out;
+                background-color: #8886;
+                z-index: 999999;
+                pointer-events: none;
+            }
+            @keyframes ripple {
+                to {
+                    transform: scale(16);
+                    opacity: 0;
+                }
+            }
+        `);
+        longPressStylesAdded = true;
+    }
+    var circleDiv = document.createElement('div');
+    circleDiv.id = 'scroll-anywhere-ripple-animation';
+    circleDiv.style.left = (eventBeforeLongPress.clientX - 10) + 'px';
+    circleDiv.style.top = (eventBeforeLongPress.clientY - 10) + 'px';
+    document.body.appendChild(circleDiv);
+    setTimeout(() => {
+        circleDiv.parentNode.removeChild(circleDiv);
+    }, 2000);
 }
 
 function cancelLongPress() {
