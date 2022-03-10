@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name            Scroll Everywhere [fork]
-// @description     Scroll entire page quickly with middle mouse button.
+// @description     Scroll entire page smoothly with long left-click and drag.
 // @author          tumpio
-// @collaborator    joeytwiddle
+// @contributor     joeytwiddle
 // @namespace       tumpio@sci.fi
 // @homepageURL     https://openuserjs.org/scripts/tumpio/Scroll_Everywhere
 // @supportURL      https://github.com/tumpio/gmscripts
@@ -10,7 +10,7 @@
 // @include         *
 // @grant           none
 // @run-at          document-body
-// @version         0.3i
+// @version         0.3j
 // @license         MIT
 // ==/UserScript==
 
@@ -32,10 +32,13 @@ var relativeScrolling, lastX, lastY, scaleX, scaleY, power, offsetMiddle;
 
 var lastMiddleClickTime;
 
+var startAfterLongPress, longPressTimer, eventBeforeLongPress;
+
 // NOTE: Do not run on iframes
 if (window.top === window.self) {
     // USER SETTINGS
-    mouseBtn = 2; // 1:left, 2:middle, 3:right mouse button
+    mouseBtn = 1; // 1:left, 2:middle, 3:right mouse button
+    startAfterLongPress = true;
     reverse = true; // reversed scroll direction
     stopOnSecondClick = false; // keep scrolling until the left mouse button clicked
     verticalScroll = false; // vertical scrolling
@@ -70,18 +73,17 @@ if (window.top === window.self) {
 
 function handleMouseDown(e) {
     if (e.which == mouseBtn) {
-        if (!down) {
-            down = true;
-            setStartData(e);
-            lastX = e.clientX;
-            lastY = e.clientY;
-            if (!slowScrollStart)
-              scroll(e);
-            window.addEventListener("mousemove", waitScroll, false);
-            if (!stopOnSecondClick)
-                window.addEventListener("mouseup", stop, false);
+        if (startAfterLongPress) {
+            cancelLongPress();
+			eventBeforeLongPress = e;
+            longPressTimer = setTimeout(longPressDetected, 500);
+            window.addEventListener("mousemove", cancelLongPress, false);
         } else {
-            stop();
+            if (!down) {
+                start(e);
+            } else {
+                stop();
+            }
         }
     }
 }
@@ -89,6 +91,9 @@ function handleMouseDown(e) {
 function handleMouseUp(e) {
     if (e.which == 2) {
         lastMiddleClickTime = Date.now();
+    }
+    if (startAfterLongPress) {
+        cancelLongPress();
     }
 }
 
@@ -110,6 +115,33 @@ function handlePaste(e) {
         e.stopPropagation();
         return false;
     }
+}
+
+function longPressDetected() {
+	if (mouseBtn == 1) {
+		// After a long press with the left mouse button, the browser will start selecting text, which will get messy when we scroll
+		// So we try to cancel that selection
+		selectNoText();
+	}
+    start(eventBeforeLongPress);
+	// Give the user a visual indication that scrolling mode has started
+	cursorMask.style.display = "";
+}
+
+function cancelLongPress() {
+    clearTimeout(longPressTimer);
+}
+
+function start(e) {
+    down = true;
+    setStartData(e);
+    lastX = e.clientX;
+    lastY = e.clientY;
+    if (!slowScrollStart)
+        scroll(e);
+    window.addEventListener("mousemove", waitScroll, false);
+    if (!stopOnSecondClick)
+        window.addEventListener("mouseup", stop, false);
 }
 
 function setStartData(e) {
@@ -240,4 +272,17 @@ function fFalse() {
 
 function slowF(x) {
     return 1 / (1 + Math.pow(Math.E, (-0.1 * x)));
+}
+
+function selectNoText() {
+	if (document.body.createTextRange) {
+        const range = document.body.createTextRange();
+        range.select();
+    } else if (window.getSelection) {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        selection.removeAllRanges();
+    } else {
+        console.warn("Could not unselect text: Unsupported browser.");
+    }
 }
