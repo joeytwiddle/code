@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           YouTube Popout Button [mashup]
 // @description    Provides a button to pop out the YouTube video in a separate window.
-// @version        1.2.0
+// @version        2.0.0
 // @author         joeytwiddle
 // @contributor    Alek_T, tehnicallyrite
 // @license        ISC
@@ -25,14 +25,22 @@
 // Need to delay, or the target div won't be rendered yet
 setTimeout(function() {
    // Create Button
+   /*
    var divWatchHeadline = document.evaluate("//div[@id='watch-actions']", document, null, XPathResult.ANY_UNORDERED_NODE_TYPE, null).singleNodeValue;
    divWatchHeadline = divWatchHeadline || document.getElementById("watch7-secondary-actions");
    divWatchHeadline = divWatchHeadline || document.getElementById("watch8-secondary-actions");
    divWatchHeadline = divWatchHeadline || document.querySelector("#menu .ytd-video-primary-info-renderer");
    divWatchHeadline = divWatchHeadline || document.querySelector("#top-level-buttons");
+   */
+
+   var divWatchHeadline = document.querySelector('.ytp-right-controls');
+   var settingsButton = document.querySelector('.ytp-miniplayer-button');
 
    var buttonPopout = document.createElement("button");
-   buttonPopout.title = "Pop-out Video";
+   buttonPopout.setAttribute('aria-label', "Pop-out window");
+   buttonPopout.title = "Pop-out window";
+
+   /*
    //buttonPopout.setAttribute("class", "yt-uix-button yt-uix-button-default yt-uix-tooltip");
    buttonPopout.style.background = 'transparent';
    buttonPopout.style.border = 'none';
@@ -48,11 +56,17 @@ setTimeout(function() {
    // The other buttons don't change these days, so we won't either
    //buttonPopout.addEventListener("mouseover", function() { popoutImage.src = overButton; }, false);
    //buttonPopout.addEventListener("mouseout", function() { popoutImage.src = offButton; }, false);
+   */
+
+   buttonPopout.className = 'ytp-popout-button ytp-button';
+   buttonPopout.style.padding = '0 4px';
+   buttonPopout.innerHTML = `<svg viewBox="0 0 36 36" height="100%" width="100%"><path d="M 27.045569,25 H 8.9544297 V 11 H 20.27853 V 8.9999999 H 8.9544297 c -1.0730594,0 -1.9334402,0.9 -1.9334402,2.0000001 v 14 c 0,1.1 0.8603808,2 1.9334402,2 H 27.045569 c 1.063393,0 1.933441,-0.9 1.933441,-2 V 17.999999 H 27.045569 Z M 22.211969,8.9999999 V 11 h 3.470525 l -9.502859,9.83 1.363076,1.41 9.502858,-9.83 V 16 H 28.97901 V 8.9999999 Z" fill="#fff" /></svg>`;
 
    //divWatchHeadline.appendChild(document.createTextNode("\n"));
    //divWatchHeadline.appendChild(buttonPopout);
-   divWatchHeadline.insertBefore(buttonPopout, divWatchHeadline.lastElementChild);
    //divWatchHeadline.appendChild(document.createTextNode("\n"));
+   //divWatchHeadline.insertBefore(buttonPopout, divWatchHeadline.lastElementChild);
+   divWatchHeadline.insertBefore(buttonPopout, settingsButton);
 
    buttonPopout.addEventListener("click", popOutVideo, false);
 
@@ -94,7 +108,7 @@ setTimeout(function() {
 
             // window.location = flink;
             // Change "YoutubePopout" to "_blank" if you want new popouts to appear in a separate window from the existing popout.
-            window.open(flink, "YoutubePopout", "menubar=no,location=no,resizable=yes,status=no,toolbar=no,personalbar=no");
+            window.open(flink, "YoutubePopout", "popup=yes,menubar=no,location=no,resizable=yes,status=no,toolbar=no,personalbar=no");
          }
       }
    }
