@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           YouTube Popout Button [mashup]
 // @description    Provides a button to pop out the YouTube video in a separate window.
-// @version        2.0.2
+// @version        2.0.3
 // @author         joeytwiddle
 // @contributor    Alek_T, tehnicallyrite
 // @license        ISC
@@ -45,7 +45,7 @@ function tryToAdd() {
 
     buttonPopout.className = 'ytp-popout-button ytp-button';
     buttonPopout.style.padding = '0 4px';
-    buttonPopout.innerHTML = `<svg viewBox="0 0 36 36" height="100%" width="100%"><path d="M 27.045569,25 H 8.9544297 V 11 H 20.27853 V 8.9999999 H 8.9544297 c -1.0730594,0 -1.9334402,0.9 -1.9334402,2.0000001 v 14 c 0,1.1 0.8603808,2 1.9334402,2 H 27.045569 c 1.063393,0 1.933441,-0.9 1.933441,-2 V 17.999999 H 27.045569 Z M 22.211969,8.9999999 V 11 h 3.470525 l -9.502859,9.83 1.363076,1.41 9.502858,-9.83 V 16 H 28.97901 V 8.9999999 Z" fill="#fff" /></svg>`;
+    buttonPopout.innerHTML = `<svg viewBox="0 0 36 36" height="100%" width="100%"><path d="M 27.020989,25.020001 H 9.0209895 v -14.05 L 20.278056,10.969089 20.27853,8.9999999 H 8.9544297 c -1.0730594,0 -1.9334402,0.9 -1.9334402,2.0000001 v 14 c 0,1.1 0.8603808,2 1.9334402,2 H 27.045569 c 1.063393,0 1.97421,-0.885891 1.968683,-1.985877 l 0.0018,-7.014124 h -1.991386 z m -4.80902,-16.0200011 -0.01053,1.9774681 3.525926,-0.0018 -9.547729,9.854341 1.363076,1.41 9.481183,-9.799226 v 3.59 l 1.993516,-0.0095 0.0039,-7.0250141 z" fill="#fff" /></svg>`;
 
     divWatchHeadline.insertBefore(buttonPopout, settingsButton);
 
