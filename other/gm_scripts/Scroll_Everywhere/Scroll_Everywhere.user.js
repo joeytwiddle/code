@@ -10,7 +10,7 @@
 // @include         *
 // @grant           GM_addStyle
 // @run-at          document-body
-// @version         0.3m
+// @version         0.3n
 // @license         MIT
 // ==/UserScript==
 
@@ -22,6 +22,9 @@
 // TODO: add slow scroll start mode
 // FIXME: Linux/mac context menu on mousedown, probably needs browser level
 // FUTURE: Options dialog
+
+// ISSUES:
+//   The fix for scrollbars works, but we need a similar for for other widgets, for example native dropdown menu widgets.
 
 var mouseBtn, reverse, stopOnSecondClick, verticalScroll, startAnimDelay, cursorStyle, down,
     scrollevents, scrollBarWidth, cursorMask, isWin, fScrollX, fScrollY, fScroll, slowScrollStart;
@@ -75,6 +78,12 @@ if (window.top === window.self) {
 }
 
 function handleMouseDown(e) {
+    // From: https://stackoverflow.com/questions/10045423/determine-whether-user-clicking-scrollbar-or-content-onclick-for-native-scroll
+    var wasClickOnScrollbar = e.offsetX > e.target.clientWidth || e.offsetY > e.target.clientHeight;
+    if (wasClickOnScrollbar) {
+        //console.log('Ignoring click on scrollbar:', e);
+        return;
+    }
     if (e.which == mouseBtn) {
         if (startAfterLongPress) {
             startLongPress(e);
