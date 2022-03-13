@@ -40,7 +40,7 @@ var scrollStartTime, scrollStopTime;
 if (window.top === window.self) {
     // USER SETTINGS
     mouseBtn = 1; // 1:left, 2:middle, 3:right mouse button
-    startAfterLongPress = true;
+    startAfterLongPress = true; // Only start scrolling after a long click
     reverse = true; // reversed scroll direction
     stopOnSecondClick = false; // keep scrolling until the left mouse button clicked
     verticalScroll = false; // vertical scrolling
@@ -260,8 +260,6 @@ function scroll(e) {
             e.clientY)
     );
 }
-
-const trace = (arg) => { console.log(arg); return arg; };
 
 function stop() {
     cursorMask.style.display = "none";
