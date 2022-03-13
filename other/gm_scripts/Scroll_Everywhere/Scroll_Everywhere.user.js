@@ -149,6 +149,10 @@ function longPressDetected() {
                 pointer-events: none;
             }
             @keyframes ripple {
+                from {
+                    transform: scale(0);
+                    opacity: 1;
+                }
                 to {
                     transform: scale(16);
                     opacity: 0;
