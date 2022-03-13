@@ -10,7 +10,7 @@
 // @include         *
 // @grant           GM_addStyle
 // @run-at          document-body
-// @version         0.3l
+// @version         0.3m
 // @license         MIT
 // ==/UserScript==
 
@@ -33,6 +33,8 @@ var relativeScrolling, lastX, lastY, scaleX, scaleY, power, offsetMiddle;
 var lastMiddleClickTime;
 
 var startAfterLongPress, longPressTimer, eventBeforeLongPress, longPressStylesAdded;
+
+var scrollStartTime, scrollStopTime;
 
 // NOTE: Do not run on iframes
 if (window.top === window.self) {
@@ -68,6 +70,7 @@ if (window.top === window.self) {
 
     window.addEventListener("mousedown", handleMouseDown, false);
     window.addEventListener("mouseup", handleMouseUp, false);
+    window.addEventListener("click", handleClick, true);
     window.addEventListener('paste', handlePaste, true);
 }
 
@@ -91,6 +94,18 @@ function handleMouseUp(e) {
     }
     if (startAfterLongPress) {
         cancelLongPress();
+    }
+}
+
+function handleClick(e) {
+    // If we were just in scrolling mode, then we don't want other listeners to see this click event
+    var justStoppedScrolling = Date.now() <= scrollStopTime + 20;
+    // But if we went in and out of scrolling mode in a short time, then this was actually a click
+    var wasShortClick = !startAfterLongPress && scrollStopTime - scrollStartTime < 200;
+    if (justStoppedScrolling && !wasShortClick) {
+        //console.info("MUTING click event");
+        e.preventDefault();
+        e.stopPropagation();
     }
 }
 
@@ -178,6 +193,7 @@ function cancelLongPress() {
 
 function start(e) {
     down = true;
+    scrollStartTime = Date.now();
     setStartData(e);
     lastX = e.clientX;
     lastY = e.clientY;
@@ -252,6 +268,7 @@ function stop() {
     if (isWin)
         document.oncontextmenu = !fFalse;
     down = false;
+    scrollStopTime = Date.now();
     scrollevents = 0;
     window.removeEventListener("mouseup", stop, false);
     window.removeEventListener("mousemove", scroll, false);
