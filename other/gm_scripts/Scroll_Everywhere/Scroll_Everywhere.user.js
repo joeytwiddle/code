@@ -44,6 +44,8 @@ var startAfterLongPress, longPressTimer, eventBeforeLongPress, longPressStylesAd
 
 var scrollStartTime, scrollStopTime;
 
+var elementToScroll;
+
 // NOTE: Do not run on iframes
 if (window.top === window.self) {
     // USER SETTINGS
@@ -207,6 +209,8 @@ function cancelLongPress() {
 
 function start(e) {
     down = true;
+    elementToScroll = findElementToScroll(e.target);
+    //console.log('Will do scrolling on:', elementToScroll);
     scrollStartTime = Date.now();
     setStartData(e);
     lastX = e.clientX;
@@ -218,6 +222,16 @@ function start(e) {
         window.addEventListener("mouseup", stop, false);
 }
 
+function findElementToScroll(elem) {
+    if (elem.clientHeight > 0 && elem.scrollHeight > elem.clientHeight) {
+        return elem;
+    }
+    if (!elem.parentNode) {
+        return document.documentElement.scrollHeight > 0 ? document.documentElement : document.body;
+    }
+    return findElementToScroll(elem.parentNode);
+}
+
 function setStartData(e) {
     lastScrollHeight = getScrollHeight();
     startX = e.clientX;
@@ -225,8 +239,8 @@ function setStartData(e) {
     // On some pages, body.scrollTop changes whilst documentElement.scrollTop remains 0.
     // For example: https://docs.kde.org/trunk5/en/kde-workspace/kcontrol/autostart/index.html
     // See: https://stackoverflow.com/questions/19618545
-    startScrollTop = document.documentElement.scrollTop || document.body.scrollTop || 0;
-    startScrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft || 0;
+    startScrollTop = elementToScroll.scrollTop || 0;
+    startScrollLeft = elementToScroll.scrollLeft || 0;
 }
 
 function waitScroll(e) {
@@ -257,22 +271,34 @@ function scroll(e) {
       var distance = Math.sqrt(diffX * diffX + diffY * diffY);
       var velocity = 1 + distance * power / 100;
       var reverseScale = reverse ? -1 : 1;
-      window.scrollTo(window.scrollX + diffX * scaleX * velocity * reverseScale, window.scrollY + diffY * scaleY * velocity * reverseScale);
+      doScrollTo(elementToScroll, window.scrollX + diffX * scaleX * velocity * reverseScale, window.scrollY + diffY * scaleY * velocity * reverseScale);
       lastX = e.clientX;
       lastY = e.clientY;
       return;
     }
     // The original absolute scrolling
-    window.scrollTo(
+    doScrollTo(
+        elementToScroll,
         fScrollX(
-            window.innerWidth - scrollBarWidth,
-            getScrollWidth() - window.innerWidth,
+            //window.innerWidth - scrollBarWidth,
+            //getScrollWidth() - window.innerWidth,
+            elementToScroll.clientWidth,
+            getScrollWidth() - elementToScroll.clientWidth,
             e.clientX),
         fScrollY(
-            window.innerHeight - scrollBarWidth,
-            getScrollHeight() - window.innerHeight,
+            //window.innerHeight - scrollBarWidth,
+            //getScrollHeight() - window.innerHeight,
+            elementToScroll.clientHeight,
+            getScrollHeight() - elementToScroll.clientHeight,
             e.clientY)
     );
+}
+
+function doScrollTo(elem, x, y) {
+    // For normal HTML elements
+    elem.scrollTo(x, y);
+    // For React Native elements
+    elem.scrollTo({ x: x, y: y, animated: false });
 }
 
 function stop() {
@@ -288,7 +314,7 @@ function stop() {
 }
 
 function noScrollX() {
-    return document.documentElement.scrollLeft;
+    return elementToScroll.scrollLeft;
 }
 
 function fPos(win, doc, pos) {
@@ -314,11 +340,11 @@ function fRevPos(win, doc, pos) {
 }
 
 function getScrollHeight(e) {
-  return document.body.scrollHeight || document.documentElement.scrollHeight || 0;
+    return elementToScroll.scrollHeight || 0;
 }
 
 function getScrollWidth(e) {
-  return document.body.scrollWidth || document.documentElement.scrollWidth || 0;
+  return elementToScroll.scrollWidth || 0;
 }
 
 function getScrollBarWidth() {
