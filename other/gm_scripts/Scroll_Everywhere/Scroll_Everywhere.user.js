@@ -79,7 +79,7 @@ if (window.top === window.self) {
 
 function handleMouseDown(e) {
     // From: https://stackoverflow.com/questions/10045423/determine-whether-user-clicking-scrollbar-or-content-onclick-for-native-scroll
-    var wasClickOnScrollbar = e.offsetX > e.target.clientWidth || e.offsetY > e.target.clientHeight;
+    var wasClickOnScrollbar = e.target.clientWidth > 0 && e.offsetX > e.target.clientWidth || e.target.clientHeight > 0 && e.offsetY > e.target.clientHeight;
     if (wasClickOnScrollbar) {
         //console.log('Ignoring click on scrollbar:', e);
         return;
