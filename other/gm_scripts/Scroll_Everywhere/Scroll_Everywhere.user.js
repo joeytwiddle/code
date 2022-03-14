@@ -224,7 +224,11 @@ function start(e) {
 
 function findElementToScroll(elem) {
     if (elem.clientHeight > 0 && elem.scrollHeight > elem.clientHeight) {
-        return elem;
+        var overflow = getComputedStyle(elem).overflow;
+        if (overflow === '' || overflow.match(/(auto|scroll|overlay)/)) {
+            //console.log('overflow:', overflow);
+            return elem;
+        }
     }
     if (!elem.parentNode) {
         return document.documentElement.scrollHeight > 0 ? document.documentElement : document.body;
