@@ -231,6 +231,7 @@ function findElementToScroll(elem) {
         }
     }
     if (!elem.parentNode) {
+        // On some sites, documentElement works better than body
         return document.documentElement.scrollHeight > 0 ? document.documentElement : document.body;
     }
     return findElementToScroll(elem.parentNode);
@@ -245,6 +246,10 @@ function setStartData(e) {
     // See: https://stackoverflow.com/questions/19618545
     startScrollTop = elementToScroll.scrollTop || 0;
     startScrollLeft = elementToScroll.scrollLeft || 0;
+    if (elementToScroll === document.documentElement || elementToScroll === document.body) {
+        startScrollTop = document.documentElement.scrollTop || document.body.scrollTop || 0;
+        startScrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft || 0;
+    }
 }
 
 function waitScroll(e) {
@@ -275,34 +280,32 @@ function scroll(e) {
       var distance = Math.sqrt(diffX * diffX + diffY * diffY);
       var velocity = 1 + distance * power / 100;
       var reverseScale = reverse ? -1 : 1;
-      doScrollTo(elementToScroll, window.scrollX + diffX * scaleX * velocity * reverseScale, window.scrollY + diffY * scaleY * velocity * reverseScale);
+      //doScrollTo(window, window.scrollX + diffX * scaleX * velocity * reverseScale, window.scrollY + diffY * scaleY * velocity * reverseScale);
+      doScrollTo(elementToScroll, elementToScroll.scrollLeft + diffX * scaleX * velocity * reverseScale, elementToScroll.scrollTop + diffY * scaleY * velocity * reverseScale);
       lastX = e.clientX;
       lastY = e.clientY;
       return;
     }
-    // The original absolute scrolling
-    doScrollTo(
-        elementToScroll,
-        fScrollX(
-            //window.innerWidth - scrollBarWidth,
-            //getScrollWidth() - window.innerWidth,
-            elementToScroll.clientWidth,
-            getScrollWidth() - elementToScroll.clientWidth,
-            e.clientX),
-        fScrollY(
-            //window.innerHeight - scrollBarWidth,
-            //getScrollHeight() - window.innerHeight,
-            elementToScroll.clientHeight,
-            getScrollHeight() - elementToScroll.clientHeight,
-            e.clientY)
-    );
+    var newX = fScrollX(
+        window.innerWidth - scrollBarWidth,
+        getScrollWidth() - getClientWidth(),
+        e.clientX);
+    var newY = fScrollY(
+        window.innerHeight - scrollBarWidth,
+        getScrollHeight() - getClientHeight(),
+        e.clientY);
+    doScrollTo(elementToScroll, newX, newY);
 }
 
 function doScrollTo(elem, x, y) {
+    //console.log(`Doing scroll: ${x} ${y}`);
     // For normal HTML elements
     elem.scrollTo(x, y);
     // For React Native elements
     elem.scrollTo({ x: x, y: y, animated: false });
+    if (elem === document.documentElement && document.body !== document.documentElement) {
+        doScrollTo(document.body, x, y);
+    }
 }
 
 function stop() {
@@ -343,12 +346,27 @@ function fRevPos(win, doc, pos) {
     return doc - fPos(win, doc, pos);
 }
 
-function getScrollHeight(e) {
+function getScrollHeight() {
     return elementToScroll.scrollHeight || 0;
 }
 
-function getScrollWidth(e) {
+function getScrollWidth() {
   return elementToScroll.scrollWidth || 0;
+}
+
+function getClientHeight(e) {
+    // Sometimes documentElement will return the full scrollHeight, but we want the smaller visible portal that body returns
+    if (elementToScroll === document.documentElement || elementToScroll === document.body) {
+        return Math.min(document.documentElement.clientHeight, document.body.clientHeight);
+    }
+    return elementToScroll.clientHeight || 0;
+}
+
+function getClientWidth(e) {
+    if (elementToScroll === document.documentElement || elementToScroll === document.body) {
+        return Math.min(document.documentElement.clientWidth, document.body.clientWidth);
+    }
+    return elementToScroll.clientWidth || 0;
 }
 
 function getScrollBarWidth() {
@@ -378,7 +396,7 @@ function slowF(x) {
 }
 
 function selectNoText() {
-	if (document.body.createTextRange) {
+    if (document.body.createTextRange) {
         const range = document.body.createTextRange();
         range.select();
     } else if (window.getSelection) {
