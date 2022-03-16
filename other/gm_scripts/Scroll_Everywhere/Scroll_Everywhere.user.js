@@ -303,8 +303,13 @@ function doScrollTo(elem, x, y) {
     elem.scrollTo(x, y);
     // For React Native elements
     elem.scrollTo({ x: x, y: y, animated: false });
-    if (elem === document.documentElement && document.body !== document.documentElement) {
-        doScrollTo(document.body, x, y);
+    if (elem === document.documentElement) {
+        document.body.scrollTo(x, y);
+        document.body.scrollTo({ x: x, y: y, animated: false });
+    }
+    if (elem === document.body) {
+        document.documentElement.scrollTo(x, y);
+        document.documentElement.scrollTo({ x: x, y: y, animated: false });
     }
 }
 
