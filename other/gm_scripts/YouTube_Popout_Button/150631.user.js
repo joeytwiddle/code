@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           YouTube Popout Button [mashup]
 // @description    Provides a button to pop out the YouTube video in a separate window.
-// @version        2.0.3
+// @version        2.0.4
 // @author         joeytwiddle
 // @contributor    Alek_T, tehnicallyrite
 // @license        ISC
@@ -22,22 +22,30 @@
 // Known issues:
 // - The popout window displays the location bar.  I have been unable to hide it.
 
-let numAttempts = 0;
+// Convenience function to execute your callback only after an element matching readySelector has been added to the page.
+// Example: runWhenReady('.search-result', augmentSearchResults);
+// Gives up after 1 minute.
+function runWhenReady(readySelector, callback) {
+    var numAttempts = 0;
+    var tryNow = function() {
+        var elem = document.querySelector(readySelector);
+        if (elem) {
+            callback(elem);
+        } else {
+            numAttempts++;
+            if (numAttempts >= 34) {
+                console.warn('Giving up after 34 attempts. Could not find: ' + readySelector);
+            } else {
+                setTimeout(tryNow, 250 * Math.pow(1.1, numAttempts));
+            }
+        }
+    };
+    tryNow();
+}
 
-function tryToAdd() {
-    numAttempts++;
-
+function addPopoutButton() {
     var divWatchHeadline = document.querySelector('.ytp-right-controls');
     var settingsButton = document.querySelector('.ytp-miniplayer-button');
-
-    if (!divWatchHeadline || !settingsButton) {
-        if (numAttempts >= 50) {
-            console.warn('[YoUTube Popout Button] Giving up. Never found the divWatchHeadline or the settingsButton.');
-            return;
-        }
-        setTimeout(tryToAdd, 250 * 1.05 ** numAttempts);
-        return;
-    }
 
     var buttonPopout = document.createElement("button");
     buttonPopout.setAttribute('aria-label', "Pop-out Video");
@@ -95,4 +103,4 @@ function tryToAdd() {
     }
 }
 
-tryToAdd();
+runWhenReady('.ytp-miniplayer-button', addPopoutButton);
