@@ -11,7 +11,7 @@
 // @include         *
 // @grant           GM_addStyle
 // @run-at          document-body
-// @version         0.3n
+// @version         0.3o
 // @license         MIT
 // ==/UserScript==
 
@@ -88,7 +88,7 @@ function handleMouseDown(e) {
     // From: https://stackoverflow.com/questions/10045423/determine-whether-user-clicking-scrollbar-or-content-onclick-for-native-scroll
     var wasClickOnScrollbar = e.target.clientWidth > 0 && e.offsetX > e.target.clientWidth || e.target.clientHeight > 0 && e.offsetY > e.target.clientHeight;
     if (wasClickOnScrollbar) {
-        //console.log('Ignoring click on scrollbar:', e);
+        //console.log('Ignoring click on scrollbar:', e, `${e.offsetX} > ${e.target.clientWidth} || ${e.offsetY} > ${e.target.clientHeight}`);
         return;
     }
     if (e.which == mouseBtn) {
@@ -210,7 +210,7 @@ function cancelLongPress() {
 function start(e) {
     down = true;
     elementToScroll = findElementToScroll(e.target);
-    //console.log('Will do scrolling on:', elementToScroll);
+    //console.log('Will do scrolling on:', elementToScroll, elementToScroll.scrollTop, elementToScroll.scrollHeight, getComputedStyle(elementToScroll).overflow);
     scrollStartTime = Date.now();
     setStartData(e);
     lastX = e.clientX;
