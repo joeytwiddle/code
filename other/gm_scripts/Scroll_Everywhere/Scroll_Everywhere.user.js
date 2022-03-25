@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name            Scroll Everywhere [fork]
+// @name            Scroll Everywhere
 // @description     Scroll entire page smoothly with long left-click and drag.
 // @author          tumpio
 // @oujs:author     tumpio
@@ -11,7 +11,7 @@
 // @include         *
 // @grant           GM_addStyle
 // @run-at          document-body
-// @version         0.3o
+// @version         0.3p
 // @license         MIT
 // ==/UserScript==
 
