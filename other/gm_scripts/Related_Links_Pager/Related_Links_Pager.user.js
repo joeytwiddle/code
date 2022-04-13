@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.11
+// @version        1.4.12
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -284,7 +284,7 @@ function getTextFrom(link) {
 
 function limitStringLength(str, maxLength) {
   if (str.length > maxLength - 3) {
-    return str.splice(0, maxLength - 3) + "...";
+    return str.slice(0, maxLength - 3) + "...";
   }
   return str;
 }
