@@ -149,6 +149,7 @@
         var img = document.createElement("img");
         img.classList.add("imdb-image");
         img.src = imdbIconURL;
+        img.style.marginRight = '0.25em';
         div.appendChild(img);
         div.appendChild(document.createElement("div"));
         return function (res) {
@@ -163,15 +164,19 @@
                 var loading = document.createElement("span");
                 loading.classList.add("imdb-loading");
                 loading.appendChild(document.createTextNode("Fetching..."));
+                loading.style.opacity = 0.6;
                 restDiv.appendChild(loading);
             } else if (rating && rating.score && rating.votes && rating.url) {
                 var score = document.createElement("span");
                 score.classList.add("imdb-score");
-                score.appendChild(document.createTextNode(rating.score + "/10"));
+                //score.appendChild(document.createTextNode(rating.score + "/10"));
+                score.appendChild(document.createTextNode(rating.score));
+                score.style.fontWeight = 'bold';
                 restDiv.appendChild(score);
                 var votes = document.createElement("span");
                 votes.classList.add("imdb-votes");
                 votes.appendChild(document.createTextNode("(" + rating.votes + " votes)"));
+                votes.style.opacity = 0.6;
                 restDiv.appendChild(votes);
                 div.addEventListener('click', function () {
                     GM_openInTab(rating.url, { active: true, insert: true, setParent: true });
@@ -219,6 +224,10 @@
             var buttonContainer = parentNode.querySelector(".buttonControls--container");
             if (!buttonContainer || !parentNode) return;
             parentNode.insertBefore(ratingNode, buttonContainer);
+            // For some reason, The Witcher's card hides some of the divs (although they do show when the card is expanded)
+            // These things didn't make any difference:
+            //parentNode.insertBefore(ratingNode, buttonContainer.nextSibling);
+            //parentNode.appendChild(ratingNode);
     }
 
     function imdbRenderingForHeroDisplay(node) {
