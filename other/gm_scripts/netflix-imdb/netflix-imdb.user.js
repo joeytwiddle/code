@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Netflix IMDB Ratings
-// @version      1.0
+// @version      1.1
 // @description  Show IMDB ratings on Netflix
-// @author       kraki5525 - original code by ioannisioannou16
+// @author       ioannisioannou16, kraki5525, joeytwiddle
 // @match        https://www.netflix.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
@@ -41,15 +41,18 @@
         GM_xmlhttpRequest_get(searchUrl, function (err, searchRes) {
             if (err) return cb(err);
             var searchResParsed = domParser.parseFromString(searchRes.responseText, "text/html");
-            var link = searchResParsed.querySelector(".result_text > a");
+            var link = searchResParsed.querySelector(".result_text > a") ||
+				       searchResParsed.querySelector("a.ipc-metadata-list-summary-item__t");
             var titleEndpoint = link && link.getAttribute("href");
             if (!titleEndpoint) return cb(null, {});
             var titleUrl = "https://www.imdb.com" + titleEndpoint;
             GM_xmlhttpRequest_get(titleUrl, function (err, titleRes) {
                 if (err) return cb(err);
                 var titleResParsed = domParser.parseFromString(titleRes.responseText, "text/html");
-                var score = titleResParsed.querySelector("span[class^='AggregateRatingButton__RatingScore']");
-                var votes = titleResParsed.querySelector("div[class^='AggregateRatingButton__TotalRatingAmount']");
+                //var score = titleResParsed.querySelector("span[class^='AggregateRatingButton__RatingScore']");
+                //var votes = titleResParsed.querySelector("div[class^='AggregateRatingButton__TotalRatingAmount']");
+                var score = titleResParsed.querySelector("*[data-testid='hero-rating-bar__aggregate-rating__score'] > span:nth-child(1)");
+                var votes = titleResParsed.querySelector("*[data-testid='hero-rating-bar__aggregate-rating__score'] + div + div");
                 if (!score || (!score.textContent) || !votes || (!votes.textContent)) return cb(null, {});
                 cb(null, { score: score.textContent, votes: votes.textContent, url: titleUrl });
             });
@@ -159,7 +162,7 @@
             } else if (res.loading) {
                 var loading = document.createElement("span");
                 loading.classList.add("imdb-loading");
-                loading.appendChild(document.createTextNode("fetching.."));
+                loading.appendChild(document.createTextNode("Fetching..."));
                 restDiv.appendChild(loading);
             } else if (rating && rating.score && rating.votes && rating.url) {
                 var score = document.createElement("span");
