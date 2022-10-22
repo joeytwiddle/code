@@ -138,7 +138,7 @@
         }
 
         function set(key, value) {
-            var valueObj = { value: value, expiration: (new Date()).getTime() + getRandom(oneDayMs, 7 * oneDayMs) };
+            var valueObj = { value: value, expiration: (new Date()).getTime() + getRandom(60 * oneDayMs, 65 * oneDayMs) };
             _cache[key] = valueObj;
         }
 
