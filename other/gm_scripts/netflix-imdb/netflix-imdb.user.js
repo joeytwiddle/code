@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Netflix IMDB Ratings
-// @version      1.1
+// @name         Netflix IMDB Ratings [fork]
+// @version      1.2
 // @description  Show IMDB ratings on Netflix
 // @author       ioannisioannou16, kraki5525, joeytwiddle
 // @match        https://www.netflix.com/*
@@ -14,6 +14,7 @@
 // @grant        GM_removeValueChangeListener
 // @grant        GM_openInTab
 // @connect      imdb.com
+// @connect      www.omdbapi.com
 // @resource     customCSS  https://raw.githubusercontent.com/kraki5525/netflix-imdb/master/netflix-imdb.css
 // @resource     imdbIcon   https://raw.githubusercontent.com/kraki5525/netflix-imdb/master/imdb-icon.png
 // @updateURL    https://github.com/kraki5525/netflix-imdb/raw/master/netflix-imdb.user.js
@@ -22,6 +23,14 @@
 
 (function () {
     "use strict";
+
+    // Original
+    //var source = 'imdb';
+    // Faster
+    var source = 'omdbapi';
+
+    // If you are getting rate limited, then generate your own key from: https://www.omdbapi.com/apikey.aspx
+    var omdbApiKey = '3e29acf0';
 
     GM_addStyle(GM_getResourceText("customCSS"));
 
@@ -37,6 +46,14 @@
     }
 
     function requestRating(title, cb) {
+        if (source === 'imdb') {
+            requestRatingImdb(title, cb);
+        } else if (source === 'omdbapi') {
+            requestRatingOmdbApi(title, cb);
+        }
+    }
+
+    function requestRatingImdb(title, cb) {
         var searchUrl = "https://www.imdb.com/find?s=tt&q=" + title;
         GM_xmlhttpRequest_get(searchUrl, function (err, searchRes) {
             if (err) return cb(err);
@@ -56,6 +73,30 @@
                 if (!score || (!score.textContent) || !votes || (!votes.textContent)) return cb(null, {});
                 cb(null, { score: score.textContent, votes: votes.textContent, url: titleUrl });
             });
+        });
+    }
+
+    function requestRatingOmdbApi(title, cb) {
+        var searchUrl = "http://www.omdbapi.com/?apikey=" + omdbApiKey + "&t=" + encodeURIComponent(title);
+        GM_xmlhttpRequest_get(searchUrl, function (err, searchRes) {
+            if (err) return cb(err);
+            try {
+                var data = JSON.parse(searchRes.responseText);
+                if (!data.imdbRating || data.imdbRating === 'N/A' || !data.imdbVotes || data.imdbVotes === 'N/A' || !data.imdbID) {
+                    console.warn('Some data missing from OMDB API:', data);
+                    // Fall back to IMDB
+                    return requestRatingImdb(title, cb);
+                }
+                var score = data.imdbRating;
+                var votesNum = Number(String(data.imdbVotes).replace(/,/g, ''));
+                var votesShow = (votesNum / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k';
+                var imdbID = data.imdbID;
+                var url = "https://www.imdb.com/title/" + imdbID;
+                cb(null, { score, votes: votesShow, url });
+            } catch (error) {
+                console.error('Failed to fetch OMDB API data:', error);
+                cb(error);
+            }
         });
     }
 
