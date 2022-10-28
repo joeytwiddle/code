@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.0.1
+// @version      0.0.2
 // @description  Make theatre mode toggle fullscreen
 // @author       joeytwiddle
 // @match        https://www.twitch.tv/*
@@ -31,7 +31,15 @@
 				console.info("Adding event listener to", element);
 				element.addEventListener('click', () => {
 					console.info("Toggling fullscreen");
+					// Hides the theatre button
+					// Although hitting Firefox's own fullscreen button doesn't do that
+					// Also this only seems to work once
+					// But at least it works the first time!
 					toggleFullScreen();
+					//
+					// Hides chat
+					//const fullscreenButton = document.querySelector('[data-a-target="player-fullscreen-button"]')
+					//fullscreenButton.click();
 				}, true);
 			});
 		});
