@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.12
+// @version        1.4.13
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -100,6 +100,8 @@ if (isGoogleSearchResultsPage) {
 }
 
 var ensureFirstGoogleResultIsRelated = isGoogleSearchResultsPage;
+
+var ignoreItalicsInXPath = true;
 
 // == CHANGELOG ==
 // 2019-12-10 Remove global option 'leaveHashUrlsAlone' - enable dynamically instead
@@ -486,6 +488,12 @@ function runRelatedLinksPager() {
       if (ensureFirstGoogleResultIsRelated) {
         xpath = xpath.replace('/.srg/', '/');
         xpath = xpath.replace('/.g/div/div/.rc/.r/a', '/.g/div/.rc/.r/a');
+      }
+
+      // Links to works on Wikipedia are sometimes surrounded by <i> but sometimes have <i> inside.  So we just ignore <i>.
+      // Example: https://en.wikipedia.org/wiki/God_of_War
+      if (ignoreItalicsInXPath) {
+        xpath = xpath.replace(/[/]i[/]/g, '/');
       }
 
       link.cachedGroupSignature = xpath;
