@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.13
+// @version        1.4.14
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -259,7 +259,7 @@ function getXPath(node) {
     // /#document/html/.srp.tbo.vasq.peek-rhs.BbLFkb/div/div/.mw/div/.col/div/.med/div/div/div/.bkWMgd/.g/div/.rc/.r/a for later links
     // /#document/html/.srp.tbo.vasq.peek-rhs.BbLFkb/div/div/.mw/div/.col/div/.next-col/div/.med/div/div/div/.bkWMgd/.g/div/.rc/.r/a for links on subsequent pages (loaded by tumpio's Endless Google)
     // This is rather a broad fix.  It combines those wanted above, and rejects the unwanted "related questions", but it might bring in false positives in future.
-    if (node.className === 'g' && !getAncestorWithClass(node, 'related-question-pair') && !getAncestorWithClass(node, 'g-accordion-expander')) {
+    if ((node.className || '').match(/\bg\b/) && !getAncestorWithClass(node, 'related-question-pair') && !getAncestorWithClass(node, 'g-accordion-expander')) {
       parentPath = '*';
     }
   }
