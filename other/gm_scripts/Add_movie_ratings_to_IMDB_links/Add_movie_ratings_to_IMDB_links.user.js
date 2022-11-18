@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-30-joeytwiddle
+// @version      2015-11-24-31-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -25,6 +25,14 @@ if (useLightBackground) {
     // You could also try #262626 for a dark grey but not black background
 }
 
+// Nov 2022 design has `display: flex` to make all info flow downwards, which causes our rating to appear below the link, instead of after it
+// However, we can remove this `display: flex` so our rating will appear after the link, and fortunately IMDB's divs still appear below it (for now)
+// The first selector is for the Known For section, the second for the Credits section
+// It doesn't work for the former, because that has two more parents with `display: flex`
+// TODO: A better solution might be to replace the <a> with a <div> containing the <a> and our rating
+// TODO: Or we could try putting the rating inside the link
+GM_addStyle('.ipc-primary-image-list-card__content-top, .ipc-metadata-list-summary-item__tc { display: initial; }');
+
 // The old iMDB site exposed jQuery, but the new one does not
 //var $ = unsafeWindow.$;
 // This was exposed by the @require
@@ -38,6 +46,8 @@ const voteCountSelectorNew = '.ipc-button > div > div > div > div:last-child';
 function processIMDB_Links () {
     //--- Get only links that could be to IMBD movie/TV pages.
     var linksToIMBD_Shows   = document.querySelectorAll ("a[href*='/title/']");
+
+    var lastLinkProcessed;
 
     for (var J = 0, L = linksToIMBD_Shows.length;  J < L;  J++) {
         const currentLink = linksToIMBD_Shows[J];
@@ -105,6 +115,11 @@ function processIMDB_Links () {
             continue;
         }
 
+        // Nov 2022: In the list of titles for an actor, there are now two <a>s in each row.
+        if (lastLinkProcessed && currentLink.href === lastLinkProcessed.href) {
+            continue;
+        }
+
         if (! currentLink.getAttribute ("data-gm-fetched") ){
             if (fetchedLinkCnt >= maxLinksAtATime){
                 //--- Position the "continue" button.
@@ -121,6 +136,7 @@ function processIMDB_Links () {
 
             //---Mark the link with a data attribute, so we know it's been fetched.
             currentLink.setAttribute ("data-gm-fetched", "true");
+            lastLinkProcessed = currentLink;
             fetchedLinkCnt++;
         }
     }
