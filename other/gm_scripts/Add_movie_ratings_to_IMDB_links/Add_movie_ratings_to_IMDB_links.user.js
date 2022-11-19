@@ -2,10 +2,12 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-31-joeytwiddle
+// @version      2015-11-24-32-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
+// TODO: Remove this
+// @grant        unsafeWindow
 // @grant        GM_addStyle
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // @namespace    https://greasyfork.org/users/8615
@@ -25,13 +27,21 @@ if (useLightBackground) {
     // You could also try #262626 for a dark grey but not black background
 }
 
-// Nov 2022 design has `display: flex` to make all info flow downwards, which causes our rating to appear below the link, instead of after it
-// However, we can remove this `display: flex` so our rating will appear after the link, and fortunately IMDB's divs still appear below it (for now)
-// The first selector is for the Known For section, the second for the Credits section
-// It doesn't work for the former, because that has two more parents with `display: flex`
+// Nov 2022 design has `display: flex` to make all/some info flow downwards, which causes our rating to appear below the link, instead of after it
 // TODO: A better solution might be to replace the <a> with a <div> containing the <a> and our rating
 // TODO: Or we could try putting the rating inside the link
-GM_addStyle('.ipc-primary-image-list-card__content-top, .ipc-metadata-list-summary-item__tc { display: initial; }');
+// TODO: Or we could make the rating float after the link, using position: absolute
+GM_addStyle(`
+    /* For the "Known For" section */
+    .ipc-primary-image-list-card__content-top {
+        flex-direction: row;
+    }
+
+    /* For the "Credits" section */
+    .ipc-metadata-list-summary-item__tc {
+        display: initial;
+    }
+`);
 
 // The old iMDB site exposed jQuery, but the new one does not
 //var $ = unsafeWindow.$;
