@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Twitch Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.0.2
+// @version      0.1.0
 // @description  Make theatre mode toggle fullscreen
 // @author       joeytwiddle
 // @match        https://www.twitch.tv/*
-// @grant        none
+// @grant        GM_addStyle
 // ==/UserScript==
 
 (function() {
@@ -13,7 +13,16 @@
 
 	// Options
 
+	const quietenPrimeOffersRedDot = true;
+
 	const makeTheatreModeButtonToggleFullscreen = true;
+
+	//
+
+	if (quietenPrimeOffersRedDot) {
+		//GM_addStyle(`.prime-offers__pill { display: none }`);
+		GM_addStyle(`.prime-offers__pill { filter: saturate(0%) brightness(250%) }`);
+	}
 
 	//
 
