@@ -15,6 +15,8 @@
 // @license         MIT
 // ==/UserScript==
 
+// Does not work on Steam: https://steamcommunity.com/discussions/forum/10/458604254435648435/?ctp=9
+
 // This is a version of tumpio's script which defaults to left-click drag after a long press, and will do a relative scroll of the entire page.  I find this more intuitive.
 
 /* jshint multistr: true, strict: false, browser: true, devel: true */
