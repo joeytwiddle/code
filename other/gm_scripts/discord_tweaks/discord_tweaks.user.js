@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Discord Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.0
+// @version      0.1.1
 // @description  Reduce gap between messages, optionally unbrighten name of selected channel
 // @author       joeytwiddle
 // @match        https://discord.com/*
@@ -35,7 +35,7 @@
 				margin: 0.25em;
 			}
 			/* On 26/10/2022 the problem was not that, but this */
-			.compact-2Nkcau.wrapper-30-Nkg, .cozy-VmLDNB.wrapper-30-Nkg {
+			.message-2CShn3, .cozy-VmLDNB, .zalgo-26OfGz {
 				padding-top: 0rem;
 				padding-bottom: 0rem;
 			}
