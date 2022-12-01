@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Discord Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.1
+// @version      0.1.2
 // @description  Reduce gap between messages, optionally unbrighten name of selected channel
 // @author       joeytwiddle
 // @match        https://discord.com/*
@@ -34,8 +34,8 @@
 			.group-spacing-16 .groupStart-3Mlgv1 {
 				margin: 0.25em;
 			}
-			/* On 26/10/2022 the problem was not that, but this */
-			.message-2CShn3, .cozy-VmLDNB, .zalgo-26OfGz {
+			/* New CSS classes.  It looks like [role=article] will be the most resilient. I haven't seen it used for any other elements on a standard page, but it could be used in some Discord UI / menus. */
+			[role=article], .message-2CShn3, .cozy-VmLDNB, .zalgo-26OfGz {
 				padding-top: 0rem;
 				padding-bottom: 0rem;
 			}
