@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-34-joeytwiddle
+// @version      2015-11-24-35-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -244,6 +244,8 @@ function prependIMDB_Rating (resp, targetLink) {
                isError = false;
 
                justrate = ratingM[1].substr(0, ratingM[1].indexOf("/"));
+               // For countries which use ',' instead of '.' for decimal point
+               justrate = justrate.replace(',', '.');
 
                // Let's try the metascore instead
                // Not all movied have a metascore
