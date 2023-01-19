@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Wikimedia Page History in Sidebar [adopted]
 // @description   Add History box at wikimedia's leftmost column
-// @version       1.2.5
+// @version       1.3.0
 // @license       ISC
 // @downstreamURL http://userscripts.org/scripts/source/124389.user.js
 // @include       http://*.wikipedia.org/*
@@ -13,7 +13,11 @@
 // ==/UserScript==
 
 /*
- * Originally called Wikimedia+: http://userscripts.org/scripts/show/7877
+ * Originally called "Wikimedia+": http://userscripts-mirror.org/scripts/show/7877
+ * I think it might also have been called "Wikimedia+ for Chrome (localStorage)" at some point
+ *
+ * 2023-01-19  Various updates for Wikipedia's new layout (but try to remain
+ *             compatible with classic layout still used on many other sites)
  *
  * 2018-03-04  Use scrollbar for history.
  *
@@ -176,11 +180,21 @@ setTimeout(function()
    store(hist);
 
    // Render history and add it to sidebar
+   var panel = document.getElementById("vector-main-menu") || document.getElementById("mw-panel") ||
+      document.getElementById("column-one") || document.getElementById("panel")
+      || document.getElementById("jq-interiorNavigation");
+
+   var is2023Layout = panel.id === 'vector-main-menu';
+
    function myEscape(str) {
       return str.replace('"','&quot;','g').replace('<','&lt;','g').replace('>','&gt;','g');
    }
-   var listItem = function(href,name) { return '<li><a href="' + myEscape(href) + '">' + myEscape(name || href.replace(/.*\//, '')) + '</a></li>\n'; }
+   var liType = is2023Layout ? 'li' : 'li';
+   var listItem = function(href,name) { return `<${liType}><a href="${myEscape(href)}">${myEscape(name || href.replace(/.*\//, ''))}</a></${liType}>\n`; }
    var s = '<h3 role="navigation">Recent Pages</h3><div class="vector-menu-content _ pBody"><ul class="vector-menu-content-list">';
+   if (is2023Layout) {
+	   s = '<div class="vector-main-menu-action-heading vector-menu-heading">Recent Pages</div><div class="vector-main-menu-action-content vector-menu-content"><ul class="vector-menu-content-list">';
+   }
    // for(var x in hist)
    for(var x=0; x<numToShow; x++)
    {
@@ -192,7 +206,7 @@ setTimeout(function()
          s += "<hr>";
       }
    }
-   s += '</ul></div>';
+   s += is2023Layout ? '</ul></div>' : '</ul></div>';
 
    //var indentLaterLines = 'padding-left: 1.5em; text-indent: -1.5em;';
    // Note that MediaWiki sites (but not Wikipedia) augument this rule with: .portal ul { font-size: 95%; }
@@ -202,19 +216,21 @@ setTimeout(function()
    // The following .body rule applies to the whole sidebar, so none of the above is needed.
    //s += '<style type="text/css"> .body { font-size: 0.85em; } div.body li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } '+reduceSidebarFontSize+' </style>';
 
-   var softenOurHRSeparators = '#p-history hr { margin-left: 1em; margin-right: 1em; opacity: 0.2; }';
+   var softenOurHRSeparators = '#p-history hr { margin-left: 20%; margin-right: 20%; opacity: 0.2; }';
    //var outdentPortalHeadings2018 = '.portal > h3 { margin-left: 0 !important; } .portal > .body { margin-left: 0 !important; } .portal > .body > * { margin-left: 0.5em !important; }';
    //var emphasiseGapsBetweenPortals = 'div#mw-panel div.portal h3 { margin-top: 1.5em; font-weight: bold; }';
    var useScrollbarForHistory = 'div#mw-panel div.portal div.body ul { max-height: 90vh; overflow: auto; }';
-   s += '<style type="text/css">' + softenOurHRSeparators + useScrollbarForHistory + '</style>';
+   var fitInto2023Layout = is2023Layout ? '#p-history li { padding: 0; } ' : '';
+   s += '<style type="text/css">' + softenOurHRSeparators + useScrollbarForHistory + fitInto2023Layout + '</style>';
 
-   var e = document.createElement ("nav");
+   var e = document.createElement ("div");
    e.innerHTML = s;
    e.id = "p-history";
    e.className = "mw-portlet mw-portlet-interaction vector-menu vector-menu-portal portal _ portlet";
-   var panel = document.getElementById("mw-panel") ||
-      document.getElementById("column-one") || document.getElementById("panel")
-      || document.getElementById("jq-interiorNavigation");
+   if (is2023Layout) {
+      e.className = "vector-main-menu-group vector-menu mw-portlet mw-portlet-wikibase-otherprojects";
+   }
+
    if (panel) {
       panel.insertBefore(e,panel.getElementsByClassName("portal")[1]);
       /* Should be handled by Wiki's own JS.
@@ -263,9 +279,13 @@ setTimeout(function()
 
    function AppendCategoryTreeToSidebar() {
        try {
+           /*
            var node = document.getElementById( "p-tb" )
                               .getElementsByTagName('div')[0]
                               .getElementsByTagName('ul')[0];
+           */
+
+           var node = document.querySelector('#p-tb > div > ul');
 
            var aNode = document.createElement( 'a' );
            var liNode = document.createElement( 'li' );
