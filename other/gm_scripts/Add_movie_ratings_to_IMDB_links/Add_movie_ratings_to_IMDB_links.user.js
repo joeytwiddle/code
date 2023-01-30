@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-36-joeytwiddle
+// @version      2015-11-24-37-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -135,6 +135,9 @@ function processIMDB_Links () {
             continue;
         }
 
+        // Even if we skip this link, we remember it, to prevent duplicate ratings appearing when we "Get more ratings"
+        lastLinkProcessed = currentLink;
+
         if (! currentLink.getAttribute ("data-gm-fetched") ){
             if (fetchedLinkCnt >= maxLinksAtATime){
                 //--- Position the "continue" button.
@@ -151,7 +154,6 @@ function processIMDB_Links () {
 
             //---Mark the link with a data attribute, so we know it's been fetched.
             currentLink.setAttribute ("data-gm-fetched", "true");
-            lastLinkProcessed = currentLink;
             fetchedLinkCnt++;
         }
     }
