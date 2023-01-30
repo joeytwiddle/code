@@ -74,6 +74,11 @@ function processIMDB_Links () {
 
         // I am beginning to think a whitelist might be better than this blacklist!
 
+        // Skip if in Bio
+        if ($(currentLink).hasClass('ipc-md-link')) {
+            continue;
+        }
+
         // Skip thumbnails on the search results page
         if ($(currentLink).closest('.primary_photo').length) {
             continue;
@@ -126,6 +131,19 @@ function processIMDB_Links () {
         if ($(currentLink).closest('.ipc-lockup-overlay').length) {
             continue;
         }
+
+        // From Pharaoh2k
+        continueBttn.style.display = 'inline';
+        continueBttn.style.top = '0px';
+        continueBttn.style.left = '50%';
+        continueBttn.style.position = 'fixed';
+        continueBttn.style.height = '30px';
+        continueBttn.style.width = '170px';
+        continueBttn.style.color = 'black';
+        continueBttn.style.zIndex = '1000';
+        continueBttn.style.backgroundColor = 'rgba(245, 245, 149, 0.7)';
+        continueBttn.style.boxShadow = '0 6px 6px rgb(0 0 0 / 60%)';
+        currentLink.parentNode.insertBefore(continueBttn, currentLink);
 
         // Nov 2022: In the list of titles for an actor, there are now two <a>s in each row.
         if (lastLinkProcessed && currentLink.href === lastLinkProcessed.href) {
