@@ -130,19 +130,6 @@ function processIMDB_Links () {
             continue;
         }
 
-        // From Pharaoh2k
-        continueBttn.style.display = 'inline';
-        continueBttn.style.top = '0px';
-        continueBttn.style.left = '50%';
-        continueBttn.style.position = 'fixed';
-        continueBttn.style.height = '30px';
-        continueBttn.style.width = '170px';
-        continueBttn.style.color = 'black';
-        continueBttn.style.zIndex = '1000';
-        continueBttn.style.backgroundColor = 'rgba(245, 245, 149, 0.7)';
-        continueBttn.style.boxShadow = '0 6px 6px rgb(0 0 0 / 60%)';
-        currentLink.parentNode.insertBefore(continueBttn, currentLink);
-
         // Nov 2022: In the list of titles for an actor, there are now two <a>s in each row.
         if (lastLinkProcessed && currentLink.href === lastLinkProcessed.href) {
             continue;
@@ -384,6 +371,29 @@ continueBttn.addEventListener ("click", function (){
     },
     false
 );
+
+if (document.querySelector('.ipc-see-more__button')) {
+	// Now the site hides some of the Credits of an individual behind a "See all" button
+	// Ideally we would trigger automatically when the new results are loaded
+	// But until then, we present this button, so the user can manually trigger a refetch
+	// Styling from Pharaoh2k
+	continueBttn.style.display = 'inline';
+	continueBttn.style.top = '0px';
+	continueBttn.style.left = '50%';
+	continueBttn.style.position = 'fixed';
+	//continueBttn.style.height = '30px';
+	//continueBttn.style.width = '170px';
+	//continueBttn.style.color = 'black';
+	continueBttn.style.zIndex = '1000';
+	//continueBttn.style.backgroundColor = 'rgba(245, 245, 149, 0.7)';
+	//continueBttn.style.boxShadow = '0 6px 6px rgb(0 0 0 / 60%)';
+	continueBttn.style.boxShadow = '0 6px 6px #0004';
+	continueBttn.style.cursor = 'pointer';
+	// Borrow styling from the website
+	continueBttn.className = 'ipc-btn ipc-btn--theme-base ipc-btn--core-accent1';
+	continueBttn.style.padding = '0 1rem';
+	document.body.appendChild(continueBttn);
+}
 
 processIMDB_Links ();
 
