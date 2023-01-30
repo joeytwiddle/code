@@ -6,8 +6,6 @@
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
-// TODO: Remove this
-// @grant        unsafeWindow
 // @grant        GM_addStyle
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // @namespace    https://greasyfork.org/users/8615
