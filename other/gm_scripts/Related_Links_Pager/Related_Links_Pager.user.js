@@ -101,6 +101,11 @@ if (isGoogleSearchResultsPage) {
 
 var ensureFirstGoogleResultIsRelated = isGoogleSearchResultsPage;
 
+if (document.location.hostname.match(/twitch.tv/)) {
+    // Nov 2022: Links to clips now each have a different class in them, so we need to drop classnames if we want to group them.
+    useClassnamesInXPath = false;
+}
+
 var ignoreItalicsInXPath = true;
 
 // == CHANGELOG ==
