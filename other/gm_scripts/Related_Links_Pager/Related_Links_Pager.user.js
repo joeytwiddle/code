@@ -38,8 +38,8 @@
 var delayBeforeRunning = 500;
 var minimumGroupSize   = 2;
 var maximumGroupSize   = 250;         // Some webservers restrict long URLs, responding with "Bad Request".
-var useClassnamesInXPath = false;
-var groupLinksByClass    = true;
+var useClassnamesInXPath = false;     // Similar to the next option, not sure why we have both!
+var groupLinksByClass    = true;      // May do a better job of separating unrelated links which the scripts thinks are related because they have the same depth. This is automatically disabled on Google search results, because Google often adds random classes which make this feature unhelpful.
 // CONSIDER TODO: A better compromise for all sites might be groupLinksWhichShareAtLeastOneClass.  This would reject links which do not share any classes with the focused link.
 var ignoreLinksWithoutText = false;   // We used to ignore these because thumbnails often have no text, but are followed by an identical link with text.  But now we have a more comprehensive strategy for that.
 
@@ -96,7 +96,7 @@ var verbose = false;    // Extra logging for debugging
 var isGoogleSearchResultsPage = !!document.location.href.match(/google.*(search|q=)/);
 
 if (isGoogleSearchResultsPage) {
-  groupLinksByClass = false;          // Most Google results have class "l" but any previously visited have "l vst".
+  groupLinksByClass = false;          // Most Google results have class "l" but any previously visited have "l vst".  Also, for later links on the page, the .g element may have a bunch of other classes on it, although the first 1 or 2 results don't.
 }
 
 var ensureFirstGoogleResultIsRelated = isGoogleSearchResultsPage;
