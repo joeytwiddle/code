@@ -27,6 +27,9 @@
 // @connect        *
 // ==/UserScript==
 
+// Google's favicon service now redirects to load-balanced domains: t0, t1, t2, t3, ...
+// - https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://docs.nginx.com&size=16
+
 var placeFaviconByUrl      = false;   // The little green link below the article title
 var placeFaviconAfter      = false;   // Display after the link instead of before it
 var placeFaviconInsideLink = false;   // Makes the favicon clickable but may also get underlined
@@ -270,6 +273,11 @@ function getGoogleResultsLinks () {
 			return false;
 		}
 		return true;
+	});
+
+	// Only keep links which are not really links (e.g. ignore 'javascript:void(0)' and anchor links)
+	links = [...links].filter(link => {
+		return (link.protocol === 'http:' || link.protocol === 'https:') && link.href.slice(0, 1) !== '#';
 	});
 
 	return links;
