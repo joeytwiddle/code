@@ -10,6 +10,7 @@
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
 // @include        /https?:\/\/searx\..*\/.*
+// @exclude        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/maps\/.*/
 // These are some popular searx sites which don't have 'searx' in the domain:
 // @match          https://spot.ecloud.global/*
 // @match          https://search.disroot.org/*
