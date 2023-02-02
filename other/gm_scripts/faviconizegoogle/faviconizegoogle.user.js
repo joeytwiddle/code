@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.8.4
+// @version        1.8.5
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
