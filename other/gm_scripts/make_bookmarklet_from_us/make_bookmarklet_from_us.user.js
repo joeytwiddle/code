@@ -474,10 +474,12 @@ function loadSourceViewer(url, newLink, evt) {
 		var displayDiv = document.createElement("div");
 		displayDiv.style.fontSize = '0.8em';
 		displayDiv.style.whiteSpace = "pre-wrap";
+		displayDiv.style.height = "100%";
+		displayDiv.style.overflow = "auto";
 		var displayCode = document.createElement("pre");
 		displayCode.textContent = res.responseText;
-		displayCode.style.maxHeight = "100%";
-		displayCode.style.overflow = "auto";
+		//displayCode.style.maxHeight = "100%";
+		//displayCode.style.overflow = "auto";
 		displayDiv.appendChild(displayCode);
 		while (frame.firstChild) {
 			frame.removeChild(frame.firstChild);
