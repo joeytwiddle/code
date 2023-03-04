@@ -5,7 +5,7 @@
 // @homepage       https://greasyfork.org/en/scripts/7664-faviconizegoogle
 // @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @license        ISC
-// @version        1.8.6
+// @version        1.8.7
 // @include        /https?:\/\/((www\.)?|encrypted\.)google\.[a-z]{2,3}(\.[a-z]{2})?\/(search|webhp|\?gws_rd|\?gfe_rd)?.*/
 // @include        /https?:\/\/(www\.|[a-z0-9-]*\.)?startpage\.com\/.*/
 // @include        /https?:\/\/(www\.)?ecosia\.org\/(search|news|videos)?.*/
@@ -110,11 +110,11 @@ if (!this.GM_addStyle) {
 	};
 }
 
-function findClosest (elem, tagName) {
+function findClosest (elem, className) {
 	// eslint-disable-next-line no-cond-assign
 	while (elem = elem.parentNode) {
 		//if (elem.tagName && elem.tagName.toLowerCase() === tagName.toLowerCase()) {
-		if ((' ' + elem.className + ' ').indexOf(' ' + tagName + ' ') >= 0) {
+		if ((' ' + elem.className + ' ').indexOf(' ' + className + ' ') >= 0) {
 			return elem;
 		}
 	}
@@ -122,6 +122,9 @@ function findClosest (elem, tagName) {
 }
 
 function alreadyContainsFavicon(link) {
+	// Feburuary 2023: On Google Search, they now (sometimes?) show favicons
+	const img = link.querySelector('span > div > img[data-atf]:not([data-atf="0"])');
+	if (img) return true;
 	// On Google's News tab, they already show favicons
 	// We will try to detect that
 	const images = Array.from(link.querySelectorAll('g-img img'));
@@ -344,17 +347,24 @@ function updateFavicons () {
 		// Sometimes Google shows multiple results from one side, side-by-side in a table
 		// In this case, adding a favicon to the later links is redundant, and tends to overlap the earlier link
 		// So let's not do that
+		// Presumably this no longer works, since findClosest() works by className now
+		/*
 		var tableCell = findClosest(link, 'td');
 		if (tableCell && tableCell.parentNode.firstChild !== tableCell) {
 			// We are in a table and we are not the first cell; don't add favicon
 			continue;
 		}
+		*/
 
 		link.setAttribute("data-faviconized", "yes");
 		var img = createFaviconFor(targetUrl);
 		// <cite> is for google, .url is for startpage
 		// For Google 2022, putting the img inside the container but pushed out to the left makes it invisible.  So we go up to the container, and put it just inside that
-		var targetNode = (placeFaviconByUrl && link.parentNode.parentNode.querySelector('cite, .url') || (findClosest(link, 'g') || {}).firstChild || link);
+		// After finding the parent '.g' we actually want the first 'div' inside it.  (Not the firstChild, since that might be a favicon we created earlier!)
+		var targetNode =
+			placeFaviconByUrl && link.parentNode.parentNode.querySelector('cite, .url')
+			|| findClosest(link, 'g') && findClosest(link, 'g').querySelector('div')
+			|| link;
 
 		if (isEcosia && !placeFaviconOffTheLeft) {
 			// With the default `display: block` the link will break onto a separate line from the favicon, so we do this
@@ -368,9 +378,9 @@ function updateFavicons () {
 		}
 
 		// Some result blocks contain multiple links.
-		// But now we are placing the favicon on the parent block, we don't want multiple favicons on top of each other!
+		// But now we are placing the favicon on the parent '.g' block, we don't want multiple favicons on top of each other!
 		// (Of course it would be more efficient if we didn't generate an <img> at all for these sub-links.)
-		if (targetNode.getAttribute("data-target-faviconized") || targetNode.classList.contains("favicon")) {
+		if (targetNode.getAttribute("data-target-faviconized") || targetNode.classList.contains("favicon") || alreadyContainsFavicon(targetNode)) {
 			continue;
 		}
 		targetNode.setAttribute("data-target-faviconized", "yes");
