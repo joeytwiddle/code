@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Discord Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.3
+// @version      0.1.4
 // @description  Reduce gap between messages, optionally unbrighten name of selected channel
 // @author       joeytwiddle
 // @match        https://discord.com/*
@@ -25,7 +25,7 @@
 	const doNotBrightenSelectedChannel = true;
 
 	// It turns out that on Windows, my Discord tab was zoomed to 70%, although I'm not sure how, because that wasn't in zoomValues.  Was it copying the zoom from Linux?
-	const useCustomFont = false; // navigator.userAgent.match(/Linux/);
+	const usePreferredFont = false; // navigator.userAgent.match(/Linux/);
 
 	const giveTextInputBoxADarkBackground = true;
 
@@ -74,7 +74,7 @@
 		`);
 	}
 
-	if (useCustomFont) {
+	if (usePreferredFont) {
         // TODO: Isn't `font-family` set to `inherit` for this selector?  If so, we should just set this rule on `body`, to override `--font-primary` for the entire page.
         // I note that Windows uses "gg sans", but "Noto Sans" also looks ok for me (slightly more dense and maybe slighly thicker)
 		GM_addStyle(`
@@ -96,10 +96,22 @@
 
 	if (giveTextInputBoxADarkBackground) {
 		GM_addStyle(`
-			.scrollableContainer-15eg7h {
-				/* The same as the search textbox */
-				background: hsl(225, 6.3%, 12.5%);
+			/*
+			The text input box used this (quite light):
+				background: var(--bg-overlay-3,var(--channeltextarea-background));
+				background: hsl(225, 6.5%, 23.5%);
+			The search textbox used this (nicely dark):
 				background: var(--bg-overlay-3,var(--background-tertiary));
+				background: hsl(225, 6.5%, 12.5%);
+			*/
+			/* But we will do something different, for both: slightly dark when unfocused, quite dark when focused */
+			.channelTextArea-1FufC0 .scrollableContainer-15eg7h,
+			.searchBar-jGtisZ {
+				background: hsl(225, 6.5%, 17%);
+			}
+			.channelTextArea-1FufC0 .scrollableContainer-15eg7h:focus-within,
+			.searchBar-jGtisZ:focus-within {
+				background: hsl(225, 6.5%, 14%);
 			}
 		`);
 	}
