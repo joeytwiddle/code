@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Discord Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.5
+// @version      0.1.6
 // @description  Reduce gap between messages, optionally unbrighten name of selected channel
 // @author       joeytwiddle
 // @match        https://discord.com/*
@@ -111,7 +111,7 @@
 			}
 			.channelTextArea-1FufC0 .scrollableContainer-15eg7h:focus-within,
 			.searchBar-jGtisZ:focus-within {
-				background: hsl(225, 6.5%, 15%);
+				background: hsl(225, 6.5%, 16%);
 			}
 		`);
 	}
