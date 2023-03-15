@@ -11,7 +11,7 @@
 // ==/UserScript==
 
 (function() {
-    'use strict';
+	'use strict';
 
 	//// Options
 
@@ -75,8 +75,8 @@
 	}
 
 	if (usePreferredFont) {
-        // TODO: Isn't `font-family` set to `inherit` for this selector?  If so, we should just set this rule on `body`, to override `--font-primary` for the entire page.
-        // I note that Windows uses "gg sans", but "Noto Sans" also looks ok for me (slightly more dense and maybe slighly thicker)
+		// TODO: Isn't `font-family` set to `inherit` for this selector?  If so, we should just set this rule on `body`, to override `--font-primary` for the entire page.
+		// I note that Windows uses "gg sans", but "Noto Sans" also looks ok for me (slightly more dense and maybe slighly thicker)
 		GM_addStyle(`
 			a, abbr, acronym, address, applet, big, blockquote, body, caption, cite, code, dd, del, dfn, div, dl, dt, em, fieldset, form, h1, h2, h3, h4, h5, h6, html, iframe, img, ins, kbd, label, legend, li, object, ol, p, pre, q, s, samp, small, span, strike, strong, table, tbody, td, tfoot, th, thead, tr, tt, ul, var {
 				font-family: "Bitstream Vera Sans", "Sans", "Open Sans", "gg sans","Noto Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
