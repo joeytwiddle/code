@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Discord Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.6
+// @version      0.1.7
 // @description  Reduce gap between messages, optionally unbrighten name of selected channel
 // @author       joeytwiddle
 // @match        https://discord.com/*
@@ -107,11 +107,11 @@
 			/* But we will do something different, for both: slightly dark when unfocused, quite dark when focused */
 			.channelTextArea-1FufC0 .scrollableContainer-15eg7h,
 			.searchBar-jGtisZ {
-				background: hsl(225, 6.5%, 17%);
+				background: hsl(225, 6.5%, 18%);
 			}
 			.channelTextArea-1FufC0 .scrollableContainer-15eg7h:focus-within,
 			.searchBar-jGtisZ:focus-within {
-				background: hsl(225, 6.5%, 16%);
+				background: hsl(225, 6.5%, 17%);
 			}
 		`);
 	}
