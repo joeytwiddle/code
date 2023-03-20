@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.3.1
+// @version        1.3.2
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -250,6 +250,25 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 		.notifications-dropdown .notifications-list {
 		  margin-bottom: 0 !important;
 		}
+		/* These buttons sit on top of the time, obscuring it. So let's only show them when the parent is hovered. */
+		.notifications-list-item .notification-list-item-actions {
+			/* Always present but by default invisible and unclickable */
+			display: flex !important;
+			opacity: 0.0;
+			pointer-events: none;
+			/* Transparent background. We want this, but alpha 0 */
+			background-color: var(--color-canvas-subtle);
+			background-color: #f6f8fa00;
+			transition: all 0.2s ease-out;
+		}
+		.notifications-list-item:hover .notification-list-item-actions {
+			display: flex !important;
+			opacity: 1.0;
+			pointer-events: initial;
+			/* Let's fully obscure the element behind when we are visible */
+			background-color: var(--color-canvas-subtle);
+			background-color: #f6f8faff;
+		}
 	`).appendTo('body');
 
 	notificationButtonLink.addClass('tooltip-hidden');
@@ -276,6 +295,8 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 	}).appendTo('body');
 
 	makeNotificationBlocksCollapsable(notificationsDropdown);
+
+	showActionButtons(notificationsDropdown);
 	listenForMarkAsReadClick(notificationsDropdown);
 
 	listenForCloseNotificationDropdown();
@@ -306,6 +327,7 @@ function closeNotificationsDropdown() {
 	notificationButtonLink.removeClass('tooltip-hidden');
 }
 
+// I'm guessing this is no longer around, since the notifications we display are no longer grouped by repo
 function listenForMarkAsReadClick(parentElement) {
 	$('.mark-all-as-read', parentElement).click(function() {
 		// Always collapse the repo's notifications block when the mark-as-read tick icon is clicked.
@@ -364,6 +386,11 @@ function expandBlock($divToCollapse) {
 
 function textNode(text) {
 	return document.createTextNode(text);
+}
+
+function showActionButtons(notificationsDropdown) {
+	// Now done by CSS on hover
+	//$('.notification-list-item-actions.d-none', notificationsDropdown).removeClass('d-none');
 }
 
 function listenForActionClicks() {
