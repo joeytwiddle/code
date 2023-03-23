@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.4.0
+// @version        1.4.1
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -48,9 +48,20 @@ var hideQuodAIWarning = true;
 
 var mainNotificationsPath = '/notifications';
 
-// If we wanted, we could also add: +is%3Aunread
-var participatingUrl = 'https://github.com/notifications?query=reason%3Aparticipating';
-var mentionsUrl = 'https://github.com/notifications?query=reason%3Amention';
+var notificationsToFetch = [
+	{
+		title: 'Participating',
+		path: '/notifications?query=reason%3Aparticipating+is%3Aunread',
+	},
+	{
+		title: 'Mentions',
+		path: '/notifications?query=reason%3Amention+is%3Aunread',
+	},
+	{
+		title: 'All notifications',
+		path: '/notifications?query=is%3Aunread',
+	},
+];
 
 var notificationButtonLink = null;
 var notificationButtonContainer = null;
@@ -83,15 +94,16 @@ function onNotificationButtonClicked(evt) {
 	//notificationButtonContainer.off('click', onNotificationButtonClicked);
 	// For GM 4.0 we must use an absolute path, so we use .prop() instead of .attr().  "This is an issue with Firefox and content scripts"
 	var targetPage = notificationButtonLink.prop('href');
+	// When Microsoft revamped the notifications, I don't think the icon ever shows anything different
 
-	var notificationPagesToTry = [targetPage];
-	if (showParticipatingNotificationsFirst) notificationPagesToTry.unshift(mentionsUrl);
-	if (showParticipatingNotificationsFirst) notificationPagesToTry.unshift(participatingUrl);
+	var notificationPagesToTry = notificationsToFetch.slice(0);
 	fetchNotifications(notificationPagesToTry);
 }
 
 function fetchNotifications(notificationPagesToTry) {
-	var targetPage = notificationPagesToTry.shift();
+	var currentAttempt = notificationPagesToTry.shift();
+	var title = currentAttempt.title;
+	var targetPage = 'https://github.com' + currentAttempt.path;
 	var morePagesToTry = notificationPagesToTry.length > 0;
 
 	notificationButtonContainer.css({
@@ -106,7 +118,7 @@ function fetchNotifications(notificationPagesToTry) {
 		var countNotifications = notificationPage.find('.notifications-list').find('.notifications-list-item').length;
 		var hasNotifications = countNotifications > 0;
 		if (hasNotifications || !morePagesToTry) {
-			receiveNotificationsPage(targetPage, data, textStatus, jqXHR);
+			receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR);
 		} else {
 			console.log('No notifications on', targetPage, 'but we still have others we can try:', notificationPagesToTry);
 			fetchNotifications(notificationPagesToTry);
@@ -114,28 +126,12 @@ function fetchNotifications(notificationPagesToTry) {
 	}).fail(receiveNotificationsPage);
 }
 
-function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
+function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 	notificationButtonContainer.css('opacity', '');
 
 	notificationsDropdown = $('<div>').addClass('notifications-dropdown');
 
-	var title = 'Notifications';
-	if (targetPage !== mainNotificationsPath) {
-		title += ' for ' + decodeURIComponent(targetPage.replace(/^.*[/]notifications[?]*/, ''));
-	}
 	var titleElem = $('<h3>').append( $('<center>').text(title) );
-	if (targetPage !== mainNotificationsPath) {
-		// Isn't working right now
-		/*
-		var buttonToSeeAll = $('<a href="#">').text('See all');
-		buttonToSeeAll.on('click', function(evt) {
-			evt.preventDefault();
-			closeNotificationsDropdown();
-			fetchNotifications(mainNotificationsPath);
-		});
-		titleElem.append(textNode(' ('), buttonToSeeAll, textNode(')'));
-		*/
-	}
 	notificationsDropdown.prepend( $("<span class='notitifcations-dropdown-title'>").append(titleElem) );
 
 	var notificationPage = $('<div>').append($.parseHTML(data));
@@ -152,7 +148,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 	notificationsDropdown.append(notificationsList);
 	var linkToPage = mainNotificationsPath;
 	//var linkToPage = targetPage;
-	var seeAll = $('<a class=\'notifications-dropdown-see-all\' href=\'' + encodeURI(linkToPage) + '\'>See all the notifications</a>');
+	var seeAll = $('<a class=\'notifications-dropdown-see-all\' href=\'' + encodeURI(linkToPage) + '\'>Go to notifications page</a>');
 	seeAll.on('click', () => closeNotificationsDropdown());
 	notificationsList.append(seeAll);
 
@@ -165,7 +161,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 	$('<style>').html(`
 		.notifications-dropdown {
 		  /* border: 1px solid rgba(0, 0, 0, 0.15); */
-		  background-color: #fff;
+		  background-color: #f6f8fa;
 		  /* padding: 2px 16px; */
 		  /* box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.15); */
 		  box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.2);
@@ -175,6 +171,9 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 		  /* margin-bottom: 20px; */
 		  /* To appear above the .bootcamp .desc on the front page and .table-list-header on .../issues */
 		  z-index: 9999;
+		}
+		.notitifcations-dropdown-title h3 {
+		  padding: 0.5em;
 		}
 		.notifications-dropdown > .css-truncate, .notifications-dropdown .list-group-item-name a {
 		  max-width: ${minWidth - 300}px !important;
