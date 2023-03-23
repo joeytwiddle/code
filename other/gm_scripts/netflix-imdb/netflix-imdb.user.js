@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Netflix IMDB Ratings [fork]
-// @version      1.2
+// @version      1.3
 // @description  Show IMDB ratings on Netflix
 // @author       ioannisioannou16, kraki5525, joeytwiddle
 // @match        https://www.netflix.com/*
@@ -58,8 +58,7 @@
         GM_xmlhttpRequest_get(searchUrl, function (err, searchRes) {
             if (err) return cb(err);
             var searchResParsed = domParser.parseFromString(searchRes.responseText, "text/html");
-            var link = searchResParsed.querySelector(".result_text > a") ||
-				       searchResParsed.querySelector("a.ipc-metadata-list-summary-item__t");
+            var link = searchResParsed.querySelector(".ipc-metadata-list-summary-item__tc > a");
             var titleEndpoint = link && link.getAttribute("href");
             if (!titleEndpoint) return cb(null, {});
             var titleUrl = "https://www.imdb.com" + titleEndpoint;
@@ -294,12 +293,13 @@
     }
 
     function imdbRenderingForMoreLikeThis(node) {
-        var titleNode = node.querySelector(".video-artwork");
+        var titleNode = node.querySelector(".ptrack-content > img");
         var title = titleNode && titleNode.getAttribute("alt");
         if (!title) return;
-        var meta = node.querySelector(".meta");
+        var meta = node.querySelector(".titleCard--metadataWrapper .videoMetadata--container-container");
         if (!meta) return;
         var ratingNode = getRatingNode(title);
+
         meta.parentNode.insertBefore(ratingNode, meta.nextSibling);
     }
 
@@ -331,8 +331,6 @@
                 var newNode = newNodes[j];
                 if (!(newNode instanceof HTMLElement)) continue;
 
-                //console.log(newNode);
-
                 if (newNode.classList.contains("previewModal--player-titleTreatment-logo")) {
                     imdbRenderingForExpandedCard(newNode);
                     continue;
@@ -350,12 +348,13 @@
                     continue;
                 }
 
-                // More Like This Display
-                //var titleCards = newNode.getElementsByClassName("titleCard--container");
-                //if (titleCards && titleCards.length) {
-                //    Array.prototype.forEach.call(titleCards, function (node) { cacheTitleRanking(node); });
-                //    continue;
-                //}
+                const moreLikeItems = newNode.querySelectorAll(".moreLikeThis--container .more-like-this-item");
+                if (moreLikeItems && moreLikeItems.length > 0) {
+                    for (const item of moreLikeItems.entries()) {
+                        imdbRenderingForMoreLikeThis(item[1]);
+                    }
+                    //continue;
+                }
             }
         }
     };
