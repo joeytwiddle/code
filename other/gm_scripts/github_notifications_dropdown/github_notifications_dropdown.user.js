@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.3.2
+// @version        1.4.0
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -20,6 +20,9 @@
 this.$ = this.jQuery = jQuery.noConflict(true);
 
 // ==Options==
+
+// Fetch notifications where you are a participant, before all notifications
+var showParticipatingNotificationsFirst = true;
 
 var makeBlocksCollapsableOnNotificationsPage = true;
 
@@ -41,43 +44,56 @@ var notificationDotStyle = '';
 
 var hideQuodAIWarning = true;
 
-// By default, the script will fetch notifications from the page linked in the notifications button
-// (In the past, this used to be the current repository, but in 2023 there is only one page.)
-//var forceNotificationsPage = null;
-// However, you can override the target page, by specifying a string here:
-var forceNotificationsPage = 'https://github.com/notifications?query=reason%3Amention';
-
 // ==/Options==
 
 var mainNotificationsPath = '/notifications';
 
-var notificationButtonLink = $('header a.notification-indicator[href]');
-// In v1, the click listener was on the containing <li> so we had to listen there
-//var notificationButtonContainer = notificationButtonLink.closest("li");
-// In v2, the listener needs to go on the link
-var notificationButtonContainer = notificationButtonLink;
-var closeClickTargets = $('body, header a.notification-indicator[href]');
+// If we wanted, we could also add: +is%3Aunread
+var participatingUrl = 'https://github.com/notifications?query=reason%3Aparticipating';
+var mentionsUrl = 'https://github.com/notifications?query=reason%3Amention';
+
+var notificationButtonLink = null;
+var notificationButtonContainer = null;
+
+var closeClickTargets = 'body, header a.notification-indicator[href]';
 
 var notificationsDropdown = null;
 var tabArrow = null;
 
 function listenForNotificationClick() {
-	notificationButtonContainer.on('click', onNotificationButtonClicked);
+	//notificationButtonContainer.on('click', onNotificationButtonClicked);
+	$('body').on('click', 'header a.notification-indicator[href]', onNotificationButtonClicked);
 }
 
 function onNotificationButtonClicked(evt) {
 	// Act normally (do nothing) if a modifier key is pressed, or if it was a right or middle click.
-	if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.which !== 1) {
+	if (evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey || evt.which !== 1) {
 		return;
 	}
 	evt.preventDefault();
-	notificationButtonContainer.off('click', onNotificationButtonClicked);
+
+	// We used to set these when the script loaded, but now GitHub is dynamically loading some of the content, it's better to regenerate them when needed
+	notificationButtonLink = $('header a.notification-indicator[href]');
+	// In v1, the click listener was on the containing <li> so we had to listen there
+	//var notificationButtonContainer = notificationButtonLink.closest("li");
+	// In v2, the listener needs to go on the link
+	notificationButtonContainer = notificationButtonLink;
+
+	// We used to make it fall back to its default behaviour after the first click, but now that GitHub is more like a Single Page App, we prefer to keep it alive, and trust that it works properly!
+	//notificationButtonContainer.off('click', onNotificationButtonClicked);
 	// For GM 4.0 we must use an absolute path, so we use .prop() instead of .attr().  "This is an issue with Firefox and content scripts"
-	var targetPage = forceNotificationsPage || notificationButtonLink.prop('href');
-	fetchNotifications(targetPage);
+	var targetPage = notificationButtonLink.prop('href');
+
+	var notificationPagesToTry = [targetPage];
+	if (showParticipatingNotificationsFirst) notificationPagesToTry.unshift(mentionsUrl);
+	if (showParticipatingNotificationsFirst) notificationPagesToTry.unshift(participatingUrl);
+	fetchNotifications(notificationPagesToTry);
 }
 
-function fetchNotifications(targetPage) {
+function fetchNotifications(notificationPagesToTry) {
+	var targetPage = notificationPagesToTry.shift();
+	var morePagesToTry = notificationPagesToTry.length > 0;
+
 	notificationButtonContainer.css({
 		opacity: '0.3',
 		outline: 'none',
@@ -85,7 +101,17 @@ function fetchNotifications(targetPage) {
 	$.ajax({
 		url: targetPage,
 		dataType: 'html',
-	}).then(receiveNotificationsPage.bind(null, targetPage)).fail(receiveNotificationsPage);
+	}).then((data, textStatus, jqXHR) => {
+		var notificationPage = $('<div>').append($.parseHTML(data));
+		var countNotifications = notificationPage.find('.notifications-list').find('.notifications-list-item').length;
+		var hasNotifications = countNotifications > 0;
+		if (hasNotifications || !morePagesToTry) {
+			receiveNotificationsPage(targetPage, data, textStatus, jqXHR);
+		} else {
+			console.log('No notifications on', targetPage, 'but we still have others we can try:', notificationPagesToTry);
+			fetchNotifications(notificationPagesToTry);
+		}
+	}).fail(receiveNotificationsPage);
 }
 
 function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
@@ -95,10 +121,12 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 
 	var title = 'Notifications';
 	if (targetPage !== mainNotificationsPath) {
-		title += ' for ' + targetPage.replace(/^\/+|\/notifications$/g, '');
+		title += ' for ' + decodeURIComponent(targetPage.replace(/^.*[/]notifications[?]*/, ''));
 	}
-	var titleElem = $('<h3>').text(title);
+	var titleElem = $('<h3>').append( $('<center>').text(title) );
 	if (targetPage !== mainNotificationsPath) {
+		// Isn't working right now
+		/*
 		var buttonToSeeAll = $('<a href="#">').text('See all');
 		buttonToSeeAll.on('click', function(evt) {
 			evt.preventDefault();
@@ -106,8 +134,9 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 			fetchNotifications(mainNotificationsPath);
 		});
 		titleElem.append(textNode(' ('), buttonToSeeAll, textNode(')'));
+		*/
 	}
-	//notificationsDropdown.append( $("<span class='notitifcations-dropdown-title'>").append(titleElem) );
+	notificationsDropdown.prepend( $("<span class='notitifcations-dropdown-title'>").append(titleElem) );
 
 	var notificationPage = $('<div>').append($.parseHTML(data));
 	var notificationsList = notificationPage.find('.notifications-list');
@@ -124,6 +153,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 	var linkToPage = mainNotificationsPath;
 	//var linkToPage = targetPage;
 	var seeAll = $('<a class=\'notifications-dropdown-see-all\' href=\'' + encodeURI(linkToPage) + '\'>See all the notifications</a>');
+	seeAll.on('click', () => closeNotificationsDropdown());
 	notificationsList.append(seeAll);
 
 	var arrowSize = 10;
@@ -312,7 +342,7 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 }
 
 function listenForCloseNotificationDropdown() {
-	closeClickTargets.on('click', considerClosingNotificiationDropdown);
+	$(closeClickTargets).on('click', considerClosingNotificiationDropdown);
 }
 
 function considerClosingNotificiationDropdown(evt) {
@@ -321,12 +351,13 @@ function considerClosingNotificiationDropdown(evt) {
 	} else {
 		evt.preventDefault();
 		closeNotificationsDropdown();
-		listenForNotificationClick();
+		// We don't need to re-add this now, because we no longer remove it
+		//listenForNotificationClick();
 	}
 }
 
 function closeNotificationsDropdown() {
-	closeClickTargets.off('click', considerClosingNotificiationDropdown);
+	$(closeClickTargets).off('click', considerClosingNotificiationDropdown);
 	notificationsDropdown.remove();
 	tabArrow.remove();
 	notificationButtonContainer.css({
@@ -360,7 +391,7 @@ function makeFileAndDiffBlocksCollapsable(parentElement) {
 function makeBlocksCollapsable(parentElement, headerSelector, bodySelector) {
 	$(headerSelector, parentElement).click(function(evt) {
 		// Act normally (do nothing) if a modifier key is pressed, or if it was a right or middle click.
-		if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.which !== 1) {
+		if (evt.ctrlKey || evt.shiftKey || evt.altKey || evt.metaKey || evt.which !== 1) {
 			return;
 		}
 		// The parent of the header is usually a `div.file`
@@ -412,14 +443,14 @@ function listenForClicksOnLinks(notificationsDropdown) {
 		//console.log('So I will click this button:', $buttonToClick);
 		// Hopefully the mark-as-read request will fire, as well as the browser following the clicked link
 		$buttonToClick.click();
-		greyOutTheNotificationAbove(this);
+		markNotificationAsRead(this);
 		//evt.preventDefault();
 		// Go ahead and allow the link to be clicked
 
 		// Because following the link can now happen without a page refresh, the notifcations popup will stay open, which looks odd.
 		// So let's hide the notifications dropdown.
 		// But not if it was a ctrl-click or right-click!
-		var wasCustomClick = evt.shiftKey || evt.altKey || evt.ctrlKey || evt.metaKey;
+		var wasCustomClick = evt.shiftKey || evt.altKey || evt.ctrlKey || evt.metaKey || evt.which !== 1;
 		if (!wasCustomClick) {
 			setTimeout(() => closeNotificationsDropdown(), 250);
 		}
@@ -438,7 +469,7 @@ function listenForActionClicks() {
 			//or your custom data either as object {foo: "bar", ...} or foo=bar&...
 			success: function(response) {
 				if ($form.attr('data-status') === 'archived') {
-					greyOutTheNotificationAbove($form);
+					markNotificationAsRead($form);
 				} else {
 					// We don't know what action to take
 				}
@@ -452,17 +483,22 @@ function listenForActionClicks() {
 
 		evt.preventDefault();
 
-		//greyOutTheNotificationAbove($form);
+		//markNotificationAsRead($form);
 	});
 }
 
-function greyOutTheNotificationAbove(elem) {
+function markNotificationAsRead(elemSomewhereInsideNotification) {
+	var $notificationDiv = $(elemSomewhereInsideNotification).closest('.notifications-list-item');
+	/*
 	// We don't hide it, we just grey it out
-	$(elem).closest('.notifications-list-item').css({
+	$notificationDiv.css({
 		opacity: 0.5,
 		// Apart from this, we also get some free grey from the container behind, when we set the opacity
 		backgroundColor: '#f6f8fa !important',
 	});
+	$notificationDiv.find('.notification-list-item-unread-indicator').hide();
+	*/
+	$notificationDiv.removeClass('notification-unread');
 }
 
 // Init
