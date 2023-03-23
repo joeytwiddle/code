@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.4.3
+// @version        1.4.4
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -156,6 +156,12 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 	notificationsList.append(seeAll);
 
 	var arrowSize = 10;
+	//var dropdownBackgroundColor = 'var(--color-notifications-row-bg) !important';
+	var dropdownBackgroundColor = '#f8f8f8';
+	var unreadBackgroundColor = dropdownBackgroundColor;
+	//var readOrDoneBackgroundColor = 'var(--color-canvas-subtle) !important';
+	//var readOrDoneBackgroundColor = '#f0f3f6';
+	var readOrDoneBackgroundColor = '#edf0f3';
 
 	// In v2, this appears on the notifications page, but not other pages.
 	// It is needed to activate some of the CSS for the notifications list.
@@ -164,11 +170,12 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 	$('<style>').html(`
 		.notifications-dropdown {
 		  /* border: 1px solid rgba(0, 0, 0, 0.15); */
-		  background-color: #f6f8fa;
+		  /* background-color: #f6f8fa; */
+		  background-color: ${dropdownBackgroundColor};
 		  /* padding: 2px 16px; */
 		  /* box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.15); */
 		  box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.2);
-		  border-radius: 4px;
+		  border-radius: 12px;
 		  /* max-height: 90%; */
 		  /* If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap. */
 		  /* margin-bottom: 20px; */
@@ -187,7 +194,7 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 		  /* margin-top: 20px; */
 		  padding: 5px;
 		  text-align: center;
-		  background-color: #F5F5F5 !important;
+		  background-color: ${dropdownBackgroundColor};
 		  border-bottom-left-radius: 3px; border-bottom-right-radius: 3px;
 		}
 		.notifications-dropdown-see-all:hover {
@@ -256,7 +263,7 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 		  height: 0px;
 		  border-left: ${arrowSize}px solid transparent;
 		  border-right: ${arrowSize}px solid transparent;
-		  border-bottom: ${arrowSize}px solid #d6d8da;
+		  border-bottom: ${arrowSize}px solid ${dropdownBackgroundColor};
 		  z-index: 10000001;
 		}
 		.notification-indicator.tooltipped.tooltip-hidden:before, .notification-indicator.tooltipped.tooltip-hidden:after {
@@ -300,20 +307,39 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 		  opacity: 1.0;
 		  pointer-events: initial;
 		}
-		/* These buttons sit on top of the time, obscuring it. So let's hide the time when the parent is hovered. */
-		/* Actually they already have a class for this, it's just not loaded on all pages. */
-		.notifications-list-item .notification-list-item-hide-on-hover {
-		  opacity: 1.0;
-		  /* No transition needed, immediate is better */
+
+		/* list-item.scss is not always loaded, if you haven't visited the real notifications page. So we have copied some of the CSS into here. */
+		.color-bg-subtle {
+		  background-color: var(--color-canvas-subtle) !important;
 		}
-		.notifications-list-item:hover notification-list-item-hide-on-hover {
-		  opacity: 0.0;
-		  pointer-events: none;
+		.notifications-list-item {
+		  background-color: ${readOrDoneBackgroundColor};
 		}
-		/* Grabbed from list-item.scss */
+		.notifications-list-item.notification-unread {
+		  /* background-color: var(--color-notifications-row-bg) !important; */
+		  background-color: ${unreadBackgroundColor};
+		}
+		.notifications-list-item .notification-list-item-link {
+		  color: var(--color-fg-muted) !important;
+		}
+		.notifications-list-item.notification-unread .notification-list-item-link {
+		  color: var(--color-fg-default) !important;
+		}
 		.notifications-list-item:hover {
 		  background-color: var(--color-accent-subtle) !important;
 		  box-shadow: 2px 0 0 var(--color-accent-emphasis) inset;
+		}
+		.notifications-list-item .notification-list-item-unread-indicator {
+		  width: 8px;
+		  height: 8px;
+		  background: none;
+		  background-color: rgba(0, 0, 0, 0);
+		}
+		.notifications-list-item.notification-unread .notification-list-item-unread-indicator {
+		  background-color: var(--color-accent-emphasis);
+		}
+		.notifications-list-item:hover .notification-list-item-hide-on-hover {
+		  visibility: hidden !important;
 		}
 	`).appendTo('body');
 
@@ -322,6 +348,7 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 	notificationsDropdown.css({
 		'position': 'absolute', // Must be set before we can read width accurately
 		'min-width': minWidth + 'px',
+		'max-width': '900px',
 		//overflow: "auto",
 	}).appendTo('body'); // Done sooner so we can get its width
 	var topOfDropdown = notificationButtonContainer.offset().top + notificationButtonContainer.innerHeight() + 4;
