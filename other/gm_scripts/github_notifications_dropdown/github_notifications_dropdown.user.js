@@ -41,6 +41,12 @@ var notificationDotStyle = '';
 
 var hideQuodAIWarning = true;
 
+// By default, the script will fetch notifications from the page linked in the notifications button
+// (In the past, this used to be the current repository, but in 2023 there is only one page.)
+//var forceNotificationsPage = null;
+// However, you can override the target page, by specifying a string here:
+var forceNotificationsPage = 'https://github.com/notifications?query=reason%3Amention';
+
 // ==/Options==
 
 var mainNotificationsPath = '/notifications';
@@ -67,7 +73,7 @@ function onNotificationButtonClicked(evt) {
 	evt.preventDefault();
 	notificationButtonContainer.off('click', onNotificationButtonClicked);
 	// For GM 4.0 we must use an absolute path, so we use .prop() instead of .attr().  "This is an issue with Firefox and content scripts"
-	var targetPage = notificationButtonLink.prop('href');
+	var targetPage = forceNotificationsPage || notificationButtonLink.prop('href');
 	fetchNotifications(targetPage);
 }
 
