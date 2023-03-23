@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.4.2
+// @version        1.4.3
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -138,7 +138,10 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 	var notificationsList = notificationPage.find('.notifications-list');
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
 	notificationsList.find('a').each(function() {
-		$(this).attr('title', $(this).text().trim());
+		$(this).attr('title', $(this).text().trim().replace(/[ \n]+/g, ' '));
+		// Remove the query params which make the target page scroll down and show a banner about notifications
+		// That might be nice when you're coming from the notifications page, but it interferes with the flow of using this script (because it pushes the nofications bell icon off the top of the viewport, and because we already marked it as done)
+		this.href = this.href.replace(/[?].*/, '');
 	});
 	var minWidth = Math.min(700, window.innerWidth - 48);
 	if (notificationsList.children().length === 0) {
