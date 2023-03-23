@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        1.4.1
+// @version        1.4.2
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -285,24 +285,32 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 		.notifications-dropdown .notifications-list {
 		  margin-bottom: 0 !important;
 		}
-		/* These buttons sit on top of the time, obscuring it. So let's only show them when the parent is hovered. */
 		.notifications-list-item .notification-list-item-actions {
-			/* Always present but by default invisible and unclickable */
-			display: flex !important;
-			opacity: 0.0;
-			pointer-events: none;
-			/* Transparent background. We want this, but alpha 0 */
-			background-color: var(--color-canvas-subtle);
-			background-color: #f6f8fa00;
-			transition: all 0.2s ease-out;
+		  /* Always present but by default invisible and unclickable */
+		  display: flex !important;
+		  opacity: 0.0;
+		  pointer-events: none;
+		  transition: all 0.2s ease-out;
 		}
 		.notifications-list-item:hover .notification-list-item-actions {
-			display: flex !important;
-			opacity: 1.0;
-			pointer-events: initial;
-			/* Let's fully obscure the element behind when we are visible */
-			background-color: var(--color-canvas-subtle);
-			background-color: #f6f8faff;
+		  display: flex !important;
+		  opacity: 1.0;
+		  pointer-events: initial;
+		}
+		/* These buttons sit on top of the time, obscuring it. So let's hide the time when the parent is hovered. */
+		/* Actually they already have a class for this, it's just not loaded on all pages. */
+		.notifications-list-item .notification-list-item-hide-on-hover {
+		  opacity: 1.0;
+		  /* No transition needed, immediate is better */
+		}
+		.notifications-list-item:hover notification-list-item-hide-on-hover {
+		  opacity: 0.0;
+		  pointer-events: none;
+		}
+		/* Grabbed from list-item.scss */
+		.notifications-list-item:hover {
+		  background-color: var(--color-accent-subtle) !important;
+		  box-shadow: 2px 0 0 var(--color-accent-emphasis) inset;
 		}
 	`).appendTo('body');
 
