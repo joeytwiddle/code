@@ -294,7 +294,10 @@ function receiveNotificationsPage(targetPage, data, textStatus, jqXHR) {
 		top: (topOfDropdown - arrowSize + 1) + 'px',
 	}).appendTo('body');
 
+	// I don't think this works any longer
 	makeNotificationBlocksCollapsable(notificationsDropdown);
+
+	listenForClicksOnLinks(notificationsDropdown);
 
 	showActionButtons(notificationsDropdown);
 	listenForMarkAsReadClick(notificationsDropdown);
@@ -391,6 +394,30 @@ function textNode(text) {
 function showActionButtons(notificationsDropdown) {
 	// Now done by CSS on hover
 	//$('.notification-list-item-actions.d-none', notificationsDropdown).removeClass('d-none');
+}
+
+function listenForClicksOnLinks(notificationsDropdown) {
+	$('a.notification-list-item-link', notificationsDropdown).on('click', function(evt) {
+		// When a link is clicked, also  mark it as done
+		// li.js-notification-action.notification-action-mark-archived form button
+		// button[title="Done"]
+		var $buttonToClick = $(this).closest('.notifications-list-item').find('button[title="Done"]');
+		//console.log('This link was clicked:', this);
+		//console.log('So I will click this button:', $buttonToClick);
+		// Hopefully the mark-as-read request will fire, as well as the browser following the clicked link
+		$buttonToClick.click();
+		greyOutTheNotificationAbove(this);
+		//evt.preventDefault();
+		// Go ahead and allow the link to be clicked
+
+		// Because following the link can now happen without a page refresh, the notifcations popup will stay open, which looks odd.
+		// So let's hide the notifications dropdown.
+		// But not if it was a ctrl-click or right-click!
+		var wasCustomClick = evt.shiftKey || evt.altKey || evt.ctrlKey || evt.metaKey;
+		if (!wasCustomClick) {
+			setTimeout(() => closeNotificationsDropdown(), 250);
+		}
+	});
 }
 
 function listenForActionClicks() {
