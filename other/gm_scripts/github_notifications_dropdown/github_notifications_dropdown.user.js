@@ -405,7 +405,7 @@ function listenForActionClicks() {
 			//or your custom data either as object {foo: "bar", ...} or foo=bar&...
 			success: function(response) {
 				if ($form.attr('data-status') === 'archived') {
-					hideThisNotification();
+					greyOutTheNotificationAbove($form);
 				} else {
 					// We don't know what action to take
 				}
@@ -413,21 +413,24 @@ function listenForActionClicks() {
 		});
 
 		// Disable the button, now that it has been used
-		$button.css({ opacity: 0.5, pointerEvents: 'none' });
+		//if ($button.attr('title') === "Done") {
+		//    $button.css({ opacity: 0.5, pointerEvents: 'none' });
+		//}
 
 		evt.preventDefault();
 
-		function hideThisNotification() {
-			// We don't hide it, we just grey it out
-			$form.closest('.notifications-list-item').css({
-				opacity: 0.5,
-				// Apart from this, we also get some free grey from the container behind, when we set the opacity
-				backgroundColor: '#f6f8fa !important',
-			});
-		}
+		//greyOutTheNotificationAbove($form);
 	});
 }
 
+function greyOutTheNotificationAbove(elem) {
+	// We don't hide it, we just grey it out
+	$(elem).closest('.notifications-list-item').css({
+		opacity: 0.5,
+		// Apart from this, we also get some free grey from the container behind, when we set the opacity
+		backgroundColor: '#f6f8fa !important',
+	});
+}
 
 // Init
 listenForNotificationClick();
