@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Netflix IMDB Ratings [fork]
-// @version      1.3
+// @version      1.4
 // @description  Show IMDB ratings on Netflix
 // @author       ioannisioannou16, kraki5525, joeytwiddle
 // @match        https://www.netflix.com/*
@@ -264,10 +264,6 @@
             var buttonContainer = parentNode.querySelector(".buttonControls--container");
             if (!buttonContainer || !parentNode) return;
             parentNode.insertBefore(ratingNode, buttonContainer);
-            // For some reason, The Witcher's card hides some of the divs (although they do show when the card is expanded)
-            // These things didn't make any difference:
-            //parentNode.insertBefore(ratingNode, buttonContainer.nextSibling);
-            //parentNode.appendChild(ratingNode);
     }
 
     function imdbRenderingForHeroDisplay(node) {
@@ -309,7 +305,13 @@
         if (!title) return;
         var ratingNode = getRatingNode(title);
         ratingNode.classList.add("imdb-overlay");
-        var destination = node.querySelector(".previewModal--metadatAndControls-info");
+		// If the show/film has already been viewed, then Netflix might show a progress-bar instead of the info for the show.
+		// In that case, the metadatAndControls-info element might not be in the DOM, but we can add to the metadatAndControls element instead.
+		// We prefer the metadatAndControls-info element when it is available, so that the iMDB rating appears above other info.
+		//
+		// BUG: But it gets worse.  Sometimes the metadatAndControls is there, and we add our element, then Netflix goes and removes it, and replaces it with a fresh metadatAndControls element!
+        var destination = node.querySelector(".previewModal--metadatAndControls-info")
+                          || node.querySelector(".previewModal--metadatAndControls");
                           //|| node.querySelector(".videoMetadata--container")?.parentNode;
         if (!destination) return;
         destination.appendChild(ratingNode);
