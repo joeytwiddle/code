@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        2.0.0
+// @version        2.0.1
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -63,17 +63,19 @@ var notificationsToFetch = [
 	},
 ];
 
+var notificationButtonLinkSelector = 'header a.notification-indicator[href]';
+
 var notificationButtonLink = null;
 var notificationButtonContainer = null;
 
-var closeClickTargets = 'body, header a.notification-indicator[href]';
+var closeClickTargets = 'body';
 
 var notificationsDropdown = null;
 var tabArrow = null;
 
 function listenForNotificationClick() {
 	//notificationButtonContainer.on('click', onNotificationButtonClicked);
-	$('body').on('click', 'header a.notification-indicator[href]', onNotificationButtonClicked);
+	$('body').on('click', notificationButtonLinkSelector, onNotificationButtonClicked);
 }
 
 function onNotificationButtonClicked(evt) {
@@ -83,8 +85,13 @@ function onNotificationButtonClicked(evt) {
 	}
 	evt.preventDefault();
 
+	if (isNotificationsDropdownOpen()) {
+		closeNotificationsDropdown();
+		return;
+	}
+
 	// We used to set these when the script loaded, but now GitHub is dynamically loading some of the content, it's better to regenerate them when needed
-	notificationButtonLink = $('header a.notification-indicator[href]');
+	notificationButtonLink = $(notificationButtonLinkSelector);
 	// In v1, the click listener was on the containing <li> so we had to listen there
 	//var notificationButtonContainer = notificationButtonLink.closest("li");
 	// In v2, the listener needs to go on the link
@@ -385,6 +392,8 @@ function listenForCloseNotificationDropdown() {
 function considerClosingNotificiationDropdown(evt) {
 	if ($(evt.target).closest('.notifications-dropdown').length) {
 		// A click inside the dropdown doesn't count!
+	} else if ($(evt.target).closest(notificationButtonLinkSelector).length) {
+		// We let onNotificationButtonClicked() handle clicks on the bell icon
 	} else {
 		evt.preventDefault();
 		closeNotificationsDropdown();
@@ -402,6 +411,11 @@ function closeNotificationsDropdown() {
 		'background-image': '',
 	});
 	notificationButtonLink.removeClass('tooltip-hidden');
+	notificationsDropdown = null;
+}
+
+function isNotificationsDropdownOpen() {
+	return notificationsDropdown != null;
 }
 
 // I'm guessing this is no longer around, since the notifications we display are no longer grouped by repo
