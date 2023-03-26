@@ -305,11 +305,11 @@
         if (!title) return;
         var ratingNode = getRatingNode(title);
         ratingNode.classList.add("imdb-overlay");
-		// If the show/film has already been viewed, then Netflix might show a progress-bar instead of the info for the show.
-		// In that case, the metadatAndControls-info element might not be in the DOM, but we can add to the metadatAndControls element instead.
-		// We prefer the metadatAndControls-info element when it is available, so that the iMDB rating appears above other info.
-		//
-		// BUG: But it gets worse.  Sometimes the metadatAndControls is there, and we add our element, then Netflix goes and removes it, and replaces it with a fresh metadatAndControls element!
+        // If the show/film has already been viewed, then Netflix might show a progress-bar instead of the info for the show.
+        // In that case, the metadatAndControls-info element might not be in the DOM, but we can add to the metadatAndControls element instead.
+        // We prefer the metadatAndControls-info element when it is available, so that the iMDB rating appears above other info.
+        //
+        // BUG: But it gets worse.  Sometimes the metadatAndControls is there, and we add our element, then Netflix goes and removes it, and replaces it with a fresh metadatAndControls element!  I have not fixed that yet.
         var destination = node.querySelector(".previewModal--metadatAndControls-info")
                           || node.querySelector(".previewModal--metadatAndControls");
                           //|| node.querySelector(".videoMetadata--container")?.parentNode;
