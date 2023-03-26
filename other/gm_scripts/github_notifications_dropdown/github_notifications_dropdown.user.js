@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        2.0.1
+// @version        2.0.2
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -23,6 +23,9 @@ this.$ = this.jQuery = jQuery.noConflict(true);
 
 // Fetch notifications where you are a participant, before all notifications
 var showParticipatingNotificationsFirst = true;
+
+// When clicking on an issue in the dropdown, should the script mark it as done (remove it from the list)?
+var markAsDoneWhenFollowingLink = true;
 
 var makeBlocksCollapsableOnNotificationsPage = true;
 
@@ -486,17 +489,19 @@ function showActionButtons(notificationsDropdown) {
 
 function listenForClicksOnLinks(notificationsDropdown) {
 	$('a.notification-list-item-link', notificationsDropdown).on('click', function(evt) {
-		// When a link is clicked, also  mark it as done
-		// li.js-notification-action.notification-action-mark-archived form button
-		// button[title="Done"]
-		var $buttonToClick = $(this).closest('.notifications-list-item').find('button[title="Done"]');
-		//console.log('This link was clicked:', this);
-		//console.log('So I will click this button:', $buttonToClick);
-		// Hopefully the mark-as-read request will fire, as well as the browser following the clicked link
-		$buttonToClick.click();
-		markNotificationAsRead(this);
-		//evt.preventDefault();
-		// Go ahead and allow the link to be clicked
+		if (markAsDoneWhenFollowingLink) {
+			// When a link is clicked, also  mark it as done
+			// li.js-notification-action.notification-action-mark-archived form button
+			// button[title="Done"]
+			var $buttonToClick = $(this).closest('.notifications-list-item').find('button[title="Done"]');
+			//console.log('This link was clicked:', this);
+			//console.log('So I will click this button:', $buttonToClick);
+			// Hopefully the mark-as-read request will fire, as well as the browser following the clicked link
+			$buttonToClick.click();
+			markNotificationAsRead(this);
+			//evt.preventDefault();
+			// Go ahead and allow the link to be clicked
+		}
 
 		// Because following the link can now happen without a page refresh, the notifcations popup will stay open, which looks odd.
 		// So let's hide the notifications dropdown.
