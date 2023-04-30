@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-39-joeytwiddle
+// @version      2015-11-24-40-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -19,6 +19,7 @@ var showAsStar          = false; //-- Use IMDB star instead of colored div, less
 var addRatingToTitle    = true;  //-- Adds the rating to the browser's title bar (so rating will appear in browser bookmarks).
 var showMetaScore       = true;  //-- When the metascore is available, show it
 var useLightBackground  = false; //-- If you prefer the site to have a light grey background
+var showGetMoreRatings  = false; //-- Turn this on if the "See more" button stops pulling down ratings
 
 if (useLightBackground) {
     GM_addStyle('.ipc-page-background { background: #e3e2dd !important; color: black !important; }');
@@ -374,35 +375,37 @@ continueBttn.addEventListener ("click", function (){
     false
 );
 
-var seeMoreButton = document.querySelector('.ipc-see-more__button');
-if (seeMoreButton) {
-	// New way: Load the new ratings automatically after the "See more" button is clicked
-	seeMoreButton.addEventListener('click', function (){
-        setTimeout(() => { continueBttn.click() }, 3000);
-    });
+if (showGetMoreRatings) {
+    // Old way: Show the "Get more ratings" button at the top of the screen, so the user can click it after loading more titles
+    // Now the site hides some of the Credits of an individual behind a "See all" button
+    // Ideally we would trigger automatically when the new results are loaded
+    // But until then, we present this button, so the user can manually trigger a refetch
+    // Styling from Pharaoh2k
+    continueBttn.style.display = 'inline';
+    continueBttn.style.top = '0px';
+    continueBttn.style.left = '50%';
+    continueBttn.style.position = 'fixed';
+    //continueBttn.style.height = '30px';
+    //continueBttn.style.width = '170px';
+    //continueBttn.style.color = 'black';
+    continueBttn.style.zIndex = '1000';
+    //continueBttn.style.backgroundColor = 'rgba(245, 245, 149, 0.7)';
+    //continueBttn.style.boxShadow = '0 6px 6px rgb(0 0 0 / 60%)';
+    continueBttn.style.boxShadow = '0 6px 6px #0004';
+    continueBttn.style.cursor = 'pointer';
+    // Borrow styling from the website
+    continueBttn.className = 'ipc-btn ipc-btn--theme-base ipc-btn--core-accent1';
+    continueBttn.style.padding = '0 1rem';
+    document.body.appendChild(continueBttn);
 } else {
-	// Old way: Show the "Get more ratings" button at the top of the screen, so the user can click it after loading more titles
-	// Now the site hides some of the Credits of an individual behind a "See all" button
-	// Ideally we would trigger automatically when the new results are loaded
-	// But until then, we present this button, so the user can manually trigger a refetch
-	// Styling from Pharaoh2k
-	continueBttn.style.display = 'inline';
-	continueBttn.style.top = '0px';
-	continueBttn.style.left = '50%';
-	continueBttn.style.position = 'fixed';
-	//continueBttn.style.height = '30px';
-	//continueBttn.style.width = '170px';
-	//continueBttn.style.color = 'black';
-	continueBttn.style.zIndex = '1000';
-	//continueBttn.style.backgroundColor = 'rgba(245, 245, 149, 0.7)';
-	//continueBttn.style.boxShadow = '0 6px 6px rgb(0 0 0 / 60%)';
-	continueBttn.style.boxShadow = '0 6px 6px #0004';
-	continueBttn.style.cursor = 'pointer';
-	// Borrow styling from the website
-	continueBttn.className = 'ipc-btn ipc-btn--theme-base ipc-btn--core-accent1';
-	continueBttn.style.padding = '0 1rem';
-	document.body.appendChild(continueBttn);
-}
+    var seeMoreButton = document.querySelector('.ipc-see-more__button');
+    if (seeMoreButton) {
+        // New way: Load the new ratings automatically after the "See more" button is clicked
+        seeMoreButton.addEventListener('click', function (){
+            setTimeout(() => { continueBttn.click() }, 3000);
+        });
+    }
+} else {
 
 processIMDB_Links ();
 
