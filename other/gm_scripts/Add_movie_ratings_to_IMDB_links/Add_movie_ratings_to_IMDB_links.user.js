@@ -2,7 +2,7 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-38-joeytwiddle
+// @version      2015-11-24-39-joeytwiddle
 // @license      MIT
 // @match        *://www.imdb.com/*
 // @grant        GM_xmlhttpRequest
@@ -375,8 +375,13 @@ continueBttn.addEventListener ("click", function (){
 );
 
 var seeMoreButton = document.querySelector('.ipc-see-more__button');
-// Old way: Show the "Get more ratings" button at the top of the screen, so the user can click it after loading more titles
-if (seeMoreButton && false) {
+if (seeMoreButton) {
+	// New way: Load the new ratings automatically after the "See more" button is clicked
+	seeMoreButton.addEventListener('click', function (){
+        setTimeout(() => { continueBttn.click() }, 3000);
+    });
+} else {
+	// Old way: Show the "Get more ratings" button at the top of the screen, so the user can click it after loading more titles
 	// Now the site hides some of the Credits of an individual behind a "See all" button
 	// Ideally we would trigger automatically when the new results are loaded
 	// But until then, we present this button, so the user can manually trigger a refetch
@@ -397,12 +402,6 @@ if (seeMoreButton && false) {
 	continueBttn.className = 'ipc-btn ipc-btn--theme-base ipc-btn--core-accent1';
 	continueBttn.style.padding = '0 1rem';
 	document.body.appendChild(continueBttn);
-}
-// New way: Load the new ratings automatically after the "See more" button is clicked
-if (seeMoreButton && true) {
-    seeMoreButton.addEventListener('click', function (){
-        setTimeout(() => { continueBttn.click() }, 3000);
-    });
 }
 
 processIMDB_Links ();
