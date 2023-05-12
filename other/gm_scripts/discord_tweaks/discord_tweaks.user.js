@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Discord Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.7
+// @version      0.1.8
 // @description  Reduce gap between messages, optionally unbrighten name of selected channel
 // @author       joeytwiddle
 // @match        https://discord.com/*
@@ -41,8 +41,9 @@
 			}
 			/* New CSS classes.  It looks like [role=article] will be the most resilient. I haven't seen it used for any other elements on a standard page, but it could be used in some Discord UI / menus. */
 			[role=article], .message-2CShn3, .cozy-VmLDNB, .zalgo-26OfGz {
-				padding-top: 0rem;
-				padding-bottom: 0rem;
+				padding-top: 0rem !important;
+				padding-bottom: 0rem !important;
+				margin-top: 0.05rem !important;
 			}
 		`);
 	}
