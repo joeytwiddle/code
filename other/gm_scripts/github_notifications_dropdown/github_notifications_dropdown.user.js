@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        2.0.2
+// @version        2.0.3
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -66,7 +66,7 @@ var notificationsToFetch = [
 	},
 ];
 
-var notificationButtonLinkSelector = 'header a.notification-indicator[href]';
+var notificationButtonLinkSelector = 'header a.notification-indicator[href], #AppHeader-notifications-button';
 
 var notificationButtonLink = null;
 var notificationButtonContainer = null;
