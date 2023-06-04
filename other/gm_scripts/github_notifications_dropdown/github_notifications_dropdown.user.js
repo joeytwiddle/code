@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        2.0.3
+// @version        2.0.4
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -44,6 +44,10 @@ var notificationDotStyle = '';
 //var notificationDotStyle = 'linear-gradient(hsla(35, 90%, 65%, 1), hsla(35, 90%, 40%, 1))';
 // Gentle green dot
 //var notificationDotStyle = 'linear-gradient(hsla(120, 50%, 65%, 1), hsla(120, 50%, 40%, 1))';
+
+// It may look like this is getting in the way of the header, but it's actually not.  The .AppHeader just disappears when we scroll down.  But you can move it to the bottom, if you prefer.
+// TODO: An option to make .AppHeader sticky would be great...
+var shiftNotificationShelfToTheBottom = false;
 
 var hideQuodAIWarning = true;
 
@@ -149,9 +153,17 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 	// Provide hover text for all links, so if the text is too long to display, it can at least be seen on hover.
 	notificationsList.find('a').each(function() {
 		$(this).attr('title', $(this).text().trim().replace(/[ \n]+/g, ' '));
-		// Remove the query params which make the target page scroll down and show a banner about notifications
-		// That might be nice when you're coming from the notifications page, but it interferes with the flow of using this script (because it pushes the nofications bell icon off the top of the viewport, and because we already marked it as done)
-		this.href = this.href.replace(/[?].*/, '');
+		// This code removed the query params which make the target page scroll down and show a banner about notifications (the "notification shelf")
+		// Here is an example link:
+		//     https://github.com/EbookFoundation/free-programming-books/pull/9384?notification_referrer_id=NT_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&notifications_query=is%3Aunread
+		// Here is an example link to a comment within a thread:
+		//     https://github.com/AntennaPod/AntennaPod/issues/6500?notification_referrer_id=NT_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&notifications_query=reason%3Aparticipating#issuecomment-1570558779
+		// The scrolling down is annoying because it pushes the header off-screen, and the notifications item with it.
+		// But when we are viewing a new comment in a long thread, we really do want to scroll down!  So let's disable this for now...
+		// TODO: Probably the ideal solution would be to make the header sticky, so we can always see it, no matter how far down the page we are.
+		//this.href = this.href.replace(/[?].*/, '');
+		// Let's remove the notification shelf, but keep any deep links, so we will only scroll down if needed.
+		this.href = this.href.replace(/[?][^#]*/, '');
 	});
 	var minWidth = Math.min(700, window.innerWidth - 48);
 	if (notificationsList.children().length === 0) {
@@ -600,6 +612,17 @@ if (document.location.pathname === mainNotificationsPath) {
 }
 
 listenForActionClicks();
+
+if (shiftNotificationShelfToTheBottom) {
+	GM_addStyle(`
+		.notification-shelf {
+		  position: fixed !important;
+		  top: revert !important;
+		  bottom: 0 !important;
+		  width: 100% !important;
+		}
+	`);
+}
 
 if (hideQuodAIWarning) {
 	setTimeout(() => {
