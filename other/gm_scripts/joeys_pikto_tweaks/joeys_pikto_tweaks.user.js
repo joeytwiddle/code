@@ -2,10 +2,11 @@
 // @name           Joeys Pikto Tweaks
 // @namespace      JPT
 // @description    Just some style improvements I like when using Piktochart.com
-// @include        http://localhost:3000/*
+// // @include        http://localhost:3000/*
 // @include        https://magic.piktochart.com/*
 // @include        https://*.piktochart.info/*
-// @version        1.1.18
+// @include        https://create.piktochart.com/*
+// @version        1.1.19
 // @grant          none
 // ==/UserScript==
 
