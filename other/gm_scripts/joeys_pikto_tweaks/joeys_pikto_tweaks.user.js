@@ -10,6 +10,31 @@
 // @grant          none
 // ==/UserScript==
 
+
+
+// ==== Options ====
+
+const centralizeSlideAnimations = true;
+
+
+
+// ==== Setup ====
+
+function $() {
+    console.warn(`[PiktoTweaks] Old jQUery-based tweaks are no longer supported.`);
+    return new Proxy({}, {
+        get: function(target, property) {
+            return function() {
+                console.warn(`[PiktoTweaks] Old jQUery-based tweaks are no longer supported. prop='${property}'`);
+            };
+        },
+    });
+}
+
+
+
+// ==== Convenience functions ====
+
 if (typeof GM_addStyle == 'undefined') {
   this.GM_addStyle = function(css) {
     var s = document.createElement("style");
@@ -55,6 +80,7 @@ if ( document.location.pathname.match("/$|/themes|/templates|/infographics|/gall
 // Centralise the theme search box (don't let it fill the whole width).
 //GM_addStyle(" .themes-container #themes-wrapper .filter-container { /*background: #f1f4f5;*/ } .themes-container #themes-wrapper .search-container { text-align: center; } .themes-container #themes-wrapper .search-container input[type='text'] { width: 600px; } .themes-container #themes-wrapper .search-icon { position: initial; transform: translate(-35px, 0px); } ");
 // Now fixed on production!  (y)
+
 
 
 // ==== Everywhere ====
@@ -151,7 +177,21 @@ if (document.location.hostname.indexOf('rahsia') === 0) {
 	// Make headers (which separate items) stand out from other text:
 	GM_addStyle('.journal > div > h4 , #sidebar > h3 , .subject > div > h3, #activity > h3 { background-color: #aaddff; border-bottom: 3px solid rgba(0,0,0,0.2); }');
 	// I almost want to do this to all headers.  But I didn't really want it to apply to any `h3` put *inside* a comment by a user.
-	
+
 	// This button claims to 'Edit' but it is also the only way to reply or comment on an issue.
 	$('#content > .contextual > a.icon-edit').text('Comment/Update');
+}
+
+
+
+// ==== Slideshow ====
+
+if (centralizeSlideAnimations) {
+	// There is a 600px which keeps being set on the width and height of the .slides element.
+	// This cause the animation when changing slides to rotate around an off-center origin.
+	// Fortunately, we can override those two numbers with this:
+	GM_addStyle(`.reveal .slides {
+		width: 100% !important;
+		height: 100% !important;
+	`);
 }
