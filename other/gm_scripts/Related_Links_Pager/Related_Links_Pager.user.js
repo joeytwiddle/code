@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.14
+// @version        1.4.15
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -38,8 +38,9 @@
 var delayBeforeRunning = 500;
 var minimumGroupSize   = 2;
 var maximumGroupSize   = 250;         // Some webservers restrict long URLs, responding with "Bad Request".
-var useClassnamesInXPath = false;     // Similar to the next option, not sure why we have both!
 var groupLinksByClass    = true;      // May do a better job of separating unrelated links which the scripts thinks are related because they have the same depth. This is automatically disabled on Google search results, because Google often adds random classes which make this feature unhelpful.
+var useTagsInXPath = true;
+var useClassnamesInXPath = false;     // This adds classnames all the way down the XPath.  (groupLinksByClass only looks at the classnames on the link itself)
 // CONSIDER TODO: A better compromise for all sites might be groupLinksWhichShareAtLeastOneClass.  This would reject links which do not share any classes with the focused link.
 var ignoreLinksWithoutText = false;   // We used to ignore these because thumbnails often have no text, but are followed by an identical link with text.  But now we have a more comprehensive strategy for that.
 
@@ -268,9 +269,14 @@ function getXPath(node) {
       parentPath = '*';
     }
   }
-  var thisNode = useClassnamesInXPath && node.className
-    ? node.className.replace(/(^| +)/g, '.')
-    : node.nodeName.toLowerCase();
+  var tag = node.nodeName.toLowerCase();
+  // The first replace trims unwanted trailing and leading space
+  // The second replace converts "foo bar" into ".foo.bar"
+  // The .navigation-focus replace was useful on GitHub (e.g. list of PRs)
+  var classes = node.className ? node.className.replace(/(^ +| +$)/, '').replace(/(^| +)/g, '.').replace(/.navigation-focus\b/g, '') : '';
+  var thisNode = useClassnamesInXPath && classes
+    ? useTagsInXPath ? tag + classes : classes
+    : tag;
   return parentPath + '/' + thisNode;
 }
 
