@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Netflix keyboard shortcuts
 // @namespace    netflix.keyboard
-// @version      1.6.2-joeytwiddle-1
+// @version      1.6.2-joeytwiddle-2
 // @description  Use similar controls as on YouTube when watching Netflix (f for full screen, k to play/pause, c for captions, j and l to go back and forward 10 seconds, a to change audio, p for picture-in-picture, and many more – all configurable)
 // @include      https://netflix.com/*
 // @include      https://www.netflix.com/*
@@ -603,15 +603,22 @@
                 #nks-msg {
                     position: fixed;
                     left: 50%;
-                    top: 50%;
+                    top: 25%;
                     transform: translate(-50%, -50%);
-                    font-size: 5vw;
+                    font-size: 2vw;
                     font-weight: bold;
                     transition: all 300ms;
-                    text-shadow: 0 0 2vw #000f;
+                    /* Netflix subtitles appear to use: text-shadow: #000000 0px 0px 7px; */
+                    text-shadow: #000f 0 0 2vw;
+                    /* But Google puts a black background behind the text */
+                    padding: 1vw 2vw;
+                    border-radius: 0.5vw;
+                    background-color: rgba(0,0,0,.5);
                 }
             `);
-            document.body.appendChild(msgElem);
+            // Putting it here, rather than below body, ensures we can still see it during fullscreen
+            const container = document.querySelector('.watch-video');
+            container.appendChild(msgElem);
         }
         msgElem.style.opacity = 1;
         msgElem.textContent = msg;
