@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Netflix keyboard shortcuts
 // @namespace    netflix.keyboard
-// @version      1.6.2-joeytwiddle-2
+// @version      1.6.2-joeytwiddle-3
 // @description  Use similar controls as on YouTube when watching Netflix (f for full screen, k to play/pause, c for captions, j and l to go back and forward 10 seconds, a to change audio, p for picture-in-picture, and many more – all configurable)
 // @include      https://netflix.com/*
 // @include      https://www.netflix.com/*
@@ -60,12 +60,17 @@
     // pressing `PLAYBACK_SPEED_FASTER` goes to the next higher value, and pressing `PLAYBACK_SPEED_SLOWER` goes to the next lower value
     const PLAYBACK_SPEED_INCREMENTS = [
         0.5,
-        0.75,
+        0.6,
+        0.7,
+        0.8,
         0.9,
         1.0,
         1.1,
-        1.25,
+        1.2,
+        1.3,
+        1.4,
         1.5,
+        1.75,
         2.0,
         2.5,
     ];
