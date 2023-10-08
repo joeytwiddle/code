@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         Netflix keyboard shortcuts
 // @namespace    netflix.keyboard
-// @version      1.6.2
+// @version      1.6.2-joeytwiddle-1
 // @description  Use similar controls as on YouTube when watching Netflix (f for full screen, k to play/pause, c for captions, j and l to go back and forward 10 seconds, a to change audio, p for picture-in-picture, and many more – all configurable)
 // @include      https://netflix.com/*
 // @include      https://www.netflix.com/*
-// @grant        none
+// @grant        GM_addStyle
 // @author       https://chrome.google.com/webstore/detail/netflix-keyboard-shortcut/mjpponglbellandpimdbmmhbhmakcgji
 // ==/UserScript==
+
+// Original: https://greasyfork.org/en/scripts/420603-netflix-keyboard-shortcuts
 
 (function() {
     /* global netflix */
@@ -306,6 +308,9 @@
         PLAYBACK_SPEED_CHANGE_SHOW && displayText(player, newPlaybackRate + 'x');
         savedPlaybackRate = newPlaybackRate;
         reapplyPlaybackRate();
+
+        //displayText(player, `${Math.round(100 * newPlaybackRate)}%`);
+        showMessageToUser(`${newPlaybackRate}x`);
     }
 
     function reapplyPlaybackRate() {
@@ -587,4 +592,32 @@
             toggleDebugPanel();
         }
     });
+
+    let currentTimeoutId = -1;
+    function showMessageToUser(msg) {
+        let msgElem = document.querySelector('#nks-msg');
+        if (!msgElem) {
+            msgElem = document.createElement('div');
+            msgElem.id = 'nks-msg';
+            GM_addStyle(`
+                #nks-msg {
+                    position: fixed;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+                    font-size: 5vw;
+                    font-weight: bold;
+                    transition: all 300ms;
+                    text-shadow: 0 0 2vw #000f;
+                }
+            `);
+            document.body.appendChild(msgElem);
+        }
+        msgElem.style.opacity = 1;
+        msgElem.textContent = msg;
+        clearTimeout(currentTimeoutId);
+        currentTimeoutId = setTimeout(() => {
+            msgElem.style.opacity = 0;
+        }, 1000);
+    }
 })();
