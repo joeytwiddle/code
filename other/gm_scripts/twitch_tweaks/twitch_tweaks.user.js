@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.0
+// @version      0.2.0
 // @description  Make theatre mode toggle fullscreen
 // @author       joeytwiddle
 // @match        https://www.twitch.tv/*
@@ -16,6 +16,8 @@
 	const quietenPrimeOffersRedDot = true;
 
 	const makeTheatreModeButtonToggleFullscreen = true;
+
+	const addClipsTab = true;
 
 	//
 
@@ -98,5 +100,39 @@
 		};
 
 		tryForElement();
+	}
+
+	if (addClipsTab) {
+		setTimeout(checkForMissingClipsLink, 1 * 1000);
+		// TODO: Only try again after a click, keypress, or link is followed
+		setInterval(checkForMissingClipsLink, 15 * 1000);
+	}
+
+	function checkForMissingClipsLink() {
+		if (document.querySelector('a[tabname="videos"]') && !document.querySelector('a[tabname="clips"]')) {
+			const videosLink = document.querySelector('a[tabname="videos"]');
+			const videosNode = videosLink.parentNode; // The container li
+
+			const streamerName = videosLink.pathname.split('/')[1];
+			const range = '7d'; // or '24hr' or '30d' or 'all'
+			const clipsPath = `/${streamerName}/clips?featured=false&filter=clips&range=${range}`;
+
+			const clipsNode = videosNode.cloneNode(true);
+			const clipsLink = clipsNode.querySelector('a');
+			//console.log('clipsNode:', clipsNode);
+			clipsLink.querySelector('p').textContent = 'Clips';
+			clipsLink.setAttribute('tabname', 'clips'); // Doesn't work without setAttribute?
+			clipsLink.setAttribute('data-a-target', 'channel-home-tab-Clips');
+			clipsLink.href = clipsPath;
+			// Switch the styling from selected to not selected
+			// TODO: If we actually are on the clips page, then do the opposite, and remove eGimjL from the Videos link
+			// In case they change in future, can we auto-detect what eGimjL and kzdBhB are?  (By counting the number of occurrences.)
+			const nodeWithSelectionStyle = clipsNode.querySelector('.ScTextWrapper-sc-iekec1-1');
+			if (nodeWithSelectionStyle) {
+				nodeWithSelectionStyle.className = nodeWithSelectionStyle.className.replace('eGimjL', 'kzdBhB');
+			}
+
+			videosNode.parentNode.insertBefore(clipsNode, videosNode.nextSibling);
+		}
 	}
 })();
