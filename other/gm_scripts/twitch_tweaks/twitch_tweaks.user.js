@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Twitch Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.2.0
-// @description  Make theatre mode toggle fullscreen
+// @version      0.2.1
+// @description  Add clips tab, make theatre mode toggle fullscreen, hide the annoying red dot
 // @author       joeytwiddle
 // @license      ISC
 // @match        https://www.twitch.tv/*
