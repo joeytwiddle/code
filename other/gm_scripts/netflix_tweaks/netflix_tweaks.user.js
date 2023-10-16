@@ -3,7 +3,8 @@
 // @namespace    joeytwiddle
 // @version      0.0.2
 // @description  Hide the advert on the home page, adjust brightness/contrast
-// @author       You
+// @author       joeytwiddle
+// @license      ISC
 // @match        https://www.netflix.com/*
 // @icon         https://www.google.com/s2/favicons?domain=netflix.com
 // @grant        GM_addStyle
