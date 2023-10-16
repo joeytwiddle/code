@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Netflix Tweaks
 // @namespace    joeytwiddle
-// @version      0.0.1
-// @description  Hide top recommendation/advert
+// @version      0.0.2
+// @description  Hide the advert on the home page, adjust brightness/contrast
 // @author       You
 // @match        https://www.netflix.com/*
 // @icon         https://www.google.com/s2/favicons?domain=netflix.com
@@ -14,6 +14,7 @@
     'use strict';
 
 	const hideTopRecommendation = true;
+
 	//const videoFilter = 'brightness(1.3) contrast(0.85) saturate(0.8)';
 	const videoFilter = 'brightness(1.3) contrast(0.9) saturate(0.85)';
 
@@ -22,10 +23,14 @@
 			.volatile-billboard-animations-container {
 				display: none;
 			}
+			/* Add some whitespace to compensate */
+			#main-view {
+				padding-top: 2em;
+			}
 		`);
 	}
 
-	if (typeof videoFilter === 'string') {
+	if (typeof videoFilter === 'string' && videoFilter !== '') {
 		GM_addStyle(`
 			video {
 				filter: ${videoFilter};
