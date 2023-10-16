@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Netflix Tweaks
 // @namespace    joeytwiddle
-// @version      0.0.2
+// @version      0.0.3
 // @description  Hide the advert on the home page, adjust brightness/contrast
 // @author       joeytwiddle
 // @license      ISC
@@ -16,7 +16,8 @@
 
 	const hideTopRecommendation = true;
 
-	//const videoFilter = 'brightness(1.3) contrast(0.85) saturate(0.8)';
+	// Note: When increasing the brightness, we need to reduce the other two for balance.
+	// Otherwise the saturation appears increased, and the top whites get washed out.
 	const videoFilter = 'brightness(1.3) contrast(0.9) saturate(0.85)';
 
 	if (typeof hideTopRecommendation !== 'undefined' && hideTopRecommendation) {
