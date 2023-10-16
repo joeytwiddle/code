@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Netflix Tweaks
 // @namespace    joeytwiddle
-// @version      0.0.3
+// @version      0.0.4
 // @description  Hide the advert on the home page, adjust brightness/contrast
 // @author       joeytwiddle
 // @license      ISC
@@ -27,7 +27,7 @@
 			}
 			/* Add some whitespace to compensate */
 			#main-view {
-				padding-top: 2em;
+				padding-top: 4em;
 			}
 		`);
 	}
