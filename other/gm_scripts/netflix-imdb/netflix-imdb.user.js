@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Netflix IMDB Ratings [fork]
-// @version      1.5
+// @version      1.6
 // @description  Show IMDB ratings on Netflix
 // @author       ioannisioannou16, kraki5525, joeytwiddle
 // @match        https://www.netflix.com/*
@@ -33,6 +33,21 @@
     var omdbApiKey = '3e29acf0';
 
     GM_addStyle(GM_getResourceText("customCSS"));
+
+    GM_addStyle(`
+        /* We should change the link in some way when hovered, so users know they will be clicking to IMDB and not on the Netflix card. */
+        .imdb-rating {
+            transition: 200ms all;
+        }
+        .imdb-rating:hover {
+            background: #fff2;
+        }
+        /* It looks a little better if we move the gap otuside the element, rather than inside it */
+        .imdb-rating {
+            padding: 0 !important;
+            margin: 6px 0;
+        }
+    `);
 
     var domParser = new DOMParser();
 
