@@ -224,8 +224,12 @@
                 votes.appendChild(document.createTextNode("(" + rating.votes + " votes)"));
                 votes.style.opacity = 0.6;
                 restDiv.appendChild(votes);
-                div.addEventListener('click', function () {
+                div.addEventListener('click', function (evt) {
                     GM_openInTab(rating.url, { active: true, insert: true, setParent: true });
+                    // If the card has been expanded, clicking the IMDB link will also play the show, which we don't really want!
+                    // If the card hasn't been expanded, then clicking this link will also expand the card.
+                    // Unfortunately, this doesn't prevent that, even with 'capture=true' below...
+                    evt.preventDefault();
                 });
                 div.style.cursor = "pointer";
             } else {
