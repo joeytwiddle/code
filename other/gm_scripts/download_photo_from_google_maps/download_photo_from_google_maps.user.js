@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Download Photo from Google Maps
 // @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  Press ';' to download a photo while browsing Google Maps
+// @version      0.2
+// @description  Press ';' or 'D' to download a photo while browsing Google Maps
 // @author       itsnotlupus
 // @contributors joeytwiddle
 // @license      ISC
@@ -22,7 +22,13 @@
 	const useGMDownload = true;
 
 	document.body.addEventListener('keydown', (evt) => {
-		if (evt.key === ';') {
+		const onPhotosPage = document.location.href.includes('/place/');
+		// Original script downloaded on ';' because that is rarely typed on Google Maps
+		const pressingSemicolon = evt.key === ';';
+		// Joey added 'D' because that is used on Google Photos, and we have other ways to prevent unwanted triggering
+		const pressingShiftD = evt.key === 'D' && evt.shiftKey;
+
+		if (onPhotosPage && (pressingSemicolon || pressingShiftD)) {
 			const imgElem = document.body.querySelector('#magnifier img');
 			const imgUrl = imgElem.src.replace(/=w.*$/, '=s8192');
 			//console.log('imgUrl:', imgUrl);
