@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.2.3
+// @version      0.2.4
 // @description  Add clips tab, make theatre mode toggle fullscreen, hide the annoying red dot
 // @author       joeytwiddle
 // @license      ISC
@@ -139,33 +139,45 @@
 			videosNode.parentNode.insertBefore(clipsNode, videosNode.nextSibling);
 
 			// We may need to fix the styling which shows which tab is currently selected
-			// The currently selected tab can be found at ul > li > a > div > div > .ScActiveIndicator-sc-17qqzr5-1.kAuTTn
-			// Unselected tabs have the container div but not this child.
-			const selectedTabMarkers = Array.from(videosNode.parentNode.querySelectorAll('*')).filter(
-				node => String(node.className).includes('ScActiveIndicator')
-			);
 			// When we are viewing videos, the URL is /videos
 			// When we are viewing clips, the URL is also /videos, but with a filter param
 			// In either case, we get two selectedTabMarkers, because the video node is styled as selected, and the clips node was cloned from that.
 			// So we just need to decide which marker to remove..
 			const onClipsTab = document.location.search.match(/\bfilter=clips\b/);
 			const onVideosTab = document.location.pathname.match(/[/]videos\b/) && !onClipsTab;
-			if (onVideosTab && selectedTabMarkers.length == 2) {
-				// Remove marker from Clips tab
-				removeElementFromDOM(selectedTabMarkers[1]);
+			if (onVideosTab) {
+				removeSelectedStyleFrom(clipsNode);
 			}
-			if (onClipsTab && selectedTabMarkers.length == 2) {
-				// Remove marker from Videos tab
-				removeElementFromDOM(selectedTabMarkers[0]);
+			if (onClipsTab) {
+				removeSelectedStyleFrom(videosNode);
 			}
+
+			// BUG TODO: Now all that works, but the style doesn't update if we navigate from Clips to Videos tab.  Not a big concern, since I rarely do that.
 		}
 	}
 
-	function removeElementFromDOM(elem) {
-		if (!elem) {
-			console.warn(`removeElement() elem=${elem}`);
-			return;
+	function removeSelectedStyleFrom(node) {
+		// The underline for the currently selected tab can be found at ul > li > a > div > div > .ScActiveIndicator-sc-17qqzr5-1.kAuTTn
+		// Unselected tabs have the container div but not this child.
+		const underlineElem = Array.from(node.querySelectorAll('*')).find(
+			childNode => String(childNode.className).includes('ScActiveIndicator')
+		);
+		if (underlineElem) {
+			underlineElem.parentNode.removeChild(underlineElem);
+		} else {
+			console.warn(`[Twitch Tweaks] removeSelectedStyleFrom() underlineElem not found below`, node);
 		}
-		elem.parentNode.removeChild(elem);
+
+		const textColorElem = node.querySelector('li > a > div');
+		if (textColorElem) {
+			// Since the class looks variable, let's just overwrite the style directly (back to the unstyled value)
+			// For some reason, when I do this on Firefox, even in the console, it often doesn't take O_o
+			//textColorElem.style.color = 'inherit !important';
+			// But this works
+			GM_addStyle(`.color-inherit { color: inherit !important }`);
+			textColorElem.classList.add('color-inherit');
+		} else {
+			console.warn(`[Twitch Tweaks] removeSelectedStyleFrom() textColorElem not found below`, node);
+		}
 	}
 })();
