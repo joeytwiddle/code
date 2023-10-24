@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.2.1
+// @version      0.2.2
 // @description  Add clips tab, make theatre mode toggle fullscreen, hide the annoying red dot
 // @author       joeytwiddle
 // @license      ISC
@@ -105,8 +105,15 @@
 
 	if (addClipsTab) {
 		setTimeout(checkForMissingClipsLink, 1 * 1000);
-		// TODO: Only try again after a click, keypress, or link is followed
 		setInterval(checkForMissingClipsLink, 15 * 1000);
+		// After a click, check a few times if we need to add the link
+		document.body.addEventListener('click', function(evt) {
+			setTimeout(checkForMissingClipsLink, 0.1 * 1000);
+			setTimeout(checkForMissingClipsLink, 0.2 * 1000);
+			setTimeout(checkForMissingClipsLink, 0.5 * 1000);
+			setTimeout(checkForMissingClipsLink, 1.0 * 1000);
+			setTimeout(checkForMissingClipsLink, 1.5 * 1000);
+		});
 	}
 
 	function checkForMissingClipsLink() {
@@ -125,15 +132,38 @@
 			clipsLink.setAttribute('tabname', 'clips'); // Doesn't work without setAttribute?
 			clipsLink.setAttribute('data-a-target', 'channel-home-tab-Clips');
 			clipsLink.href = clipsPath;
-			// Switch the styling from selected to not selected
-			// TODO: If we actually are on the clips page, then do the opposite, and remove eGimjL from the Videos link
-			// In case they change in future, can we auto-detect what eGimjL and kzdBhB are?  (By counting the number of occurrences.)
-			const nodeWithSelectionStyle = clipsNode.querySelector('.ScTextWrapper-sc-iekec1-1');
-			if (nodeWithSelectionStyle) {
-				nodeWithSelectionStyle.className = nodeWithSelectionStyle.className.replace('eGimjL', 'kzdBhB');
-			}
 
+			// Add the new clips tab/link after the videos tab/link
 			videosNode.parentNode.insertBefore(clipsNode, videosNode.nextSibling);
+
+			// We may need to fix the styling which shows which tab is currently selected
+			// The currently selected tab can be found at ul > li > a > div > div > .ScActiveIndicator-sc-17qqzr5-1.kAuTTn
+			// Unselected tabs have the container div but not this child.
+			const selectedTabMarkers = Array.from(videosNode.parentNode.querySelectorAll('*')).filter(
+				node => String(node.className).includes('ScActiveIndicator')
+			);
+			// When we are viewing videos, the URL is /videos
+			// When we are viewing clips, the URL is also /videos, but with a filter param
+			// In either case, we get two selectedTabMarkers, because the video node is styled as selected, and the clips node was cloned from that.
+			// So we just need to decide which marker to remove..
+			const onClipsTab = document.location.pathname.match(/\bfilter=clips\b/);
+			const onVideosTab = document.location.pathname.match(/[/]videos\b/) && ~onClipsTab;
+			if (onVideosTab && selectedTabMarkers.length == 2) {
+				// Remove marker from Clips tab
+				removeElementFromDOM(selectedTabMarkers[1]);
+			}
+			if (onClipsTab && selectedTabMarkers.length == 2) {
+				// Remove marker from Videos tab
+				removeElementFromDOM(selectedTabMarkers[0]);
+			}
 		}
+	}
+
+	function removeElementFromDOM(elem) {
+		if (!elem) {
+			console.warn(`removeElement() elem=${elem}`);
+			return;
+		}
+		elem.parentNode.removeChild(elem);
 	}
 })();
