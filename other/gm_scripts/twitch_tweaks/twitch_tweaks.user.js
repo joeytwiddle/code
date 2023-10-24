@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.2.2
+// @version      0.2.3
 // @description  Add clips tab, make theatre mode toggle fullscreen, hide the annoying red dot
 // @author       joeytwiddle
 // @license      ISC
@@ -103,6 +103,8 @@
 		tryForElement();
 	}
 
+	//
+
 	if (addClipsTab) {
 		setTimeout(checkForMissingClipsLink, 1 * 1000);
 		setInterval(checkForMissingClipsLink, 15 * 1000);
@@ -146,8 +148,8 @@
 			// When we are viewing clips, the URL is also /videos, but with a filter param
 			// In either case, we get two selectedTabMarkers, because the video node is styled as selected, and the clips node was cloned from that.
 			// So we just need to decide which marker to remove..
-			const onClipsTab = document.location.pathname.match(/\bfilter=clips\b/);
-			const onVideosTab = document.location.pathname.match(/[/]videos\b/) && ~onClipsTab;
+			const onClipsTab = document.location.search.match(/\bfilter=clips\b/);
+			const onVideosTab = document.location.pathname.match(/[/]videos\b/) && !onClipsTab;
 			if (onVideosTab && selectedTabMarkers.length == 2) {
 				// Remove marker from Clips tab
 				removeElementFromDOM(selectedTabMarkers[1]);
