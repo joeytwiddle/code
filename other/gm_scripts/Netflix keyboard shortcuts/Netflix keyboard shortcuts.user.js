@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Netflix keyboard shortcuts
 // @namespace    netflix.keyboard
-// @version      1.6.2-joeytwiddle-3
+// @version      1.6.3-joeytwiddle-4
 // @description  Use similar controls as on YouTube when watching Netflix (f for full screen, k to play/pause, c for captions, j and l to go back and forward 10 seconds, a to change audio, p for picture-in-picture, and many more – all configurable)
 // @include      https://netflix.com/*
 // @include      https://www.netflix.com/*
