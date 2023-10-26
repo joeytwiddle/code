@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Discord Tweaks
 // @namespace    https://greasyfork.org/en/users/8615-joeytwiddle
-// @version      0.1.8
+// @version      0.1.9
 // @description  Reduce gap between messages, optionally unbrighten name of selected channel
 // @author       joeytwiddle
 // @match        https://discord.com/*
@@ -17,7 +17,7 @@
 
 	// Around 21/10/2022 Discord put a larger vertical gap between messages.
 	// his reduces the gap size similar to how it was before.
-	const reduceGapBetweenMessages = true;
+	const reduceGapBetweenMessages = false; // Turned off while I try Appearance > Compact Mode.  I also see some settings in Discord we could play with.
 
 	// When a channel has activity (new messages), Discord makes the name of that channel bold and white, which is fine.
 	// But Discord also does that for the selected channel, which makes it look like it has new activity, when maybe it doesn't.
@@ -106,13 +106,18 @@
 				background: hsl(225, 6.5%, 12.5%);
 			*/
 			/* But we will do something different, for both: slightly dark when unfocused, quite dark when focused */
+			/* Old selector, no longer working:
 			.channelTextArea-1FufC0 .scrollableContainer-15eg7h,
 			.searchBar-jGtisZ {
-				background: hsl(225, 6.5%, 18%);
+			*/
+			/* This new selector might last a bit longer than the class, but it requires !important, and I couldn't find a new selector for the search box */
+			main > form > div > div,
+			.searchBar_e0c60b {
+				background: hsl(225, 6.5%, 18%) !important;
 			}
-			.channelTextArea-1FufC0 .scrollableContainer-15eg7h:focus-within,
-			.searchBar-jGtisZ:focus-within {
-				background: hsl(225, 6.5%, 17%);
+			main > form > div > div:focus-within,
+			.searchBar_e0c60b:focus-within {
+				background: hsl(225, 6.5%, 17%) !important;
 			}
 		`);
 	}
