@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Download Photo from Google Maps
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  Press ';' or 'D' to download a photo while browsing Google Maps
 // @author       itsnotlupus
 // @contributors joeytwiddle
@@ -19,7 +19,7 @@
 
 	// This will save the image directly to your Downloads folder (if your userscript environment supports it).
 	// Otherwise it will open a new tab, for you to save the image manually.
-	const useGMDownload = true;
+	const useGMDownload = false;
 
 	document.body.addEventListener('keydown', (evt) => {
 		const onPhotosPage = document.location.href.includes('/place/');
