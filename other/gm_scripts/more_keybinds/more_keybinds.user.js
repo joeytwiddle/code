@@ -2,8 +2,9 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.2.4
+// @version        1.2.5
 // @include        *
+// @license        ISC
 // @run-at         document-start
 // @grant          none
 // ==/UserScript==
@@ -40,22 +41,37 @@ function keypressListener(evt) {
 	if (evt.target.tagName && evt.target.tagName.match(/input|select|textarea/i) || evt.target.getAttribute('contenteditable')==="true") {
 		return;
 	}
+	// Unfortunately this doesn't catch all input boxes (e.g. YouTube live chat, amongst others)
 
 	// Actions
 
+	/*
 	// Ctrl+Backspace goes Back
 	if (code == 8 && evt.ctrlKey) {
 		window.history.back();
 	}
 
-	// The Delete key, because sometimes I map Ctrl+Backspace to emit a Delete
-	if (code == 46) {
+	// The Delete key, because sometimes I map Ctrl+Backspace to emit a Delete, so I need that Delete to go back
+	// But I disable this for sites where I really need the Delete key to work normally outside of form elements.  Those sites are usually graphical editors.
+	if (code == 46 && !document.location.host.match(/piktochart.com|miro.com|whimsical.com/)) {
 		window.history.back();
 	}
 
 	// Ctrl+Enter goes Forward
 	if (code == 13 && evt.ctrlKey) {
 		window.history.forward();
+	}
+	*/
+
+	// macOS style (Cmd-BraceLeft / Cmd-BraceRight)
+	// Not needed in Firefox, because Firefox responds to these by default
+	if (!navigator.userAgent.match(/Firefox[/]/)) {
+		if ((evt.ctrlKey || evt.altKey) && evt.key === '[') {
+			window.history.back();
+		}
+		if ((evt.ctrlKey || evt.altKey) && evt.key === ']') {
+			window.history.forward();
+		}
 	}
 
 	/* These conflict with selecting words in text!
