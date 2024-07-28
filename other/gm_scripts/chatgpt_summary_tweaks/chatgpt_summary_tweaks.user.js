@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Joey's Global Tweaks
+// @name         ChatGPT Summary Tweaks
 // @namespace    http://tampermonkey.net/
-// @version      2024-07-28-3
-// @description  CSS tweaks for various extensions or common elements
+// @version      2024-07-29
+// @description  CSS tweaks for ChatGPT Summary extension
 // @author       joeytwiddle
 // @match        http://*/*
 // @match        https://*/*
@@ -13,6 +13,9 @@
 (function() {
     'use strict';
 
+	// For "ChatGPT Summary - summarize assistant" extension
+	// https://chromewebstore.google.com/detail/chatgpt-summary-summarize/mikcekmbahpbehdpakenaknkkedeonhf
+
 	startWatchingForChatGPTSummary();
 
 	function startWatchingForChatGPTSummary() {
@@ -21,9 +24,6 @@
 
 	function addStylesToChatGPTSummary() {
 		addStyleToShadowDOM(document.querySelector('#readergpt__shadowRoot'), `
-			/* For "ChatGPT Summary - summarize assistant" extension
-			   https://chromewebstore.google.com/detail/chatgpt-summary-summarize/mikcekmbahpbehdpakenaknkkedeonhf
-			*/
 			.readergpt__container {
 				width: 75vw !important;
 				height: 75vh !important;
