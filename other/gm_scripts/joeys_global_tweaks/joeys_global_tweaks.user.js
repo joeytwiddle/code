@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Joey's Global Tweaks
 // @namespace    http://tampermonkey.net/
-// @version      2024-07-28-2
+// @version      2024-07-28-3
 // @description  CSS tweaks for various extensions or common elements
 // @author       joeytwiddle
 // @match        http://*/*
@@ -16,7 +16,7 @@
 	startWatchingForChatGPTSummary();
 
 	function startWatchingForChatGPTSummary() {
-		runWhenReady('#readergpt__shadowRoot', addStylesToChatGPTSummary);
+		runWhenReadyUniq('#readergpt__shadowRoot', addStylesToChatGPTSummary);
 	}
 
 	function addStylesToChatGPTSummary() {
@@ -39,10 +39,7 @@
 		if (document.location.hostname.match(/youtube/)) {
 			// It is common on YouTube that I will navigate to another video and run the summarize assistant there too.
 			// In which case, we will need to add the CSS styles again.
-			//
-			// BUG TODO: Of course this doesn't work, because it sees the selector immediately, and triggers a second time!
-			//
-			//startWatchingForChatGPTSummary();
+			startWatchingForChatGPTSummary();
 		}
 	}
 
@@ -53,11 +50,14 @@
 		// Alternatives: https://github.com/Tampermonkey/tampermonkey/issues/1714
 	}
 
-	function runWhenReady(readySelector, callback) {
+	// Modified version of runWhenReady() which does not re-trigger on the same element
+	var lastElementHandled = null;
+	function runWhenReadyUniq(readySelector, callback) {
 		var numAttempts = 0;
 		var tryNow = function() {
 			var elem = document.querySelector(readySelector);
-			if (elem) {
+			if (elem && elem !== lastElementHandled) {
+				lastElementHandled = elem;
 				callback(elem);
 			} else {
 				numAttempts++;
