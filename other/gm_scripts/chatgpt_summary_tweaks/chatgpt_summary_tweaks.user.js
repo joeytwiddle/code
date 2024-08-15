@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ChatGPT Summary Tweaks
 // @namespace    http://tampermonkey.net/
-// @version      2024-07-29
+// @version      2024-08-15
 // @description  CSS tweaks for ChatGPT Summary extension
 // @author       joeytwiddle
 // @match        http://*/*
@@ -33,6 +33,11 @@
 			#readergpt__readableText {
 				/* On my machine, the default margin of 16px cuts off the last line of text, let alone showing the white border. */
 				margin-bottom: 56px;
+
+				/* No, let's remove the white margin, and go for padding instead. */
+				margin: 0;
+				margin-bottom: 36px;
+				padding: 24px;
 			}
 		`);
 
@@ -61,8 +66,8 @@
 				callback(elem);
 			} else {
 				numAttempts++;
-				if (numAttempts >= 34) {
-					console.warn('Giving up after 34 attempts. Could not find: ' + readySelector);
+				if (numAttempts >= 5000) {
+					console.warn('Giving up after 5000 attempts. Could not find: ' + readySelector);
 				} else {
 					setTimeout(tryNow, 250 * Math.pow(1.1, numAttempts));
 				}
