@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Instagram Video Controls 4
 // @namespace    https://fxzfun.com/
-// @version      4.0.2
+// @version      4.0.3
 // @description  Adds video player controls to Instagram videos
 // @author       FXZFun
 // @contributor  joeytwiddle
@@ -11,6 +11,9 @@
 // @grant        GM_addStyle
 // @license      GNU GPL v3
 // ==/UserScript==
+
+// Based on: https://github.com/FXZFun/userscripts/blob/main/src/instagramvideocontrols.user.js
+// Alternative: https://www.reddit.com/r/userscripts/comments/11j8jcc/instagram_video_controls_userscript/
 
 (function() {
 	'use strict';
@@ -23,19 +26,13 @@
 
 	function addControls() {
 		document.querySelectorAll("video").forEach(vid => {
-			if (vid.controls === "controls") {
-				return;
-			}
-			console.log("IVC: new video detected");
+			//if (vid.controls === "controls") {
+			//	return;
+			//}
 			vid.controls = "controls";
-			// Default to 80% if no previously stored volume was found
 			vid.volume = parseFloat(localStorage.getItem("ivc-volume")) || 0.8;
 			vid.addEventListener('volumechange', () => localStorage.setItem("ivc-volume", JSON.stringify(vid.muted ? 0 : vid.volume)));
 			vid.addEventListener('play', () => setTimeout(() => vid.muted = false, 10));
-
-			//console.log('Removing:', vid.nextElementSibling);
-			//vid.nextElementSibling.remove();
-			//vid.nextElementSibling.style.display = 'none';
 
 			let vidSibling = vid.nextElementSibling.firstChild;
 			vidSibling.style = "transition: 0.5s; pointer-events: none";
@@ -64,15 +61,14 @@
 	let currentURL = "";
 	setInterval(() => {
 		if (location.href !== currentURL) {
-			console.log("IVC: new page detected");
-			currentURL = location.href;
-
 			if (!document.head.innerHTML.includes("::-webkit-media-controls")) GM_addStyle('::-webkit-media-controls-panel { z-index: 999998; position: relative; } .ivcControls { margin-top: -80px; } button[aria-label="Toggle audio"] { display: none; }');
 
 			if (location.host === "www.instagram.com" && location.pathname === "/") runMainPage();
 
-			//console.log("IVC: new video available");
+			console.log("IVC: new video available");
 			addControls();
+
+			currentURL = location.href;
 		}
 	}, 500);
 
