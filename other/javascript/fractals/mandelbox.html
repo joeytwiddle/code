@@ -1,0 +1,2933 @@
+<html>
+<head><title>Javascript MandelBox Explorer</title></head>
+<body>
+	<!--
+	<script type="text/javascript" src="http://hwi.ath.cx/code/other/gm_scripts/fastjslogger/fastjslogger.user.js"></script>
+	-->
+	<!-- Bad in FF 15.0.1: all sliders range 0-100!
+	<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
+	-->
+
+	<div style="position: fixed; bottom: 10px; right: 20px;">
+	Javascript MandelBox Explorer 
+	<script type="text/javascript">
+
+
+
+// Javascript MandelBox Explorer by joeytwiddle (c)opyleft, inspired by squirrel
+// and subdream.  Ported from a '99 Julia renderer that dumped frames in DOS,
+// then updated in '11 to use tglad's formula found in '10.  With some help
+// from the human race, mother nature, planet earth and the sun.
+
+
+
+/* Options */
+
+var scaleDown = 2;      // 2 animates nicely, 1 is prettier, 0 is slow!
+var maxIters  = 8;      // 10 contains some details, 8 makes more recognisable shapes if steps is as low as 10
+var bailout   = 2.0;    // Should be 2.0 for Julia.  Below 1.9 we start to clip the shape.
+var steps     = 10;     // How finely to search space (depth) for hit.  Must be high (slow) to catch thin walls.
+var stepExponent = 30;  // Distribute more hits closer to the camera.
+var smallest  = 0.002;// How finely to refine hit
+smallest = 0.006;       // a cute amount of noise for a slightly faster framerate
+// smallest = 0.016;    // rougher
+if (scaleDown == 1)
+	smallest = 0.003;    // low noise
+if (scaleDown == 0)
+	smallest = 0.001;    // no noise
+smallest = 0.000002;    // For normal-vector lighting method, which is very sensitive to bumps
+var targetFPS = 25;
+var animate = true;
+var progressiveRendering = false;
+//// Smaller number means faster zoom!  This is the reciprocal of what the user wants to edit.
+var wheelZoomSpeed = 1.2;
+var zoomSpeed = 2;
+// var zoomSpeed = 1.5;
+var overExposure = 1.4;
+var startLevel = 3; // TODO: Rather than limiting the range of options for startLevel, just check and enforce them.  (Limited by the 2 power of offscreenCanvas)
+
+// TODO: Auto-increase some of above parameters if framerate is high enough
+
+var centre = {x:0,y:0,z:0};
+var distanceFromObject = 2.0;
+var rotation = 0;
+var elevation = Math.PI/6;
+var dep,fov,wid;
+var dslice = 0;
+
+var cameraBailout;
+// var stepExponent = 4.0;
+var stepBack;
+var searchConfidence;
+var useDistanceEstimation = false; // It doesn't work properly!  Perhaps I've been trying to use it wrong.  Perhaps we shouldn't use it to jump closer, but to determine when we have made an accurate hit.  Like a bailout, but for the stepper?  Instead of binary search?  :-O
+var rotateAboutCamera = false; // TODO BUG: This breaks strafing when true!
+
+var colorMode;
+var lightnessThresholdLow = 48;
+var lightnessThresholdHigh = 320;
+var warpHue = false;
+var lightRotatesWithCamera = true;
+var specularHighlighting   = true;
+var fadeWithDistance       = false;
+var tgladColoringMethod = 0;
+
+var showInfo = (document.location.href.indexOf("-dev.html")>=0);
+var showProgress = true;
+
+var drawCheckersWhenInside = true;
+var scaleDownDots = 2;
+var maxOldImages = 10;
+
+var showOrbits   = false;   // User option
+var showOrbitNow = false;   // Runtime flag
+
+var canvas = document.createElement("canvas");
+var take = 0.6; var leave = 0.4;
+// Make dimensions a power of 2 (can break progressiveRendering if wrong)
+var minBlockSize = 1<<(startLevel+4);   // 4 for "highest" low-res
+canvas.width  = minBlockSize*((window.innerWidth*take /minBlockSize)|0);
+canvas.height = minBlockSize*((window.innerHeight*take /minBlockSize)|0);
+canvas.style.position = 'fixed';
+canvas.style.left = window.innerWidth/2 - canvas.width/2;
+canvas.style.top = window.innerHeight*0.4 - canvas.height/2;
+document.body.appendChild(canvas);
+var ctx = canvas.getContext("2d");
+// var dep    = (back - front)/2;
+
+
+
+/* Library functions */
+
+function log(data) {
+	if (this.console && console.log) {
+		console.log.apply(console,arguments);
+	}
+	// None of the above work in Firefox
+	if (window.navigator.vendor === "") {
+		//// The only way I know to log in Firefox!
+		setTimeout(function(){ throw new Error("NotAnError: "+data); },0);
+	}
+}
+
+function floatrnd(low,high) {
+	return low + Math.random() * (high - low);
+}
+
+// Vectors can be faster if we use new types WebGLFloatArray or Float32Array.
+/*
+try {
+	FloatArray = WebGLFloatArray;
+} catch (x) {
+	try {
+		FloatArray = Float32Array; // Chromium 2010, Firefox 4.0
+	} catch (y) {
+		FloatArray = Array; // Firefox 3.5.3
+	}
+}
+*/
+// Float32Array renders 6 times SLOWER than normal Array in Chrome! :P
+// In Firefox they are about the same speed.
+// TODO: The problem might be that I'm putting the foldCounts property into the
+// result vector (array), which fails in FF and could be causing the slowdown
+// in Chrome.
+// Note also that I sometimes add a fourth vector to the 3d vectors for
+// consistency, but this requires the 3d vectors to be *declared* as length 4,
+// or things just silently fail.
+// I have not yet been able to test WebGLFloatArray.
+// FloatArray = Float32Array;
+FloatArray = Array;
+// Unpatch with :%s/\<new FloatArray([234])/[]/g
+
+var tmpz = new FloatArray(4);
+
+function quat_mod(a) {
+	return Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2] + a[3]*a[3]);
+}
+
+// r may be a and/or b in quat_add, quat_sub and quat_scale
+function quat_add(a,b,r) {
+	// if (!r) r=[];
+	r[0] = a[0] + b[0];
+	r[1] = a[1] + b[1];
+	r[2] = a[2] + b[2];
+	r[3] = a[3] + b[3];
+	return r;
+}
+
+function quat_sub(a,b,r) {
+	// if (!r) r=[];
+	r[0] = a[0] - b[0];
+	r[1] = a[1] - b[1];
+	r[2] = a[2] - b[2];
+	r[3] = a[3] - b[3];
+	return r;
+}
+
+// r may NOT be a or b in quat_mult!
+function quat_mult(a,b,r) {
+	// if (!r) r=[];
+	r[0] = a[0]*b[0] - a[1]*b[1] - a[2]*b[2] - a[3]*b[3];
+	r[1] = a[0]*b[1] + a[1]*b[0] + a[2]*b[3] - a[3]*b[2];
+	r[2] = a[0]*b[2] + a[2]*b[0] - a[1]*b[3] + a[3]*b[1];
+	r[3] = a[0]*b[3] + a[3]*b[0] + a[1]*b[2] - a[2]*b[1];
+	return r;
+}
+
+function quat_scale(a,s,r) {
+	// if (!r) r=[];
+	r[0] = a[0]*s;
+	r[1] = a[1]*s;
+	r[2] = a[2]*s;
+	r[3] = a[3]*s;
+	return r;
+}
+
+function quat_norm(v,r) {
+	return quat_scale(v,1/quat_mod(v),r);
+}
+
+function quat_dot(u,v) {
+	return u[0]*v[0] + u[1]*v[1] + u[2]*v[2] + u[3]*v[3];
+}
+
+function quat_dist(a,b) {
+	return quat_mod(quat_sub(b,a,tmpz));
+}
+
+function quat_copy(u,r) {
+	r[0] = u[0];
+	r[1] = u[1];
+	r[2] = u[2];
+	r[3] = u[3];
+	return r;
+}
+
+function rotate3d_about_x(v,ang,r) {
+	var newv = r || new FloatArray(4);
+	newv[0] = v[0];
+	newv[1] = Math.cos(ang)*v[1] + Math.sin(ang)*v[2];
+	newv[2] = Math.cos(ang)*v[2] - Math.sin(ang)*v[1];
+	return newv;
+}
+
+function rotate3d_about_y(v,ang,r) {
+	var newv = r || new FloatArray(4);
+	newv[0] = Math.cos(ang)*v[0] + Math.sin(ang)*v[2];
+	newv[1] = v[1];
+	newv[2] = Math.cos(ang)*v[2] - Math.sin(ang)*v[0];
+	return newv;
+}
+
+function cross_product3d(a,b,r) { // V3.cross
+	r[0] = a[1]*b[2] - a[2]*b[1];
+	r[1] = a[2]*b[0] - a[0]*b[2];
+	r[2] = a[0]*b[1] - a[1]*b[0];
+	return r;
+}
+
+function closest_point_on_line_to_origin(lineStart,lineEnd) {
+	var dir = new FloatArray(4);
+	quat_norm(quat_sub(lineEnd,lineStart,dir),dir);
+	var parallelDistToNear = quat_dot(lineStart,dir);
+	var closestPoint = quat_sub(lineStart,quat_scale(dir,parallelDistToNear,dir),dir);
+	return closestPoint;
+}
+
+function closest_distance_of_line_from_origin(lineStart,lineEnd) {
+	return quat_mod(closest_point_on_line_to_origin(lineStart,lineEnd));
+}
+
+// This function wrapper hides the tmpvars from global scope.
+// I did not notice a significant slowdown from it.
+var clipLineToSphere;
+(function(){
+
+	var spc = [];
+	var lv = [];
+	var l = [];
+	function clipLineToSphere(near,far,radius) {
+		// Move everything by -near
+		spc = quat_scale(near,-1,spc);   // sphere centre, relative to near
+		lv = quat_sub(far,near,lv);  // vector of line
+		l = quat_norm(lv,l);         // direction of line
+		var A = quat_dot(l,spc);
+		var Ba = A*A - quat_mod(spc)*quat_mod(spc) + radius*radius;
+		if (Ba >= 0) {
+			var B = Math.sqrt(Ba);
+			var nearDist = A-B;
+			var farDist = A+B;
+			// if (nearDist > 0 && farDist < quat_mod(lv))
+				// if (Math.random()>0.999)
+					// log("Clipped ["+near+"],["+far+"] at ",nearDist," and ",farDist);
+					// // log("Clipped ["+near+"],["+far+"] at ",nearDist," and ",farDist);
+			// Only clip if we are making line shorter
+			if (nearDist > 0)
+				near = quat_add(near,quat_scale(l,nearDist,tmpz),near);
+			if (farDist < quat_mod(lv))
+				far = quat_add(near,quat_scale(l,farDist,tmpz),far);
+		}
+	}
+
+	this.clipLineToSphere = clipLineToSphere;
+})();
+
+function hookEvent(elem,eventType,handlerFn) {
+	if (elem.addEventListener) {
+		if (eventType == 'mousewheel')
+			elem.addEventListener('DOMMouseScroll',handlerFn,false);
+		elem.addEventListener(eventType,handlerFn,false);
+	} else if (elem.attachEvent) {
+		elem.attachEvent("on" + eventType,handlerFn);
+	}
+}
+
+function unhookEvent(elem,eventType,handlerFn) {
+	if (elem.removeEventListener) {
+		if (eventType == 'mousewheel')
+			elem.removeEventListener('DOMMouseScroll',handlerFn,false);
+		elem.removeEventListener(eventType,handlerFn,false);
+	} else if (elem.detachEvent) {
+		elem.detachEvent("on" + eventType,handlerFn);
+	}
+}
+
+function readableFloat(f) {
+	return "" + ((f*100)|0)/100;
+}
+
+function setStatus(str) {
+	document.getElementById("infoLabel").textContent = str;
+}
+
+function imageDataToRGB(data,ptr) {
+	return "rgb("+data[ptr]+","+data[ptr+1]+","+data[ptr+2]+")";
+}
+
+function blitCanvas(src,dest) { // both canvases
+	dest.getContext("2d").drawImage(src,0,0,src.width,src.height,0,0,dest.width,dest.height);
+}
+
+
+
+/* Here be Dragons, Gremlins and a Minotaur */
+/* Beware this code was a test of bad programming practice in Javascript!
+ * Everything is top-level.  There are caches here and there, which get updated
+ * now and then.  The progressive scanner has to consider two different levels
+ * of scaleDown!  Parts of it were written for speed, not for reading.
+ * Basically things are pretty fragile, so if you change something, test
+ * everything!  ;)
+ * I would request that you adapt and improve the code here, but you could
+ * probably be more productive working on something fresh of your own.  :)  bc
+ */
+
+
+
+/* Fractal Formulae */
+
+// The iterator function:
+var formulaName;
+var get_count;
+var clipLineToShape;
+
+var juliaBeMandelbrot = false;
+function setupJulia() {
+	get_count = julia4d_get_count;
+	centre = { x: 0, y:0, z:0 };
+	distanceFromObject = 2.4;
+	dep    = 4.0;
+	fov    = 45;
+	wid    = 1.5;
+	cameraBailout = 1.7;   // Should be 2.0!  1.7 sometimes clips the shell but rarely the julia itself
+	steps = 10;
+	stepExponent = 1;
+	stepBack = 1.9;
+	searchConfidence = 0.5;
+	// smallest = 0.006;       // a cute amount of noise for a slightly faster framerate
+	drawCheckersWhenInside = false;   // Because we pretend the 0-shell is inside the fractal
+	progressiveRendering = false;
+	scaleDown = 2;
+	initOffscreenBuffer();
+	showProgress = false;
+	overExposure = 0.5;
+	animate = true;
+	//// OK to neglect this: it applies to user rotation, not animation rotation.
+	// rotateAboutCamera = false;
+	colorMode = false;
+	lightnessThresholdLow = -65536;
+	lightnessThresholdHigh = 65536*65536;
+	clipLineToShape = function(near,far) {
+		clipLineToSphere(near,far,2.0);
+	};
+	juliaBeMandelbrot = false;
+}
+
+function setupMandelbrot2d() {
+	setupJulia();
+	juliaBeMandelbrot = true;
+	steps = 30;
+}
+
+function setupMandelbox() {
+	get_count = tglad_get_count;
+	centre = { x: -4, y: -2.5, z: -5 };
+	distanceFromObject = 9.0;
+	// rotation = Math.PI/4.2;
+	rotation = Math.PI/5;
+	// rotation = 0;   elevation = 0;
+	// rotation = Math.PI/9;   elevation = Math.PI/12;
+	// rotation = Math.PI/17;   elevation = Math.PI/17;
+	dep    = 22;
+	fov    = 45;
+	wid    = 8.0;
+	cameraBailout = 11.0;
+	steps = 20;
+	stepExponent = 30;
+	stepBack = 2.9;
+	searchConfidence = 0.2;
+	// smallest = 0.006;       // a cute amount of noise for a slightly faster framerate
+	drawCheckersWhenInside = true;
+	progressiveRendering = true;
+	overExposure = 1.0;
+	bailout = 32;
+	// maxIters = 8;
+	maxIters = 9;
+	scaleDown = 0;
+	initOffscreenBuffer();
+	showProgress = true;
+	animate = false;
+	colorMode = true;
+	lightnessThresholdLow = 48;
+	lightnessThresholdHigh = 320;
+	// lightnessThresholdLow = 16;
+	// lightnessThresholdHigh = 255;
+	clipLineToShape = null;
+}
+
+// setupJulia();
+// setupMandelbox();
+
+/* Iterator parameters */
+
+var c = [-0.488193901,0.572800587,0,0];
+var ca,cb,cc,cd;
+var bailoutSquared;
+
+var foldCounts = {};
+
+var scale = 2;
+//// I inlined these two for speed
+// var foldingLimit = 1;
+// var foldingValue = 2;
+var fixedRadius = 1;
+var minRadius = 0.5;
+var sqrFixedRadius,multiplierA;
+
+/* Iterator functions */
+
+var julia4d_get_count, tglad_get_count;
+var tgladDE;   // distance estimate, shared with getHitPoint (and searchline TODO)
+
+(function(){ // A closure to hide 4 of our 50 global vars :)
+
+// var z = [];
+var za,zb,zc,zd;
+
+function julia4d_get_count(startz) {
+	//// Dirty optimizer
+	if (quat_mod(startz) > 2.02)
+		return 0; // 1 to drop bubble (do it below as well!)
+	// return quat_mod(startz) < 0.7 ? 0 : 1;
+	var k = maxIters;
+	// var z = startz.slice(0);
+	za = startz[0];
+	zb = startz[1];
+	zc = startz[2];
+	zd = startz[3];
+	if (juliaBeMandelbrot) {
+		ca = za;
+		cb = zb;
+		cc = zc;
+		cd = zd;
+		if (zc < 0)
+			return 2;
+	}
+	var tmpza; // ,tmpzb,tmpzc,tmpzd;
+	var modSquared;
+	var zaa = za*za;
+	var zbb = zb*zb;
+	var zcc = zc*zc;
+	var zdd = zd*zd;
+	do {
+		// z = quat_add(quat_mult(z,z,tmpz),c,z);
+		// When I inlined this calculation I found some of the terms cancelled :)
+		tmpza = zaa - zbb - zcc - zdd;
+		zb = 2 * za*zb + cb;
+		zc = 2 * za*zc + cc;
+		zd = 2 * za*zd + cd;
+		za = tmpza + ca;
+		// zb = tmpzb + cb;
+		// zc = tmpzc + cc;
+		// zd = tmpzd + cd;
+		// mod = quat_mod(z);
+		zaa = za*za;
+		zbb = zb*zb;
+		zcc = zc*zc;
+		zdd = zd*zd;
+		// mod = Math.sqrt(zaa + zbb + zcc + zdd);
+		modSquared = zaa + zbb + zcc + zdd;
+		if (modSquared > bailoutSquared) {
+			return (maxIters - k) /* +1 */;
+			// The +1 above drops the bubble
+		}
+		// if (isNaN(mod)) {
+			// log("julia4d_get_count NaNed on "+(maxIters-k)+"th iteration!");
+			// return (maxIters - k); // +1 to drop the bubble
+		// }
+	} while (k--);
+	return 0;   // maxxed out
+	// NOTE: bailing out on the first iteration will ALSO return 0!  But this creates the cute looking bubble, so I kept it that way.
+}
+
+this.julia4d_get_count = julia4d_get_count;
+
+// Note: mandelbox vectors are only 3d, but outside of this function, most of the code assumes 4d vectors
+function tglad_get_count(startz) {
+	foldCounts.box = 0;
+	foldCounts.minSphere = 0;
+	foldCounts.fixedSphere = 0;
+	tgladDE = 1.0;
+	// return quat_mod(startz) < 0.7 ? 0 : 1;
+	var k = maxIters;
+	// var z = startz.slice(0);
+	za = startz[0];
+	zb = startz[1];
+	zc = startz[2];
+	zd = startz[3];
+	// For Mandelbrot:
+	ca = za;
+	cb = zb;
+	cc = zc;
+	cd = zd;
+	var tmpza; // ,tmpzb,tmpzc,tmpzd;
+	var modSquared;
+	var zaa = za*za;
+	var zbb = zb*zb;
+	var zcc = zc*zc;
+	var zdd = zd*zd;
+	do {
+		// z = quat_add(quat_mult(z,z,tmpz),c,z);
+		// When I inlined this calculation I found some of the terms cancelled :)
+		/*
+		tmpza = zaa - zbb - zcc - zdd;
+		zb = 2 * za*zb + cb;
+		zc = 2 * za*zc + cc;
+		zd = 2 * za*zd + cd;
+		za = tmpza + ca;
+		*/
+		/* Without the +c
+		tmpza = zaa - zbb - zcc - zdd;
+		zb = 2 * za*zb;
+		zc = 2 * za*zc;
+		zd = 2 * za*zd;
+		za = tmpza;
+		*/
+
+		if (showOrbitNow) {
+			showOrbitBit(za,zb,zc,dslice);
+		}
+
+		// tglad_fold();
+		// fold box onto itself (foldingLimit=1 foldingValue=2)
+		// once
+		if (za > 1) {
+			za = 2 - za;
+			foldCounts.box++;
+		} else if (za < -1) {
+			za = -2 - za;
+			foldCounts.box++;
+		}
+		if (zb > 1) {
+			zb = 2 - zb;
+			foldCounts.box++;
+		} else if (zb < -1) {
+			zb = -2 - zb;
+			foldCounts.box++;
+		}
+		if (zc > 1) {
+			zc = 2 - zc;
+			foldCounts.box++;
+		} else if (zc < -1) {
+			zc = -2 - zc;
+			foldCounts.box++;
+		}
+		// fold sphere onto itself
+		// var length = point.Magnitude();
+		var length = Math.sqrt(za*za + zb*zb + zc*zc);
+		/*if (length < minRadius/2) {
+			foldCounts.box /= 2;
+		}*/
+		if (length < minRadius) {
+			// point.MultiplyEquals(multiplierA);
+			za *= multiplierA;
+			zb *= multiplierA;
+			zc *= multiplierA;
+			tgladDE *= multiplierA;
+			foldCounts.minSphere++;
+		} else if (length < fixedRadius) {
+			var multiplierB = sqrFixedRadius/(length*length);
+			// point.MultiplyEquals(multiplierB);
+			za *= multiplierB;
+			zb *= multiplierB;
+			zc *= multiplierB;
+			tgladDE *= multiplierB;
+			foldCounts.fixedSphere++;
+		}
+		/*
+		*/
+		// point.MultiplyEquals(scale)
+		// point.AddEquals(C)
+		za = za*scale + ca;
+		zb = zb*scale + cb;
+		zc = zc*scale + cc;
+		tgladDE = tgladDE*Math.abs(scale) + 1.0;
+
+		// mod = quat_mod(z);
+		zaa = za*za;
+		zbb = zb*zb;
+		zcc = zc*zc;
+		// mod = Math.sqrt(zaa + zbb + zcc + zdd);
+		modSquared = zaa + zbb + zcc;
+		if (modSquared > bailoutSquared) {
+			return (maxIters - k); // +1 to drop the bubble
+		}
+		// if (isNaN(mod)) {
+			// log("julia4d_get_count NaNed on "+(maxIters-k)+"th iteration!");
+			// return (maxIters - k); // +1 to drop the bubble
+		// }
+	} while (k--);
+	return 0;   // maxxed out
+	// NOTE: bailing out on the first iteration will ALSO return 0!  But this creates the cute looking bubble, so I kept it that way.
+}
+
+this.tglad_get_count = tglad_get_count;
+
+})();
+
+
+
+/* Search Space for Solid */
+
+/*
+// Recursive binary search
+var t = new FloatArray(4);
+function searchline(front,back) {
+	var mid = new FloatArray(4); // Need a fresh mid object, because it will soon be a front or back
+	t = quat_sub(back,front,t);
+	// log("Searching "+front+" to "+back+" size "+quat_mod(t));
+	if (quat_mod(t) < smallest)
+		return back;
+	//// NOTE: If searchConfidence==0.5, then we can use a shorter calculation here:
+	// mid = quat_scale(quat_add(front,back,tmpz),0.5,mid);
+	mid = quat_add(front,quat_scale(quat_sub(back,front,tmpz),searchConfidence,tmpz),mid);
+	if (get_count(mid) == 0)
+		return searchline(front,mid);
+	else
+		return searchline(mid,back);
+}
+*/
+
+// Non-recursive binary search
+var t = new FloatArray(4);
+function searchline(front,back) {
+	var mid = new FloatArray(4); // Need a fresh mid object, because it will soon be a front or back
+	var dist = quat_mod(quat_sub(back,front,t));
+	var old;
+	// log("Searching "+front+" to "+back+" size "+quat_mod(t));
+	while (dist > smallest) {
+		//// NOTE: If searchConfidence==0.5, then we can use a shorter calculation here:
+		// mid = quat_scale(quat_add(front,back,tmpz),0.5,mid);
+		mid = quat_add(front,quat_scale(quat_sub(back,front,tmpz),searchConfidence,tmpz),mid);
+		if (useDistanceEstimation) {
+			get_count(front);
+			var estimatedDistance = bailout / Math.abs(tgladDE) / 4 / 4 / 4 / 4;
+			if (estimatedDistance > dist*searchConfidence) {
+				// searchConfidence = dist/estimatedDistance;
+				mid = quat_add(front,quat_scale(quat_sub(back,front,tmpz),dist/estimatedDistance,tmpz),mid);
+			}
+		}
+		if (get_count(mid) == 0) {
+			old = back; back = mid; mid = old;
+			dist *= searchConfidence;
+		} else {
+			old = front; front = mid; mid = old;
+			dist *= (1-searchConfidence);
+		}
+	}
+	return back;
+}
+
+
+var near = new FloatArray(4);
+var far = new FloatArray(4);
+function getHitPoint(i,j) {
+
+	var last,next,res;
+
+	// Shoot ray into image
+	far  = transformFromCameraToWorld([(-wid+2*wid*i/width)*dep/focalDistance,(-hei+2*hei*j/height)*dep/focalDistance,+dep],far);
+	if (clipLineToShape) {
+		near = quat_copy(camFocalPoint,near);
+		clipLineToShape(near,far);
+		// We don't make a separate copy of far until we are sure we will use it (at end of fn)
+		// if (quat_dist(near,camFocalPoint) >0 && Math.random()>0.99)
+			// log("Moved "+camFocalPoint+" to "+near);
+	}
+	/*
+	 * Doing this caused the julia to squish against the camera twice!
+	near[3] = near[1]; near[1] = dslice;
+	far[3] = far[1]; far[1] = dslice;
+	*/
+	// log("Near: "+near+" Far: "+far);
+	//// Even if we are using exponential steps, we still use linear size stepBack, to avoid over-processing at nasty extremes
+	var delta = quat_scale(quat_sub(far,near,tmpz),1/steps,new FloatArray(4));
+	if (stepBack) {
+		var stepbackVector = quat_scale(delta,-stepBack,new FloatArray(4));
+	}
+	// The wasInside check allows us to move the camera further back, and avoid squashing the julia against the screen
+	var wasInside = (get_count(near) == 0);
+	last = quat_copy(near, new FloatArray(4));
+	next = quat_copy(near, new FloatArray(4));
+
+	// For Mandelbox, drops the line if it is outside the cube (unfortunately using a sphere :P)
+	if (closest_distance_of_line_from_origin(near,far) > cameraBailout) {
+		if (colorMode) {
+			foldCounts.box         = 0;
+			foldCounts.minSphere   = 0;
+			foldCounts.fixedSphere = 0;
+		}
+		return near;  // Might be clipped by clipLineToShape, but if constant then fine to return a reference :)
+		// return quat_copy(near,new FloatArray(4));  // Might be clipped by clipLineToShape, but if constant then fine to return a reference :)
+	}
+
+	// For further optimization of the zoomed-out image, we could clip the ray by the bailout shell, or indeed by the known box itself.
+
+	// var exponentMax = Math.pow(stepExponent,steps);   // Now we use s^e not e^s_unnormalised
+
+	var totalDistance = quat_dist(near,far);   // Should be same as dep :P
+	var direction = quat_norm(quat_sub(far,near,tmpz),new FloatArray(4));
+
+	// DONE: stepBack should not go *behind* near!
+	var localStepBack = stepBack;
+
+	// log("Delta is "+quat_mod(delta));
+
+	tgladDE = 0; // aka null, don't use it on first iteration
+
+	for (var k=0;k<=steps;k++) {
+
+		if (stepExponent == 1) {
+			next = quat_add(next,delta,next);
+		} else {
+			var newDistance = totalDistance * (Math.pow(stepExponent+1,k/steps)-1)/stepExponent;
+			// var newDistance = totalDistance * Math.pow(k/steps,stepExponent);
+			next = quat_add(near,quat_scale(direction,newDistance,next),next);
+		}
+		// log("Next: "+next);
+
+		if (useDistanceEstimation && tgladDE) {
+			// BUG TODO: Using either method above, we will still take the same number of steps!  With one we jump past far, with the other we reset and sample planes we have already jumped past.
+			// We do still get a speedup, possibly due to performing searchline // earlier, or get_count returning faster, or hitting the far wall sooner.
+			var estimatedDistance = bailout / Math.abs(tgladDE);
+			// Only use DE when it's making us jump further
+			if (estimatedDistance > quat_dist(last,next) /*&& quat_mod([last[0],last[1],last[2],0])<bailout*/) {
+				// if (Math.random()<0.001)
+					// log("Estimate says we can jump further "+estimatedDistance);
+				// quat_norm(delta,delta);
+				// quat_scale(delta,estimatedDistance,delta);
+				next = quat_add(last,quat_scale(direction,estimatedDistance,next),next);
+			}
+		}
+
+		if (wasInside) { // We were last inside solid
+			wasInside = (get_count(next) === 0);
+			if (!wasInside && drawCheckersWhenInside) {
+				// If we have moved from solid to space, draw a checker shape.
+				// This "informs" the user of the hidden surface, but very much
+				// spoils the image!
+				if (i%32<2 || j%32<2) {
+					// @duplicated code from below
+					// We could skip the stepback, our depth is not that important :P
+					if (stepBack) {
+						last = quat_add(last,stepbackVector,last);
+						if ( quat_dot(direction,quat_sub(last,near,tmpz)) <= 0 )
+							quat_copy(near,last);
+					}
+					// searchline tries to find closest iters==0, but we want the closest iters>0.
+					// So we do a search backwards, preferring the furthest hit.
+					// Bug: But really we would prefer the nearest hit!
+					// searchConfidence = 1 - searchConfidence;
+					res = searchline(next,last);
+					// searchConfidence = 1 - searchConfidence;
+					/*
+					if (colorMode) {
+						hitPoints[i][j].foldCounts = foldCounts;
+						foldCounts = {};
+					}
+					*/
+					return res;
+				}
+			}
+			localStepBack = 0;
+
+		} else // We were in empty space
+		if (get_count(next) == 0) {
+
+			// return quat_mod(quat_sub(next,near,tmpz));
+			if (localStepBack) {
+				//// Step back a bit, in case we stepped over something on an earlier step!
+				// last = quat_add(near,quat_scale(quat_sub(last,near,last),0.75,last),last);
+				last = quat_add(last,stepbackVector,last);
+				if ( quat_dot(direction,quat_sub(last,near,tmpz)) <= 0)
+					quat_copy(near,last);
+			}
+			res = searchline(last,next);
+			// return res[2];
+			// return quat_mod(quat_sub(res,near,tmpz));
+			/*
+			if (colorMode) {
+				hitPoints[i][j].foldCounts = foldCounts;
+				foldCounts = {};
+			}
+			*/
+			return res;
+			// return 255*(1.0-(res[2]-front)/(forget-front));
+			// TODO: draw to screen rend->pos[i][j]=res.c;
+		}
+
+		last[0] = next[0];
+		last[1] = next[1];
+		last[2] = next[2];
+		last[3] = next[3];
+
+		/*
+		if (useDistanceEstimation && tgladDE) {
+			tgladDE *= 1.2;
+			if (Math.random()<0.01)
+				log("Scaling delta to "+tgladDE);
+			quat_norm(delta,delta);
+			quat_scale(delta,tgladDE,delta);
+		}
+		*/
+
+	}
+
+	// return far;
+	/*
+	foldCounts.box = 1;
+	foldCounts.fixedSphere = 0;
+	foldCounts.minSphere = 0;
+	hitPoints[i][j].foldCounts = foldCounts;
+	foldCounts = {};
+	*/
+	// Don't get any crazy ideas about using earlier fold colors!
+	/*
+	if (colorMode)
+		hitPoints[i][j].foldCounts = {};
+	*/
+	if (colorMode) {
+		foldCounts.box         = 0;
+		foldCounts.minSphere   = 0;
+		foldCounts.fixedSphere = 0;
+	}
+	return quat_copy(far,new FloatArray(4));
+}
+
+
+
+/* Offscreen buffer */
+
+var width;
+var height;
+var canvasImage;
+var offscreenCanvas;
+var offscreenContext;
+var offscreenImage;
+var data;
+var hitPoints;
+
+function initOffscreenBuffer() {
+	width = Math.floor(canvas.width / Math.pow(2,scaleDown));
+	height = Math.floor(canvas.height / Math.pow(2,scaleDown));
+	canvasImage = ctx.getImageData(0,0,canvas.width,canvas.height);
+	offscreenCanvas = document.createElement("canvas");
+	offscreenCanvas.width = width;
+	offscreenCanvas.height = height;
+	offscreenContext = offscreenCanvas.getContext("2d");
+	offscreenImage = offscreenContext.getImageData(0,0,width,height);
+	data = offscreenImage.data;
+	// TODO: This does not update the V of MVC! :P
+	hitPoints = [];
+	for (var i=0;i<width;i++) {
+		hitPoints[i] = [];
+		for (var j=0;j<height;j++) {
+			hitPoints[i][j] = {};
+		}
+	}
+}
+
+var hei;
+var focalDistance;
+var camFocalPoint;
+
+function initDerivatives() {
+	// Changes rarely:
+	hei = wid * canvas.height/canvas.width;
+	// These are per-frame constants:
+	focalDistance = wid / Math.tan(fov*Math.PI/180);
+	// To measure distance/depth later, we use the camera point in real space
+	camFocalPoint = [0,0,0];
+	camFocalPoint = transformFromCameraToWorld(camFocalPoint);
+	camFocalPoint[3] = dslice;
+	// We also end up using it for lots of other things
+
+	function fireCentreMovedEvent() {
+		setTimeout(function(){
+			document.location.hash = "campos=["+camFocalPoint[0]+","+camFocalPoint[1]+","+camFocalPoint[2]+"]&rot=["+rotation+","+elevation+"]&dist="+distanceFromObject+"&scale="+scale;
+		},5000);
+	}
+	fireCentreMovedEvent();
+
+	// Or we use the camera direction
+	camDirection = [0,0,1];
+	camDirection = rotateFromCameraToWorldOrientation(camDirection,camDirection);
+	// Used for searching
+	near = quat_copy(camFocalPoint,near);
+	bailoutSquared = bailout*bailout;
+	// tglad derivatives:
+	sqrFixedRadius = fixedRadius*fixedRadius;
+	multiplierA = sqrFixedRadius/(minRadius*minRadius);
+
+	updateControls();
+}
+
+
+
+/* Motion, camera and renderer */
+
+var vel   = [0,0,0,0]; // velocity
+var accel = [0,0,0,0]; // acceleration
+accel = [floatrnd(-.025,.025),floatrnd(-.025,.025),floatrnd(-.025,.025),floatrnd(-.025,.025)];
+var accelMax = 0.005;
+var positionDampening = 0.85;
+// var accelMax = 0.008;
+// var positionDampening = 0.8;
+
+var paused = false;
+
+var frameCount,frameStartTime;
+function resetFPS() {
+	frameCount = 0;
+	frameStartTime = new Date().getTime();
+}
+resetFPS();
+
+var drawTimer = null;
+
+function cleanTitle() {
+	return (""+document.title).replace(/ \*( .*|)$/,'','g');
+}
+function clearTitle() {
+	document.title = cleanTitle();
+}
+function setTitle(str) {
+	clearTitle();
+	if (str)
+		document.title = cleanTitle() + " * " + str;
+}
+function updateProgress(progressThroughAll) {
+	if (showProgress) {
+		var timeSpent = new Date().getTime() - startTime;
+		// var timeLeft = ((width>>level)-i) * timeSpent / i;
+		var timeLeft = timeSpent * (1-progressThroughAll) / progressThroughAll;
+		if (progressThroughAll>0.002 && timeSpent+timeLeft > 4000) {
+			var secondsLeft = (timeLeft/1000 + 0.5) | 0;
+			var minutesLeft = (secondsLeft/60) | 0;
+			secondsLeft -= 60*minutesLeft;
+			var prep = " ("+(startLevel-level+1)+"/"+(startLevel+1)+") "+((100*progressThroughAll)|0)+"% "+(minutesLeft>0 ? minutesLeft+"m" : "")+secondsLeft+"s";
+			setTitle(prep);
+			setStatus("Rendering: " + prep);
+		} else {
+			setStatus("Rendering...");
+		}
+	}
+}
+
+function drawFrame() {
+
+	if (animate && paused) {
+		drawTimer = null;
+		return;
+	}
+
+	//// An early call to setTimeout performs better wrt target FPS.
+	//// But our "threading" requires we leave it until later.
+	//// (We could set it now, but when it executes, have it delay if the drawTimer is already locked.)
+	// if (animate) {
+		// drawTimer = setTimeout(drawFrame,1000/targetFPS);
+	// }
+
+	setTitle(" ");
+
+	/* if (!animate || showInfo) {
+		ctx.fillStyle = 'white';
+		ctx.fillText("Rendering next frame...",20,40);
+	} */
+
+	drawTimer = setTimeout(startRender,0);
+
+}
+
+function rotateFromCameraToWorldOrientation(v,r) {
+	r = rotate3d_about_y(rotate3d_about_x(v,elevation,tmpz),rotation,r);
+	return r;
+}
+
+function transformFromCameraToWorld(v,r) {
+	// v = v.slice(0);   // slice is not available in Float32Arrays
+	r = r || new FloatArray(4);
+	r = quat_copy(v,r);
+	// Rotation occurs about object not camera!
+	r[2] -= distanceFromObject;
+	// r = rotate3d_about_y(rotate3d_about_x(r,elevation,tmpz),rotation,r);
+	r = rotateFromCameraToWorldOrientation(r,r);
+	r[0] += centre.x;
+	r[1] += centre.y;
+	r[2] += centre.z;
+	r[3] = dslice;
+	return r;
+}
+
+function transformFromWorldToCamera(v,r) {
+	quat_copy(v,r);
+	r[0] -= centre.x;
+	r[1] -= centre.y;
+	r[2] -= centre.z;
+	r = rotate3d_about_x(rotate3d_about_y(r,-rotation,tmpz),-elevation,r);
+	r[2] += distanceFromObject;
+	return r;
+}
+
+function calculateLightnessScale(level) {
+	lightnessScale = 128*32*overExposure / Math.pow(2,scaleDown+level);
+}
+
+var startTime;
+var level,traverseI;   // Exposed for onclick
+function startRender() {
+
+	startTime = new Date().getTime();
+
+	initDerivatives();
+
+	if (animate) {
+
+		// elevation = Math.PI/9*startTime/5000;
+		// elevation = 0;
+		// rotation = -Math.PI/3.0 + Math.PI/8.0*startTime/6000;
+		rotation += Math.PI/8.0/6;
+
+		dslice = 0.45*Math.sin(startTime / 79000);
+		// dslice = 0;
+
+		//// Oscillating path
+		// var t = new Date().getTime();
+		// accel = quat_add(accel, [ 0.001*Math.sin(t/1900), 0.001*Math.sin(t/2300), 0.001*Math.sin(t/4300), 0.001*Math.sin(t/8300) ], accel);
+
+		//// Random acceleration
+		var accelDampening = ( quat_mod(c)<0.5 ? 1.0 : 0.9 );
+		accel = quat_add(quat_scale(accel,accelDampening,tmpz),[floatrnd(-accelMax,+accelMax),floatrnd(-accelMax,+accelMax),floatrnd(-accelMax,+accelMax),floatrnd(-accelMax,+accelMax)],accel);
+		vel = quat_add(quat_scale(vel,0.9,tmpz),accel,vel);
+		// c = quat_add(quat_scale(c,positionDampening,tmpz),vel,c);
+		c = quat_add(c,vel,c);
+		c = quat_scale(c,positionDampening,c);
+
+	}
+
+	ca = c[0];
+	cb = c[1];
+	cc = c[2];
+	cd = c[3];
+
+	/* No longer used
+	left   = centre.x - wid;
+	right  = centre.x + wid;
+	_top   = centre.y - hei;
+	bottom = centre.y + hei;
+	*/
+	// front  = centre.z - dep;
+	// back   = centre.z + dep;
+
+	// log("c="+c+" dslice="+dslice);
+
+	// for (var pixel=0,ptr=0; pixel<width*height; pixel+=1,ptr+=4) {
+		// var i = pixel % width;
+		// var j = (pixel / width)|0;
+
+	// if (Math.random()<0.05) {
+	// if (frameCount%48 == 0) {
+
+	var lockupBrowser = (animate && !progressiveRendering) && !haveBeenDragging;
+
+	if (lockupBrowser) {
+
+		// Simple and efficient 1-pass, but prevents user interaction with the page
+
+		calculateLightnessScale(0);
+
+		for (var i=0;i<width;i++) {
+			for (var j=0;j<height;j++) {
+				if (colorMode) {
+					foldCounts = hitPoints[i][j].foldCounts;
+					if (!foldCounts) {
+						foldCounts = {};
+						hitPoints[i][j].foldCounts = foldCounts;
+					}
+				}
+				hitPoints[i][j].hitPoint = getHitPoint(i,j);
+				hitPoints[i][j].hitPoint[3] = dslice;
+				calcColor(i,j,0);
+			}
+			(showProgress && (i%4)==0 && updateProgress(i/width) );
+		}
+		renderComplete();
+
+		// CONSIDER: Could drop out and fall back to interative method if ETA is very far away.
+
+	} else {
+
+		// Perform multiple scans at increasing resolution
+		// Makes callbacks to self so that page is still interactive for user.
+		// We have to use this method for either of the features above!
+		// An interactive but non-progressive renderer might be faster, but wouldn't give the user much feedback!
+
+		level = startLevel;
+
+		// Although overexposure loses information, the specular highlight and areas of darkness look more realistic (and understandable).
+		// var lightnessScale = 128*128*overExposure/(back-front) >> scaleDown;
+		// log("lightnessScale="+lightnessScale);
+		calculateLightnessScale(level);
+
+		traverseI = 0;
+		function doBit() {
+
+			// Be gentle if we are also busy rendering dots for the user
+			// TODO BUG: We should use something else!  haveBeenDragging is not
+			// set until after mousedown and after mousemove, sometimes two more
+			// passes after we first clicked!
+			// Possible: set and unset beGentle on mouseup/down
+			// Recommended: set and unset beGentle according to *any* window interaction (mousemove or key)
+			var beGentle = haveBeenDragging || userActivityMonitor.wasUserRecentlyActive();
+
+			if (traverseI < (width>>level)) {
+
+				// document.title = ((100*i/width)|0)+"% * " + (""+document.title).replace(/^([^%]*% |)\* /,'','g');
+				var amountDoneAtStartOfThisLevel = 1/Math.pow(4,level+1);
+				var amountDoneAtEndOfThisLevel = 1/Math.pow(4,level);
+				var amountThisLevelDoes = amountDoneAtEndOfThisLevel - amountDoneAtStartOfThisLevel; // Should be: 3/Math.pow(4,level+1);
+				var progressThroughLevel = traverseI/(width>>level);
+				var progressThroughAll = amountDoneAtStartOfThisLevel + amountThisLevelDoes*progressThroughLevel;
+
+				updateProgress(progressThroughAll);
+
+				//// Start with small chunks so browser is responsive, do larger chunks later in the render.
+				// var rate = 4 + 11*progressThroughAll;
+				//// Perhaps above is unneccessary.  Each chunk is 4x bigger anyway on later scans.
+				var rate = 4 + 11*progressThroughLevel; // 15/4 times slower at the end of each level :)
+				// TODO: We should base rate on observed processing speed, and aim to lock JS for no more than 4.0 seconds.
+				var to = (traverseI + rate)|0;
+				if (animate && !progressiveRendering)
+					to = width>>level;
+				if (beGentle)
+					to = traverseI+1;
+				if (to > (width>>level))
+					to = width>>level;
+
+				for (var i=traverseI;i<to;i++) {
+					for (var j=0;j<(height>>level);j++) {
+						if (level<startLevel && (i%2)==0 && (j%2)==0) {
+							// We have already calculated this on earlier pass!
+							// DONE: This skip was not working, when canvas.height was odd!
+							// log("hitPoints["+(i<<level)+"]["+(j<<level)+"] = "+hitPoints[i<<level][j<<level]);
+						} else {
+							if (colorMode) {
+								foldCounts = hitPoints[i<<level][j<<level].foldCounts;
+								if (!foldCounts) {
+									foldCounts = {};
+									hitPoints[i<<level][j<<level].foldCounts = foldCounts;
+								}
+							}
+							hitPoints[i<<level][j<<level].hitPoint = getHitPoint(i<<level,j<<level);
+							hitPoints[i<<level][j<<level].hitPoint[3] = dslice;
+						}
+						if (progressiveRendering || level==0)
+							calcColor(i<<level,j<<level,level);
+					}
+				}
+				traverseI = i;
+				// i++;
+
+			} else {
+
+				level--;
+				if (level >= 0) {
+					traverseI = 0;
+					calculateLightnessScale(level);
+					// log("Level = "+level);
+					drawTimer = setTimeout(doBit,0);
+				} else {
+					renderComplete();
+				}
+				return;
+
+			}
+
+			queueNextBit(beGentle);
+
+		}
+		function queueNextBit(beGentle) {
+			// if (animate && !progressiveRendering)
+				// doBit();
+			// else
+			drawTimer = setTimeout(doBit, (beGentle ? 1000 : 0) );
+		}
+		queueNextBit();
+
+	}
+
+}
+
+function distanceFromCamera(v) {
+	// return quat_mod(quat_sub(v,camFocalPoint,tmpz));
+	// Alternative: depth not distance
+	quat_sub(v,camFocalPoint,tmpz);
+	tmpz[3] = 0;
+	camDirection[3] = 0;
+	return quat_dot(tmpz,camDirection);
+}
+
+function getHSLfromRGB(r,g,b,outObj) {
+	// r,g,b in range 0-255
+	// returns {h,s,l} with ranges 0-1
+	if (!outObj)
+		outObj = {};
+	var maxcol = Math.max(r,Math.max(g,b));
+	var mincol = Math.min(r,Math.min(g,b));
+	var l = (mincol + maxcol ) / 255 / 2;
+	var s = (
+			l < 0.5
+			? (maxcol - mincol)/(maxcol + mincol)
+			: (maxcol - mincol)/(2.0-maxcol-mincol)
+		);
+	var h = (
+			r == maxcol
+			? (g - b)/(maxcol-mincol)
+			: g == maxcol
+			? 2.0 + (b-r)/(maxcol-mincol)
+			: 4.0 + (r-g)/(maxcol-mincol)
+		);
+	if (h < 0)
+		h += 6;
+	outObj.h = h/6;
+	outObj.s = s;
+	outObj.l = l;
+	return outObj;
+}
+
+function writeHSVasRGBdata(h,s,v,data,ptr) {
+	// hsv input values range 0 - 1, rgb output values range 0 - 255
+	// Adapted from http://www.easyrgb.com/math.html
+	var red, green, blue;
+	if(s == 0) {
+		red = green = blue = Math.round(v*255);
+	} else {
+		// h should be < 1
+		var var_h = h * 6;
+		if (var_h == 6) var_h = 0; // TODO: get offset if h<0 or h>1
+		var var_i = Math.floor( var_h );
+		var var_1 = v*(1-s);
+		var var_2 = v*(1-s*(var_h-var_i));
+		var var_3 = v*(1-s*(1-(var_h-var_i)));
+		if (var_i==0) {
+			red = v;
+			green = var_3;
+			blue = var_1;
+		} else if(var_i==1) {
+			red = var_2;
+			green = v;
+			blue = var_1;
+		} else if(var_i==2) {
+			red = var_1;
+			green = v;
+			blue = var_3
+		} else if(var_i==3) {
+			red = var_1;
+			green = var_2;
+			blue = v;
+		} else if (var_i==4) {
+			red = var_3;
+			green = var_1;
+			blue = v;
+		} else {
+			red = v;
+			green = var_1;
+			blue = var_2
+		}
+		red   = (red   * 255) | 0;
+		green = (green * 255) | 0;
+		blue  = (blue  * 255) | 0;
+	}
+	data[ptr]   = red;
+	data[ptr+1] = green;
+	data[ptr+2] = blue;
+}
+
+function writeHSLasRGBdata(h,s,l,data,ptr) {
+	// hsl input values range 0 - 1, rgb output values range 0 - 255
+	var red, green, blue;
+	if(s == 0) {
+		red = green = blue = l*255;
+	} else {
+		var temp2 = ( l < 0.5 ? l*(1.0+s) : l+s - l*s );
+		var temp1 = 2.0*l - temp2;
+		var temp3;
+
+		// Red
+		temp3 = h + 1/3;
+		if (temp3<0)
+			temp3 += 1.0;
+		if (temp3>1)
+			temp3 -= 1.0;
+		if (temp3 < 1/6)
+			red = temp1 + (temp2-temp1)*6*temp3;
+		else if (temp3 < 1/2)
+			red = temp2;
+		else if (temp3 < 2/3)
+			red = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else
+			red = temp1;
+
+		// Green
+		temp3 = h;
+		if (temp3<0)
+			temp3 += 1.0;
+		if (temp3>1)
+			temp3 -= 1.0;
+		if (temp3 < 1/6)
+			green = temp1 + (temp2-temp1)*6*temp3;
+		else if (temp3 < 1/2)
+			green = temp2;
+		else if (temp3 < 2/3)
+			green = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else
+			green = temp1;
+
+		// Blue
+		temp3 = h - 1/3;
+		if (temp3<0)
+			temp3 += 1.0;
+		if (temp3>1)
+			temp3 -= 1.0;
+		if (temp3 < 1/6)
+			blue = temp1 + (temp2-temp1)*6*temp3;
+		else if (temp3 < 1/2)
+			blue = temp2;
+		else if (temp3 < 2/3)
+			blue = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else
+			blue = temp1;
+
+		red   = (red   * 255) | 0;
+		green = (green * 255) | 0;
+		blue  = (blue  * 255) | 0;
+	}
+	data[ptr]   = red;
+	data[ptr+1] = green;
+	data[ptr+2] = blue;
+}
+
+var hsl = {};
+var lightnessScale,camDirection;
+function calcColor(i,j,level) {
+	// TODO: This algorithm is doing the wrong thing, looking only at the change in depth.
+	// This causes features at a distance to gain more contrast than closer features.
+	// We are more interested in the angle, which is related to the change *and* the current depth.
+	// Work out the angle!
+	var ptr = 4*(i + j*width);
+	// var lightness = 290 - depth[i][j]*138;
+	if (i==0 || j==0) {
+		lightness = 255;
+	} else {
+		// TODO: Make lighting methods selectable!
+		var distanceOfHitpoint = distanceFromCamera(hitPoints[i][j].hitPoint);
+		var xdelta = distanceOfHitpoint - distanceFromCamera(hitPoints[i-(1<<level)][j].hitPoint);
+		var ydelta = distanceOfHitpoint - distanceFromCamera(hitPoints[i][j-(1<<level)].hitPoint);
+		// lightness = (148 - lightnessScale/wid*(xdelta + ydelta));
+		//// Trying to eliminate fadeoff at depth.  This overexposes close objects.
+		// lightness = (148 - lightnessScale*(xdelta + ydelta))/distanceOfHitpoint;
+		var hitVector     = hitPoints[i][j].hitPoint;
+		var leftHitVector = hitPoints[i-(1<<level)][j].hitPoint;
+		var upHitVector   = hitPoints[i][j-(1<<level)].hitPoint;
+		if (!leftHitVector || !upHitVector) {
+			lightness = 128;
+		} else {
+			// This requires more accurate depths (i.e. lower value of smallest) than other lighting methods.
+			var normal = cross_product3d(quat_sub(upHitVector,hitVector,tmpz),quat_sub(leftHitVector,hitVector,[]),[]);
+			normal[3] = 0;
+			// On the Julia, the normal seems to be wrong only if hitpoint.x > 0
+			quat_norm(normal,normal);
+			// BUG TODO: But that is in real space - we want it in camera space, or we want the light in real space :P
+			// var normalToLight = [-4,-16,-1,0];
+			// var normalToLight = [4,16,1,0];
+			// var normalToLight = [5,7,1,0];
+			var normalToLight = [-5,-7,-1,0];
+			quat_norm(normalToLight,normalToLight);
+			if (lightRotatesWithCamera)
+				rotateFromCameraToWorldOrientation(normalToLight,normalToLight);
+			var withLight = quat_dot(normal,normalToLight);
+			// if (Math.random()<0.001) log("withLight = "+withLight);
+			// lightness = 138 + lightnessScale*withLight/48 * Math.pow(2,scaleDown + level);
+			// lightness = 138 + 118*withLight;
+			// lightness = 180 + 140*withLight;
+			lightness = (lightnessThresholdLow + lightnessThresholdHigh)/2 + overExposure*withLight*(lightnessThresholdHigh - lightnessThresholdLow)/2;
+			// lightness = 168 + 148*Math.pow(withLight,3);   // flat middle :(
+		}
+		//// This did bring down the high values, but it flattened the color a lot, and created a sharp transition between above/below average, i.e. there was no middle grey on the background, but a band where light met dark.
+		// var sgn = (xdelta+ydelta > 0 ? +1 : -1);
+		// lightness = (148 - sgn*lightnessScale*Math.sqrt(xdelta*xdelta + ydelta*ydelta)) | 0;
+		/*
+		function sgnlog(x) {
+			if (x > 0)
+				return Math.log(x+1)
+			else
+				return -Math.log(-x+1);
+		}
+		lightness = (148 - 32*sgnlog(lightnessScale*(xdelta + ydelta))) | 0;
+		*/
+	}
+	// if (i%128==0 && j%128==0)
+		// log("lightness: "+(148 - lightnessScale*(xdelta + ydelta))+" -> "+lightness);
+	/*
+	// Produces a similar effect to overExposure, but curved rather than linearly exceeded
+	function softcurve(x) {
+		// // plot [0:1] ( x < 0.5 ? 0.5 - sqrt(0.5*0.5 - x**2) : 0.5 + sqrt(0.5*0.5 - (1-x)**2) )
+		// return (
+				// x < 0.5
+				// ? 0.5 - Math.sqrt(0.5*0.5 - x*x)
+				// : 0.5 + Math.sqrt(0.5*0.5 - (1-x)*(1-x))
+				// );
+		// plot [-1:1] sgn(x)*sqrt(x*x)**(1.0/3.0)
+		x = (x-0.5) * 2;
+		return 0.5 + 0.5 * (x>0?+1:-1) * Math.pow(Math.abs(x), 1/1.5);
+	}
+	lightness = 255 * softcurve(lightness/255);
+	*/
+	//// Compare 4 depths - slower and debatable improvement
+	// var xydelta = depth[i][j] - depth[i-1][j-1];
+	// var lightness = (148 - lightnessScale*(xdelta + ydelta + xydelta)/2) | 0;
+	/* if (lightness > 255)
+		lightness = 255;
+	if (lightness < 0)
+		lightness = 0; */
+	if (lightness < lightnessThresholdLow)
+		lightness = lightnessThresholdLow;
+	if (lightness > lightnessThresholdHigh)
+		lightness = lightnessThresholdHigh;
+	// Specular highlight
+	if (specularHighlighting && withLight > 0.92)
+		lightness = 400;
+	// Fade with distance
+	if (fadeWithDistance)
+		lightness *= (1.1 - 1.1*distanceOfHitpoint/dep);   // I thought the relationship might be /r^2 but this has better visual effect
+	// DONE below: Rather than getting richer under lighting (like lego plastic), it fades under lighting to pastel (like no object known on Earth)
+	// We should go to full saturation, before we start going to white.
+	var foldCounts;
+	if (colorMode &&
+		(foldCounts = hitPoints[i][j].foldCounts) &&
+		(foldCounts.fixedSphere || foldCounts.box || foldCounts.minSphere)
+	) {
+		var multr = 1;
+		var multg = 1;
+		var multb = 1;
+		if (tgladColoringMethod == 1) {
+			multr = Math.pow(0.70,foldCounts.fixedSphere - foldCounts.minSphere);
+			multg = Math.pow(0.993,foldCounts.box);
+			multb = Math.pow(0.40,foldCounts.minSphere);
+		} else if (tgladColoringMethod == 2) {
+			multr = 0.02 * foldCounts.box;
+			multg = 0.90 * foldCounts.minSphere;
+			multb = 0.99 * foldCounts.fixedSphere;
+		} else {
+			multr = Math.pow(0.70,foldCounts.fixedSphere);
+			multg = Math.pow(0.99,foldCounts.box);
+			multb = Math.pow(0.40,foldCounts.minSphere);
+		}
+		var maxMult = Math.max(Math.max(multr,multg),multb);
+		multr /= maxMult;
+		multg /= maxMult;
+		multb /= maxMult;
+		// ctx.fillStyle = foldCounts.canvasCol;
+		// ctx.fillRect(i<<scaleDown,j<<scaleDown,1<<scaleDown,1<<scaleDown);
+		data[ptr]   = (lightness*multr)|0;
+		data[ptr+1] = (lightness*multg)|0;
+		data[ptr+2] = (lightness*multb)|0;
+
+		//// Shiny plastic
+		//// NOTE: Requires lightnessThresholdHigh=255
+		// var sat = 1 - 1/Math.log(foldCounts.fixedSphere + foldCounts.box + foldCounts.minSphere);
+		// var hsl = getHSLfromRGB(data[ptr],data[ptr+1],data[ptr+2],hsl);
+		// writeHSLasRGBdata(hsl.h,sat,lightness/255,data,ptr);
+		// writeHSLasRGBdata(hsl.h,hsl.s,hsl.l,data,ptr);   // This is not right!!
+		// I don't think we need to warp hue.  I increased maxIters and got some new colors from that!
+		if (warpHue) {
+			// var offset = multr + multg + multb;
+			var offset = foldCounts.fixedSphere + foldCounts.minSphere;
+			var hsl = getHSLfromRGB(data[ptr],data[ptr+1],data[ptr+2],hsl);
+			hsl.h += offset/6;
+			//// Full saturation!
+			// writeHSVasRGBdata(hsl.h,1.0,lightness/255,data,ptr);
+			//// Higher contrast
+			// writeHSVasRGBdata(hsl.h,hsl.s,lightness/255,data,ptr);
+			//// What I was trying for
+			writeHSLasRGBdata(hsl.h,hsl.s,hlightness/255,data,ptr);
+		}
+	} else {
+		// Strangely FF needs this but Chrome does not!
+		// I guess we should not put properties into a Float32Array ;)
+		// foldCounts = {};
+		// hitPoints[i][j].foldCounts = foldCounts;
+		// This results in a greyscale result.  We could do it earlier.
+		// This performs clipping to 0-255 for us:
+		data[ptr]   = lightness|0;
+		data[ptr+1] = lightness|0;
+		data[ptr+2] = lightness|0;
+	}
+	// hitPoints[i][j].canvasCol = "rgb("+data[ptr]+","+data[ptr+1]+","+data[ptr+2]+")";
+	// log("canvasCol = "+foldCounts.canvasCol);
+	/*
+	var distness = 1.25-depth[i][j]/2;
+	if (distness<0) distness=0;
+	if (distness>1) distness=1;
+	data[ptr]   = lightness*distness;
+	data[ptr+1] = lightness*distness;
+	// data[ptr+2] = lightness;
+	data[ptr+2] = lightness*distness;
+	*/
+	// data[ptr+1] = lightness*11/12;
+	// data[ptr+2] = lightness*4/5;
+
+	// Three light sources, one on each axis (sort of)
+	// useful for checking your normals are good.
+	// red light comes from +x, green from -y (up screen), blue from +z
+	if (tgladColoringMethod == 3 && normal) {
+		// data[ptr]   = 255*normal[0];
+		// data[ptr+1] = -255*normal[1];
+		// data[ptr+2] = 255*normal[2];
+		data[ptr]   = 128+128*normal[0];
+		data[ptr+1] = 128-128*normal[1];
+		data[ptr+2] = 128+128*normal[2];
+	}
+
+	data[ptr+3] = 255;
+	// Don't draw if we are at the wrong angle!
+	if (progressiveRendering && !haveBeenDragging) {
+		var scalePoint = Math.pow(2,scaleDown);
+		var boxSize = Math.pow(2,scaleDown+level);
+		ctx.fillStyle = imageDataToRGB(data,ptr);
+		ctx.fillRect(i*scalePoint,j*scalePoint,boxSize,boxSize);
+	}
+}
+
+function renderComplete() {
+
+	// Provided we don't create any more setTimeout s, we can queue the next frame now, before rendering it.
+	if (animate) {
+		drawTimer = setTimeout(drawFrame,1000/targetFPS);
+	} else {
+		drawTimer = null;
+	}
+
+	var endTime = new Date().getTime();
+	// log("took " + (endTime-startTime)/1000 + " seconds.");
+	if (showProgress) {
+		setStatus("Done in "+readableFloat(endTime-startTime)/1000 + " seconds.");
+	}
+
+	offscreenContext.putImageData(offscreenImage,0,0);
+	// If we are in the middle of a drag operation, don't interrupt the view!
+	if (!haveBeenDragging) {
+		blitCanvas(offscreenCanvas,canvas);
+	}
+
+	frameCount++;
+	if (showInfo) {
+		var timeElapsed = new Date().getTime() - frameStartTime;
+		var fps = frameCount / timeElapsed * 1000;
+		ctx.fillStyle = 'white';
+		var toPrint = (
+				fps >= 1
+				? readableFloat(fps)+" fps"
+				: readableFloat(1/fps)+" sec"
+			);
+		ctx.fillText(toPrint,20,20);
+		ctx.fillText("c = ["+c+"] dslice = "+dslice,20,canvas.height - 10);
+	}
+
+	// if (!animate) {
+		// drawTimer = setTimeout(drawFrame,4000);
+	// }
+
+	setTitle('');
+
+	if (!animate)
+		saveCompletedRender();
+
+}
+
+
+
+/* Preview renderer */
+
+// BUG: This fails with an error if user has just increased scaleDown, or just
+// fails to draw anything useful if they have decreased it.
+function renderPreviewFrom(_newPos,_newRotation,_newElevation,finalPresentation) {
+
+	// Drop it in the shared variables that the other functions use
+	newPos = _newPos;
+	newRotation = _newRotation;
+	newElevation = _newElevation;
+
+	initDerivatives();
+
+	if (!finalPresentation) {
+		ctx.fillStyle = 'grey';
+		ctx.fillRect(0,0,canvas.width,canvas.height);
+	}
+
+	if (!finalPresentation)
+		withCorners().drawScanPlanes();
+
+	ctx.globalAlpha = 1.0;
+
+	// Rather than more dots, it's faster to use the same dots but rounded to show some change.
+	var lessSkipping = (finalPresentation ? 0 : 0);
+	var drawDots = finalPresentation;
+	// If skip is a power of 2, it picks up more points from the earlier passes.
+	// But sometimes it's useful to have some of the old points still visible (e.g. to see where we came from)
+	// Just do skip++ to get dots from various passes (earlier shots)
+	var skip = (2 * Math.pow(2,scaleDownDots - scaleDown - lessSkipping) |0);
+	// skip++; // I prefer the skips from the first pass, because they make a nice soft local shape.  But perhaps a mix of both old and new can be found.
+	if (skip<1)
+		skip = 1;
+	// I previously tried an unbalanced binary tree to sort the points by depth.
+	// It was comparable in Chromium, terrible in Firefox.
+	var dotsToDraw = [];
+	var point = new FloatArray(4);
+	for (var i=0;i<width;i+=skip) {
+		for (var j=0;j<height;j+=skip) {
+			var hitPoint = hitPoints[i][j];
+			if (hitPoint.hitPoint) {
+				/*
+				point = quat_copy(hitPoint.hitPoint,point);
+				// Move vector from world to camera coordinate space
+				// DONE: Refactor - this is duplicated in transformFromWorldToNewCamera
+				quat_sub(point,newPos,point);
+				point = rotate3d_about_x(rotate3d_about_y(point,-newRotation,tmpz),-newElevation,point);
+				point[2] += distanceFromObject;
+				*/
+				//// I wanted to clip points which moved in front of the screen, but the screen plane has become almost meaningless in the current implementation.
+				transformFromWorldToNewCamera(hitPoint.hitPoint,point);
+				if (point[2] > 0) {
+					// var hit2d = [ point[0]/point[2], point[1]/point[2] ];
+					// quat_scale(hit2d,focalDistance*canvas.width/wid/2,hit2d);
+					// quat_add(hit2d,[canvas.width/2,canvas.height/2,0],hit2d);
+					var hit2d = transformFromCameraToScreen(point);
+					// Rather than re-calculate the color, pick it out of the existing buffer image!
+					var canvasCol = imageDataToRGB(data,(i+j*width)<<2);
+					// if (hitPoint.foldCounts && hitPoint.canvasCol) {
+						// ctx.fillStyle = canvasCol;
+						// Don't render it yet - add it to the tree to sort by depth.
+						// But first we much attach the color data:
+						hit2d.canvasCol = canvasCol;
+						hit2d.distance = point[2];
+						/*
+						hit2d.oldDistance = transformFromWorldToCamera(hitPoint.hitPoint,[])[2];
+						*/
+						// Silly little cache, so I don't have to share this functionality with other parts of the code :P
+						if (hitPoint.distanceCachedFor != ""+hitPoint.hitPoint) {
+							hitPoint.distance = transformFromWorldToCamera(hitPoint.hitPoint,[])[2];
+							hitPoint.distanceCachedFor = ""+hitPoint.hitPoint;
+						}
+						hit2d.oldDistance = hitPoint.distance;
+						dotsToDraw.push(hit2d);
+					// }
+				}
+			}
+		}
+	}
+	// CONSIDER: We could alter radius relative to old/new distance, if we knew old distance!
+	dotsToDraw.sort(function(a,b){ return b.distance - a.distance; });
+	dotsToDraw.forEach(function(hit2d){
+		// Occasionally this throws:
+		// Uncaught TypeError: Cannot read property 'canvasCol' of undefined
+		// But I checked the code and that's unpossible.
+		if (!hit2d)
+			return;
+		ctx.fillStyle = hit2d.canvasCol;
+		if (drawDots) {
+			// Too slow!
+			ctx.globalAlpha = 0.4;
+			ctx.beginPath();
+			ctx.arc(hit2d[0],hit2d[1],radius,0,Math.PI*2,true);
+			ctx.closePath();
+			ctx.fill();
+			ctx.globalAlpha = 1;
+		} else {
+			// This radius assumes the point was polled from the most recent
+			// viewpoint.  Older points may appear larger.
+			var radius = skip*0.5*Math.pow(2,scaleDown);
+			radius = radius * hit2d.oldDistance / hit2d.distance;
+			// ctx.fillRect(hit2d[0]-radius,hit2d[1]-radius,radius*2,radius*2);
+			//// Don't offset, since we didn't when reading.  Might make the re-scan invisible!
+			// ctx.fillRect(hit2d[0],hit2d[1],radius*2,radius*2);
+			ctx.fillRect(hit2d[0]-1,hit2d[1]-1,radius*2+2,radius*2+2);
+		}
+	});
+
+	// Display the "Cancel" icon
+	if (/*haveBeenDragging &&*/ canvasStartX && canvasStartY) {
+		ctx.strokeStyle = 'red';
+		ctx.lineWidth = 1.4;
+		ctx.beginPath();
+		dragMinPixels -= 2;
+		ctx.arc(canvasStartX,canvasStartY,dragMinPixels,0,Math.PI*2,true);
+		ctx.moveTo(canvasStartX+dragMinPixels*0.707,canvasStartY-dragMinPixels*0.707);
+		ctx.lineTo(canvasStartX-dragMinPixels*0.707,canvasStartY+dragMinPixels*0.707);
+		dragMinPixels += 2;
+		ctx.closePath();
+		ctx.stroke();
+	}
+
+	if (!finalPresentation)
+		withCorners().drawBoxes();
+
+	ctx.globalAlpha = 1.0;
+
+}
+
+function transformFromWorldToNewCamera(v,r) {
+	// If we want to rotate about not the focus object but the camera ...
+	//
+	quat_copy(v,r);
+	if (rotateAboutCamera) {
+		r[0] -= camFocalPoint[0];
+		r[1] -= camFocalPoint[1];
+		r[2] -= camFocalPoint[2];
+		// Needed for strafing.  Cancels with newPos during rotation.
+		r[0] += centre.x;
+		r[1] += centre.y;
+		r[2] += centre.z;
+	}
+	r[0] -= newPos[0];
+	r[1] -= newPos[1];
+	r[2] -= newPos[2];
+	r = rotate3d_about_x(rotate3d_about_y(r,-newRotation,tmpz),-newElevation,r);
+	if (!rotateAboutCamera)
+		r[2] += distanceFromObject;
+	return r;
+}
+
+function transformFromCameraToScreen(v) {
+	if (v[2] <= 0)
+		return null;
+	var scrPnt = [ v[0]/v[2], v[1]/v[2], focalDistance, dslice ];
+	quat_scale(scrPnt,focalDistance*canvas.width/wid/2,scrPnt);
+	quat_add(scrPnt,[canvas.width/2,canvas.height/2,0],scrPnt);
+	return scrPnt;
+}
+
+function transformFromWorldToImage(v) {
+	v = transformFromWorldToNewCamera(v,[]);
+	return transformFromCameraToScreen(v);
+}
+
+// Returns an object containing some drawing functions.
+function withCorners() {
+
+	var backScale = dep / focalDistance;
+	var cornerLeftTopNear     = transformFromCameraToWorld([-wid,+hei,focalDistance]);
+	var cornerLeftBottomNear  = transformFromCameraToWorld([-wid,-hei,focalDistance]);
+	var cornerRightTopNear    = transformFromCameraToWorld([+wid,+hei,focalDistance]);
+	var cornerRightBottomNear = transformFromCameraToWorld([+wid,-hei,focalDistance]);
+	// TODO: change things so we don't do +focalDistance to depth :P
+	var cornerLeftTopFar      = transformFromCameraToWorld([-wid*backScale,+hei*backScale,dep]);
+	var cornerLeftBottomFar   = transformFromCameraToWorld([-wid*backScale,-hei*backScale,dep]);
+	var cornerRightTopFar     = transformFromCameraToWorld([+wid*backScale,+hei*backScale,dep]);
+	var cornerRightBottomFar  = transformFromCameraToWorld([+wid*backScale,-hei*backScale,dep]);
+
+	function draw3dLine(ca,cb) {
+		// BUG: Should clip line to view frustrum (or hemi-volume), rather than fail on lines behind camera
+		var ca2d = transformFromWorldToImage(ca);
+		var cb2d = transformFromWorldToImage(cb);
+		if (ca2d!=null && cb2d!=null) {
+			ctx.beginPath();
+			ctx.moveTo(ca2d[0],ca2d[1]);
+			ctx.lineTo(cb2d[0],cb2d[1]);
+			ctx.closePath();
+			ctx.stroke();
+		}
+	}
+
+	function drawScanPlanes() {
+		// Display the scan planes (show stepExponent working)
+		ctx.globalAlpha = 0.5;
+		ctx.strokeStyle = 'white';
+		ctx.lineWidth = 1.0;
+		for (var k=0;k<steps;k++) {
+			var thru = (Math.pow(stepExponent+1,k/steps)-1)/stepExponent;
+			function interpolate(a,b) {
+				return quat_add(a,quat_scale(quat_sub(b,a,tmpz),thru,tmpz),new FloatArray(4));
+			}
+			var nw = interpolate(camFocalPoint,cornerLeftTopFar);
+			var ne = interpolate(camFocalPoint,cornerRightTopFar);
+			var se = interpolate(camFocalPoint,cornerRightBottomFar);
+			var sw = interpolate(camFocalPoint,cornerLeftBottomFar);
+			draw3dLine(nw,ne);
+			draw3dLine(ne,se);
+			draw3dLine(se,sw);
+			draw3dLine(sw,nw);
+		}
+	}
+	// this.drawScanPlanes = drawScanPlanes;
+
+	function drawBoxes() {
+
+		// Show old view frustrum
+		ctx.globalAlpha = 0.5;
+		ctx.lineWidth = 2.0;
+		ctx.strokeStyle = 'blue';
+
+		draw3dLine(cornerLeftTopNear,cornerLeftTopFar);
+		draw3dLine(cornerRightTopNear,cornerRightTopFar);
+		draw3dLine(cornerLeftBottomNear,cornerLeftBottomFar);
+		draw3dLine(cornerRightBottomNear,cornerRightBottomFar);
+
+		draw3dLine(cornerLeftTopNear,cornerRightTopNear);
+		draw3dLine(cornerLeftTopFar,cornerRightTopFar);
+		draw3dLine(cornerLeftBottomNear,cornerRightBottomNear);
+		draw3dLine(cornerLeftBottomFar,cornerRightBottomFar);
+
+		draw3dLine(cornerLeftTopNear,cornerLeftBottomNear);
+		draw3dLine(cornerRightTopNear,cornerRightBottomNear);
+		draw3dLine(cornerLeftTopFar,cornerLeftBottomFar);
+		draw3dLine(cornerRightTopFar,cornerRightBottomFar);
+
+		// Iterate the 12 lines that make up a cube
+		ctx.strokeStyle = 'red';
+		for (var axis=0;axis<3;axis++) {
+			for (var cx=-1;cx<=+1;cx+=2) {
+				for (var cy=-1;cy<=+1;cy+=2) {
+					// Construct the two ends of the line
+					var nums = [cx,cy];
+					var ca = [];
+					var cb = [];
+					// Could be done more neatly with an insert (or slice/splice?).  Dunno about efficiency.
+					// There must be an easier way :P
+					for (var initAxis=0;initAxis<3;initAxis++) {
+						if (initAxis == axis) {
+							ca.push(-1);
+							cb.push(+1);
+						} else {
+							var num = nums.pop();
+							ca.push(num);
+							cb.push(num);
+						}
+					}
+					// Scale the cube to the size of the standard Mandelbox
+					quat_scale(ca,6,ca);
+					quat_scale(cb,6,cb);
+					draw3dLine(ca,cb);
+				}
+			}
+		}
+
+	}
+	// this.drawBoxes = drawBoxes;
+
+	return ({
+		drawBoxes: drawBoxes,
+		drawScanPlanes: drawScanPlanes
+	});
+
+}
+
+// setupJulia(); formulaName = "Julia";
+setupMandelbox(); formulaName = "MandeBox";
+initOffscreenBuffer();
+//// This can be cancelled (paused) by window.onblur!
+// drawTimer = setTimeout(drawFrame,2000);
+// drawFrame();
+//// But we do really want the later stuff to run now
+drawTimer = setTimeout(drawFrame,0);
+
+var params = {};
+document.location.hash.slice(1).split('&').forEach(function(x){
+	params[x.split('=')[0]] = x.split('=')[1];
+});
+if (params["rot"]) {
+	var list = JSON.parse(params["rot"]).map(parseFloat);
+	rotation  = list[0];
+	elevation = list[1];
+}
+if (params["campos"]) {
+	camFocalPoint = (params["campos"]).slice(1,-1).split(',').map(parseFloat);
+	distanceFromObject = ( params["dist"] ? parseFloat(params["dist"]) : 0.01 );
+	wid = distanceFromObject/2;   // Should be the same order of magnitude
+	var newCen = rotateFromCameraToWorldOrientation([0,0,distanceFromObject,0],[]);
+	newCen = quat_add(newCen,camFocalPoint,newCen);
+	centre.x = newCen[0];
+	centre.y = newCen[1];
+	centre.z = newCen[2];
+	if (distanceFromObject < 1.0)
+		rotateAboutCamera = true;
+}
+if (params["scale"]) {
+	scale = parseFloat(params["scale"]);
+}
+
+
+
+/* Navigation */
+
+function saveCompletedRender() {
+	var oldCanvas = document.createElement("canvas");
+	oldCanvas.width = offscreenCanvas.width;
+	oldCanvas.height = offscreenCanvas.height;
+	//// When using progressiveRendering, offscreenCanvas has lots of unwritten
+	//// (old) data until it's completed, so we can't use it.
+	if (progressiveRendering && drawTimer!=null) {
+		//// NOTE: To save memory, we could skip saving the image if it's rubbish
+		//// TODO: It's rubbish if the first pass has not completed.  In that case, a preview is as good or better than the current canvas.
+		blitCanvas(canvas,oldCanvas);   // Sometimes has rubbish on it
+	} else {
+		offscreenContext.putImageData(offscreenImage,0,0);
+		blitCanvas(offscreenCanvas,oldCanvas);
+	}
+	cameraHistory.push({
+		centre: { x:centre.x, y:centre.y, z:centre.z },
+		wid: wid,
+		hei: hei,
+		dep: dep,
+		fov: fov,
+		distanceFromObject: distanceFromObject,
+		smallest: smallest,
+		// back: back,
+		// front: front,
+		// We also store the camera angle at this time
+		rotation: rotation,
+		elevation: elevation,
+		lastImage: oldCanvas,
+	});
+	enforceMaxOldImages();
+}
+
+function enforceMaxOldImages() {
+	if (cameraHistory.length > maxOldImages) {
+		for (var i=0;i<cameraHistory.length-maxOldImages;i++) {
+			cameraHistory[i].lastImage = null;
+		}
+	}
+}
+
+function zoomTowardsPoint(target) {
+	if (drawTimer != null)
+		saveCompletedRender();   // Save it anyway!
+
+	// centre.z = (front + back)/2;
+
+	// log("Moving towards",target);
+	centre.x = target[0];
+	centre.y = target[1];
+	centre.z = target[2];
+	// centre.x = (centre.x*1 + target[0]*2) / 3;
+	// centre.y = (centre.y*1 + target[1]*2) / 3;
+	// centre.z = (centre.z*1 + target[2]*2) / 3;
+
+	zoomIn(zoomSpeed);
+	// fov *= zoomSpeed;   // Hell no!  fov<1 is madness :P
+
+	// DONE: Should really make these redundant:
+	// front = -dep;
+	// back = +dep;
+
+	// renderPreviewFrom([centre.x,centre.y,centre.z],rotation,elevation);
+	queueFrame();
+}
+
+function moveCameraBack() {
+	if (cameraHistory.length > 0) {
+		var lastCam = cameraHistory[cameraHistory.length-1];
+		delete cameraHistory[cameraHistory.length-1];
+		cameraHistory.length--;
+		for (var prop in lastCam) {
+			// log("Overwriting "+prop+"="+window[prop]+" with "+lastCam[prop]);
+			window[prop] = lastCam[prop];
+			// eval(prop+"="+lastCam[prop]);
+		}
+		// renderPreviewFrom([centre.x,centre.y,centre.z],rotation,elevation);
+		var delayRender = 0;
+		if (lastCam.lastImage) {
+			//// Don't replace the offscreenCanvas - we might have changed resolution!
+			// offscreenCanvas = lastCam.canvas;
+			// offscreenContext = offscreenCanvas.getContext("2d");
+			// offscreenImage = offscreenContext.getImageData(0,0,width,height);
+			// data = offscreenImage.data;
+			// blitCanvas(offscreenCanvas,canvas);
+			// log("Blitting old canvas");
+			// queueFrame(1000);
+			// if (drawTimer)
+				// clearTimeout(drawTimer);
+			blitCanvas(lastCam.lastImage,offscreenCanvas);
+			blitCanvas(offscreenCanvas,canvas); // For some reason this doesn't work! (although queueFrame does give us the old image when it starts)
+			// blitCanvas(lastCam.lastImage,canvas); // Oh it has all stopped working properly now :f
+			// We must do a re-render (queueFrame), in order to get the depths back!
+			// (Unless we start storing oldHitPoints as well as lastImage.)
+			// So give the user a little time to see the image before splatting it
+			// with the low-res scan:
+			if (progressiveRendering)
+				delayRender = 1500;
+		}
+		queueFrame(delayRender);
+	}
+}
+
+function zoomIn(speed) {
+	wid /= speed;
+	hei /= speed;
+	//// The required depth depends on whether the view is looking down a corridor, or close up at a surface.
+	// dep /= speed;
+	//// A compromise: bad for long shots and for close-ups!
+	if (dep > 100*wid)
+		dep = 100*wid;
+	smallest /= speed;
+
+	// For user convenience, we set rotateAboutCamera when they get closer to the surface
+	// We do it only in zoomIn, so that 
+	if (distanceFromObject>=2.0 && distanceFromObject/speed<2.0)
+		rotateAboutCamera = true;
+
+	distanceFromObject /= speed;
+}
+
+
+
+/* Events */
+
+function queueFrame(ms) {
+	if (ms === undefined) {
+		ms = 1;
+	}
+	if (drawTimer)
+		clearTimeout(drawTimer);
+	drawTimer = setTimeout(drawFrame,ms);
+	// Don't present previews when we're animating - it will harm framerate!
+	// Also don't do it if we have stalled the render, presumably to temporarily display the current canvas state.
+	if (!animate && ms===1) {
+		// Show approximation of where we are going
+		renderPreviewFrom([centre.x,centre.y,centre.z],rotation,elevation,true);
+		// Copy our dodgy approximation into the offscreen buffer, to use as
+		// "cancel" image if the user does more dragging!  (The old "cancel" image is now in the wrong place :P)
+		blitCanvas(canvas,offscreenCanvas);
+		renderPreviewFrom([centre.x,centre.y,centre.z],rotation,elevation,false);
+	}
+}
+
+// Keypresses
+hookEvent(window,"keyup",function(evt){
+	if (evt.keyCode == 27) {
+		paused = true;
+		if (drawTimer)
+			clearTimeout(drawTimer);
+		drawTimer = null;
+		setStatus("Stopped by Escape.");
+	}
+	if (evt.keyCode == 32) {
+		paused = !paused;
+		if (!paused && animate) {
+			resetFPS();
+			queueFrame();
+		}
+		setStatus( (paused ? "Paused" : "Unpaused") );
+	}
+});
+
+// Auto pause when window is unfocused
+var pausingTimer = null;
+hookEvent(window,"blur",function(evt) {
+	if (pausingTimer) {
+		clearTimeout(pausingTimer);
+		pausingTimer = null;
+	}
+	paused = true;
+});
+hookEvent(window,"focus",function(evt) {
+	// paused = false;
+	// Often when refocusing the window I want to reload, not start rendering a new frame!
+	// So we delay unpausing for a little while.
+	pausingTimer = setTimeout(function(){
+		paused=false;
+		if (animate) {
+			resetFPS();
+			queueFrame();
+		}
+	},700);
+});
+
+var haveBeenDragging = false;
+var draggingMode = "";   // Firefox doesn't present correct evt.button when dragging.
+var mousedownTime;
+
+var cameraHistory = [];
+
+hookEvent(canvas,"click",function(evt) {
+
+	if (haveBeenDragging) {
+		haveBeenDragging = false;
+		document.body.style.cursor = '';
+		// log("mouseclick successfully ignored");
+		return;
+	}
+
+	// log("mouseclick detected - zooming");
+
+	/*
+	var target = front + depth[(evt.layerX*width/canvas.width)|0][(evt.layerY*height/canvas.height)|0];
+	centre.x = left + evt.layerX*wid*2 / canvas.width;
+	centre.y = _top + evt.layerY*hei*2 / canvas.height;
+	// front = (front + 2*target)/3;
+	// back = (back + 2*target)/3;
+	centre.z = (centre.z + 2*target)/3
+	*/
+
+});
+
+// This fires as well as the mousedown?
+hookEvent(canvas,"contextmenu",function(evt) {
+	// log("contextmenu on",this,"with evt",evt);
+	evt.preventDefault();
+});
+
+hookEvent(canvas,"mousewheel",function(evt) {
+	// log("mousewheel detail="+evt.detail,evt);
+	var delta;
+	if (evt.wheelDeltaY) {
+		delta = evt.wheelDeltaY;
+	} else if (evt.detail) {
+		delta = -evt.detail/3;
+	}
+	if (delta > 0) {
+		zoomIn(wheelZoomSpeed);
+		renderPreviewFrom([centre.x,centre.y,centre.z],rotation,elevation);
+		queueFrame();
+	} else {
+		zoomIn(1/wheelZoomSpeed);
+		renderPreviewFrom([centre.x,centre.y,centre.z],rotation,elevation);
+		queueFrame();
+	}
+});
+
+var dragMinPixels = 8;
+var startX,startY;              // Shared for moveCamera by onmousedown.  Read from screenX/Y.
+var canvasStartX,canvasStartY;  // Shared mousedown handler for renderPreview's "cancel" icon
+var deltaX,deltaY;              // Shared by moveCamera for onmouseup
+var newPos,newRotation,newElevation;   // Calculated by moveCamera and shared for mouseup events
+function moveCamera(evt) {
+	// log("mousemove evt.button="+evt.button,evt);
+	deltaX = evt.screenX - startX;
+	deltaY = evt.screenY - startY;
+	//// Reset everything (in case user cancels)
+	newRotation = rotation;
+	newElevation = elevation;
+	newPos = [centre.x,centre.y,centre.z];
+	//// We do not activate dragging immediately
+	// if (new Date().getTime() < mousedownTime+500)
+	if (!haveBeenDragging && progressiveRendering) { // && drawTimer!=null
+		// Take a copy of the image so far, to use as cancel image.
+		blitCanvas(canvas,offscreenCanvas);
+	}
+	haveBeenDragging = true;
+	if (deltaX*deltaX + deltaY*deltaY < dragMinPixels*dragMinPixels) {
+		document.body.style.cursor = 'crosshair';
+		blitCanvas(offscreenCanvas,canvas);
+		return;
+	}
+	if (draggingMode === "strafe") {
+		document.body.style.cursor = ( evt.shiftKey ? "row-resize" : "col-resize" );
+		var right = rotate3d_about_y(rotate3d_about_x([1,0,0],elevation),rotation);
+		var down = rotate3d_about_y(rotate3d_about_x([0,1,0],elevation),rotation);
+		var forward = rotate3d_about_y(rotate3d_about_x([0,0,-2],elevation),rotation);
+		forward[1] = 0;   // Often (sometimes?) I prefer to move horizontally forwards rather than camera forwards
+		var moveVector = [0,0,0];
+		var switchHorMotion = (evt.shiftKey ? +1 : +1);
+		quat_add(moveVector,quat_scale(right,switchHorMotion*-2*deltaX*wid/canvas.width,moveVector),moveVector);
+		var otherDir = (evt.shiftKey ? forward : down);
+		quat_add(moveVector,quat_scale(otherDir,-2*deltaY*hei/canvas.height,tmpz),moveVector);
+		newPos = [centre.x,centre.y,centre.z];
+		quat_add(newPos,moveVector,newPos);
+		renderPreviewFrom(newPos,newRotation,newElevation);
+	} else
+	if (draggingMode === "rotate") {
+		document.body.style.cursor = 'move';
+		newRotation = rotation + deltaX*2*Math.PI/canvas.width;
+		newElevation = elevation + deltaY*2*Math.PI/canvas.height;
+		// rotateAboutCamera is dealt with by transformFromCameraToWorld during
+		// dragging and, and finally by mouseup
+		renderPreviewFrom(newPos,newRotation,newElevation);
+	}
+}
+
+hookEvent(canvas,"mousedown",function(evt) {
+	// log("mousedown detected evt.button="+evt.button); 
+	// offsetX does not exist in Firefox!
+	startX = evt.screenX;
+	startY = evt.screenY;
+	canvasStartX = evt.layerX;
+	canvasStartY = evt.layerY;
+	if (evt.button === 0) {
+		draggingMode = "strafe";
+	} else if (evt.button === 2) {
+		draggingMode = "rotate";
+	}
+	mousedownTime = new Date().getTime();
+	hookEvent(window,"mousemove",moveCamera);
+	//// TESTING: To respond to Shift key changes
+	//// RESULTS: preview re-render did occur, but cursor
+	//// did not immediately change, and preview was
+	//// rendered from wrong position/angle!
+	// hookEvent(window,"keydown",moveCamera);
+	// hookEvent(window,"keyup",moveCamera);
+	evt.preventDefault(); // Otherwise a text drag action begins!
+});
+
+hookEvent(window,"mouseup",function(evt) {
+	// log("mouseup detected - unhooking",evt);
+	unhookEvent(window,"mousemove",moveCamera);
+	// unhookEvent(window,"keydown",moveCamera);
+	// unhookEvent(window,"keyup",moveCamera);
+	if (haveBeenDragging) {
+		//// NO!  This must be left for onmouseclick to check and clear!
+		// haveBeenDragging = false;
+		//// Unless it was a context-menu button click - which has no click event! :f
+		if (evt.button == 2) {
+			haveBeenDragging = false;
+			document.body.style.cursor = '';
+		}
+
+		if (deltaX*deltaX + deltaY*deltaY < dragMinPixels*dragMinPixels) {
+			// Don't apply any changes
+			return;
+		}
+
+		if (draggingMode === "strafe") {
+			newPos[3] = 0;
+			var dist = quat_dist([centre.x,centre.y,centre.z,0],newPos);
+			// log("Moving distance "+dist+" of "+wid/8);
+			//// This check is now performed using deltaX/deltaY above
+			// if (dist <= wid/8) {
+				// ctx.drawImage(offscreenCanvas,0,0,offscreenCanvas.width,offscreenCanvas.height,0,0,canvas.width,canvas.height);
+			// } else {
+			// log("Moved from ",centre," to ",newPos);
+			centre.x = newPos[0];
+			centre.y = newPos[1];
+			centre.z = newPos[2];
+			if (drawTimer != null)
+				saveCompletedRender();
+			queueFrame();
+			// }
+		} else
+		if (draggingMode === "rotate") {
+			// log("Rotating from "+rotation+","+elevation+" to "+newRotation+","+newElevation);
+			rotation = newRotation;
+			elevation = newElevation;
+			if (rotateAboutCamera) {
+				// During rendering, error in centre/newPos was accounted for.
+				// But now we must make it permanent.
+				var newAhead = rotate3d_about_y(rotate3d_about_x([0,0,distanceFromObject],newElevation,tmpz),newRotation,[]);
+				newPos = quat_add(camFocalPoint,newAhead,newPos);
+				centre.x = newPos[0];
+				centre.y = newPos[1];
+				centre.z = newPos[2];
+				initDerivatives();
+			}
+			if (drawTimer != null)
+				saveCompletedRender();
+			queueFrame();
+		}
+
+	}
+});
+
+hookEvent(canvas,'mouseup',function(evt) {
+	if (!haveBeenDragging) {
+		// Normal click detected
+		// But I want to reject clicks which were held down (just in case)
+		if (new Date().getTime() < mousedownTime+1000) {
+			function friendlyFail() {
+				// Sometimes this can be a pain if we started a new render from the same position, then decide to zoom - we must wait for the zoom pixel to be rescanned.
+				// log("Be patient.  We do not yet have a hitPoint near this pixel!");
+				ctx.fillStyle = 'red';
+				ctx.fillText("We do not have a hitPoint near this pixel!",20,60);
+				setStatus("We do not have a hitPoint near this pixel!");
+			}
+			if (evt.button === 0) {
+				var hitPointRecord = getHitPointRecordUnderMouse(evt);
+				if (hitPointRecord)
+					zoomTowardsPoint(hitPointRecord.hitPoint);
+				else
+					friendlyFail();
+			} else
+			if (evt.button === 2) {
+				moveCameraBack();
+			}
+		}
+	}
+});
+
+function getHitPointRecordUnderMouse(evt) {
+	var i = (evt.layerX*width/canvas.width)|0;
+	var j = (evt.layerY*height/canvas.height)|0;
+	// i,j may need modding if render is not complete!
+	// depending on render mode
+	if (!progressiveRendering) {
+		if (drawTimer!=null && !animate && i>=traverseI) {
+			// Gah!  During animate, drawTimer is never null.
+			// We must either always fail, or just use the last frame.
+			return null;
+		}
+	} else {
+		if (drawTimer!=null) {
+			// We can use current level, if scanline has passed this point.
+			// Otherwise we use the previous level.
+			var passed = ( (traverseI<<level) > i );
+			var useLevel = (passed || level==startLevel ? level : level+1);
+			i = (i>>useLevel)<<useLevel;
+			j = (j>>useLevel)<<useLevel;
+			// If we are still on first level, then we might not be able to find a hitPoint!
+			if (level == startLevel && i>=traverseI<<level) {
+				return null;
+			}
+		}
+	}
+	return hitPoints[i][j];
+}
+
+hookEvent(canvas,'mousemove',maybeDrawOrbit);
+function maybeDrawOrbit(evt) {
+	// BUGS:
+	// Leaves a mess during a progressiveRender because there is no reset image.
+	// Last orbit remains when starting a drag and cancelling it.
+	if (showOrbits && !haveBeenDragging) {
+		if (progressiveRendering && drawTimer!=null) {
+			//// Does not work on early passes because only radius 1 dots are in
+			//// data!  Lots of the offscreen image is empty or old frame data.
+			//// Since nothing works, we do nothing, allowing the orbits to leave
+			//// a mess, but anticipating the progressive renderer will overwrite
+			//// them sooner or later.
+			// offscreenContext.putImageData(offscreenImage,0,0);
+			// blitCanvas(offscreenCanvas,canvas);
+		} else {
+			blitCanvas(offscreenCanvas,canvas);
+		}
+		var pt = getHitPointRecordUnderMouse(evt);
+		if (pt && pt.hitPoint) {
+			ctx.globalAlpha = 1.0;
+			ctx.fillStyle = 'red';
+			ctx.strokeStyle = 'darkmagenta';
+			ctx.lineWidth = 1.0;
+			ctx.beginPath();
+			showOrbitNow = true;
+			orbitIteration = 0;
+			get_count(pt.hitPoint);
+			ctx.closePath();
+			ctx.stroke();
+			showOrbitNow = false;
+		}
+	}
+}
+
+var orbitIteration;
+function showOrbitBit(za,zb,zc,zd) {
+	var point = transformFromWorldToCamera([za,zb,zc,zd],[]);
+	var hit2d = transformFromCameraToScreen(point);
+	if (hit2d) {
+		if (orbitIteration == 0) {
+			ctx.moveTo(hit2d[0],hit2d[1]);
+		} else {
+			ctx.lineTo(hit2d[0],hit2d[1]);
+		}
+		orbitIteration++;
+		var thru = orbitIteration/maxIters;
+		ctx.fillStyle = 'hsl(0,100%,'+(50-40*thru)+'%)';
+		var radius = 15.0 * focalDistance / point[2];
+		ctx.fillRect(hit2d[0]-radius,hit2d[1]-radius,radius*2,radius*2);
+		/* We can't draw circles because we are still constructing the line path.
+		ctx.beginPath();
+		ctx.arc(hit2d[0],hit2d[1],radius,0,Math.PI*2,true);
+		ctx.closePath();
+		ctx.fill();
+		*/
+	}
+}
+
+
+
+</script>
+<small><i>by joeytwiddle</i></small>
+</div>
+
+
+
+<!-- /* Controls */ -->
+
+<style type="text/css">
+	button {
+		font-size: 11;
+	}
+	.controlContainer {
+		position: fixed;
+		left: 10px;
+		bottom: 10px;
+	}
+	#controls * {
+		font-size: 11;
+		background-color: #eeeeee;
+	}
+</style>
+<div class="controlContainer">
+	<div id="help" style="display: none; background-color: white; color: black;">
+		Click to zoom in, right-click to go back.  Drag to pan or rotate, Shift-drag to move forwards.
+		<br>For more detailed images, increase Iterations, Sample Steps and Step Back, and reduce Search Confidence and Depth.
+	</div>
+	<div id="controls">
+	</div>
+	<button onclick="document.getElementById('controls').style.display = ( document.getElementById('controls').style.display=='none' ? '' : 'none' ); this.textContent = ( document.getElementById('controls').style.display=='none' ? 'Controls ^^' : 'Controls vv' )+'';">Controls ^^</button>
+	<label id="infoLabel"></label>
+</div>
+<script type="text/javascript">
+
+// Modify the provided function to fire once only, some time *after* being called.
+function afterIdle(idleTime,fnToCall) {
+	var timer = null;
+	return function() {
+		if (timer)
+			clearTimeout(timer);
+		// timer = setTimeout(fnToCall,idleTime);
+		//// fnToCall may be expecting the same environment we received
+		var that = this, args = arguments;
+		timer = setTimeout(function(){ fnToCall.apply(that,args); },idleTime);
+	};
+}
+
+var inactiveTabBackgroundColor = '#cccccc';
+function TabSet() {
+
+	var tabList = []; // order
+	var tabMap = {}; // by name
+
+	this.element = document.createElement("div");
+	var tabBarTable = document.createElement("table");
+	// tabBarTable.width = "100%";
+	var tabBarRow = document.createElement("tr");
+	tabBarTable.appendChild(tabBarRow);
+	this.element.appendChild(tabBarTable);
+	var tabPane = document.createElement("div");
+	// this.element.style.border = '1px solid black';
+	tabPane.style.border = '1px solid black';
+	// tabPane.style.height = '100%';
+	this.element.appendChild(tabPane);
+	this.tabPane = tabPane;
+
+	var activeTab = null;
+
+	this.getTab = function(tabName) {
+		var tab = tabMap[tabName];
+		if (!tab) {
+			// tab = new Tab(tabName);
+			tab = this.createTab(tabName);
+		}
+		return tab;
+	};
+
+	var that = this;
+
+	this.createTab = function(tabName) {
+		var tab = {name:tabName};
+		tabList.push(tab);
+		tabMap[tabName] = tab;
+		var tabLabelCell = document.createElement("td");
+		var tabLabel = document.createTextNode(tabName);
+		tabLabelCell.appendChild(tabLabel);
+		tabBarRow.appendChild(tabLabelCell);
+		tab.cell = tabLabelCell;
+		// tab.label = tabLabel;
+		tabLabelCell.style.paddingLeft = '5px';
+		tabLabelCell.style.paddingRight = '5px';
+		tabLabelCell.style.borderLeft = '1px solid black';
+		tabLabelCell.style.borderRight = '1px solid black';
+		tabLabelCell.style.borderTop = '1px solid black';
+		tab.contents = document.createElement("div");
+		if (tabList.length == 1) {
+			activeTab = tab;
+		} else {
+			tab.contents.style.display = 'none';
+			tab.cell.style.backgroundColor = inactiveTabBackgroundColor;
+		}
+		tabPane.appendChild(tab.contents);
+
+		//// Didn't work - maybe didn't run OR the element itself wasn't visible so clientHeight==0
+		// tab.contents.onDOMNodeInserted = function(evt) {
+			// checkCorrectWidth();
+		// };
+
+		tabLabelCell.onclick = function(evt) {
+			if (activeTab) {
+				activeTab.contents.style.display = 'none';
+				tabMap[activeTab.name].cell.style.backgroundColor = inactiveTabBackgroundColor;
+			}
+			tab.contents.style.display = '';
+			tab.cell.style.backgroundColor = '';
+			activeTab = tab;
+			checkCorrectWidth();
+		};
+
+		return tab;
+	};
+
+	var fixedWidth = 0;
+	var fixedHeight = 0;
+
+	function checkCorrectWidth() {
+
+		// Show each of the tabs in turn, to find how tall and wide the content pane should be.
+
+		if (activeTab) {
+			activeTab.contents.style.display = 'none';
+		}
+
+		that.tabPane.style.width = '';
+		that.tabPane.style.height = '';
+
+		tabList.forEach(function(tab) {
+			// log("No contents found in", tab);
+			tab.contents.style.display = '';
+			var w = that.tabPane.clientWidth;
+			if (w > fixedWidth)
+				fixedWidth = w;
+			var h = that.tabPane.clientHeight;
+			if (h > fixedHeight)
+				fixedHeight = h;
+			tab.contents.style.display = 'none';
+		});
+
+		if (activeTab) {
+			activeTab.contents.style.display = '';
+		}
+
+		that.tabPane.style.width = fixedWidth+"px";
+		that.tabPane.style.height = fixedHeight+"px";
+
+	}
+	// Expose
+	this.checkCorrectWidth = checkCorrectWidth;
+
+}
+
+var controlDiv = document.getElementById("controls");
+
+var tabset = new TabSet();
+controlDiv.appendChild(tabset.element);
+
+// These wrappers work around the glitches in input.value
+// i.e. they work on checkboxes and ...
+function getValue(input) {
+	if (input.type == "checkbox") {
+		return input.checked;
+	} else if (input.type == "number" || input.type == "range") {
+		return parseFloat(input.value);
+	} else {
+		return input.value;
+	}
+}
+function setValue(input,newValue) {
+	if (input.type == "checkbox") {
+		input.checked = newValue;
+	} else if (input.type == "select") {
+		// TODO BUG: Does not seem to work!
+		for (var i=0;i<input.length;i++) {
+			if (input[i].value == newValue) {
+				input.selectedIndex = i;
+				break;
+			}
+		}
+		if (i==input.length)
+			log("Failed to set "+input+" value to "+newValue);
+	} else {
+		input.value = newValue;
+	}
+}
+
+function appendRowToTab(tabName,tr) {
+	var tab = tabset.getTab(tabName);
+	var tabTable = tab.contents.getElementsByTagName("table")[0];
+	if (!tabTable) {
+		tabTable = document.createElement("table");
+		tab.contents.appendChild(tabTable);
+	}
+	tabTable.appendChild(tr);
+}
+
+// I am currently enjoying making all options toplevel globals
+var options = this;
+var listOfUpdateFunctions = [];
+function addControl(tabName,label,varName,postChangeFn,min,max,minDesc,maxDesc) {
+	// postChangeFn=-1 implies we should not re-render!
+
+	var input = document.createElement("input");
+	var otherInput;
+
+	var currentValue = options[varName]; // eval(varName);
+	// log(varName+"="+currentValue+" (type "+typeof currentValue+")");
+
+	var step;
+	if (typeof currentValue == 'number') {
+		input.type = "number";
+		input.size = "4";
+		input.min = min;
+		input.max = max;
+		// Floating point inputs don't work without a step value!
+		if (Math.floor(min)==min && Math.floor(max)==max) {
+			// Integer range assumed
+			// BUG: Dev might want floating step for range 0,1 or -1,+1 or 0,2
+			step = 1;
+		} else {
+			step = (max - min)/25;
+		}
+		input.step = step;
+	} else if (typeof currentValue == 'boolean') {
+		input.type = "checkbox";
+	} else {
+		input.type = "text";
+	}
+	setValue(input,currentValue);
+
+	// The update function is called when the user edits a control.
+	// It copies the new value into the options var, and then requests a rerender.
+	function update() {
+		var newValue = getValue(this);
+		// log("update on input "+this+" newValue = ("+typeof newValue+") "+newValue);
+		options[varName] = newValue;
+		// Call provided function if it exists
+		if (typeof postChangeFn == "function")
+			postChangeFn();
+		// Update any other related inputs
+		// Fortunately this doesn't cause an infloop :)
+		// However it was causing trouble with html5slider in Firefox, so now it
+		// checks to ensure not setting value on self.
+		if (this != input)
+			setValue(input,newValue);
+		if (otherInput && this != otherInput)
+			setValue(otherInput,newValue);
+		resetFPS(); // We always call this one
+		// postChangeFn=-1 implies we should not re-render!
+		if (postChangeFn != -1)
+			queueFrame(1000);
+	}
+	// Delay updates a little, in case the user is making multiple clicks, or string-editing a number
+	// (This is desirable for text fields and number+/- editors, but not so much the range sliders.)
+	// We want a long delay in non-animation mode, so the GUI doesn't lock up before we finish editing controls.  But in animation mode, we don't want much delay.
+	var updateWhenIdle = afterIdle(500,update);
+	/*
+	if (typeof currentValue == 'number') { // or other idle fields
+		// input.onkeyup = updateWhenIdle;
+		// input.onchange = updateWhenIdle;
+		// input.onmouseup = updateWhenIdle;
+		input.onchange = update;   //// Does not fire when typing or when clicking ++!
+		//// But it does fire when we hit Enter or edit text then blur away.
+		//// So Chrome does nothing on keyup - it waits for enter or blur.
+		// input.onkeyup = update;
+		// input.onmouseup = updateWhenIdle;   // Unfortunately fires even if we are just clicking to focus the text :P
+		// TODO: The real issue is - we don't want to set our own value again :P
+	} else {
+		input.onchange = update;   // Does not fire when clicking number++ !
+	}
+	*/
+	// input.onchange = update;
+	input.addEventListener("change",update,true);
+
+	var tr = document.createElement("tr");
+
+	var td = document.createElement("td");
+	td.appendChild(document.createTextNode(label+":"));
+	tr.appendChild(td);
+
+	// Refactor this somewhere.
+	// Also: There is no slider widget in FF4!  So we must make one, or drop it.
+	if (typeof currentValue == 'number') {
+		minDesc = minDesc ? '('+minDesc+')' : '';
+		maxDesc = maxDesc ? '('+maxDesc+')' : '';
+		td = document.createElement("td");
+		td.align='right';
+		td.appendChild(document.createTextNode(minDesc));
+		tr.appendChild(td);
+		td = document.createElement("td");
+		td.align='right';
+		td.appendChild(document.createTextNode(min));
+		tr.appendChild(td);
+		// TODO: Pointless in FF 4.0.1 - just displays another number input
+		otherInput = document.createElement("input");
+		otherInput.type = "range";
+		otherInput.min = min;
+		otherInput.max = max;
+		otherInput.step = step;
+		setValue(otherInput,currentValue);
+		// otherInput.onchange = update;
+		otherInput.addEventListener("change",update,true);
+		// otherInput.onkeyup = update;
+		// otherInput.onmouseup = update;
+		td = document.createElement("td");
+		td.appendChild(otherInput);
+		tr.appendChild(td);
+		td = document.createElement("td");
+		td.align='left';
+		td.appendChild(document.createTextNode(max));
+		tr.appendChild(td);
+		td = document.createElement("td");
+		td.align='left';
+		td.appendChild(document.createTextNode(maxDesc));
+		tr.appendChild(td);
+	}
+
+	td = document.createElement("td");
+	td.appendChild(input);
+	tr.appendChild(td);
+
+	appendRowToTab(tabName,tr);
+
+	listOfUpdateFunctions.push(function(){
+		var currentValue = options[varName]; // eval(varName);
+		setValue(input,currentValue);
+		if (otherInput)
+			setValue(otherInput,currentValue);
+	});
+
+}
+
+function addSingleElement(tabName,name,element) {
+	var tr = document.createElement("tr");
+	var td = document.createElement("td");
+	td.appendChild(document.createTextNode(name+":"));
+	tr.appendChild(td);
+	td = document.createElement("td");
+	td.colspan = 5;
+	td.appendChild(element);
+	tr.appendChild(td);
+	appendRowToTab(tabName,tr);
+}
+
+function createSelectElement(optionList) {
+	var selectElement = document.createElement("select");
+	optionList.forEach(function(formulaName) {
+		var optionElement = document.createElement("option");
+		optionElement.textContent = formulaName;
+		optionElement.value = formulaName;
+		selectElement.appendChild(optionElement);
+	});
+	return selectElement;
+}
+
+function updateControls() {
+	listOfUpdateFunctions.forEach(function(f){
+		f();
+	});
+}
+
+// hookEvent(controlDiv,'mouseover',updateControls);
+
+var formulaInput = createSelectElement(["Mandelbox","Julia","Mandelbrot2d"]);
+hookEvent(formulaInput,"change",function(){
+	var formulaName = this.value;
+	// log("Got formula: "+formulaName);
+	window.formulaName = formulaName;
+	var setupFn = eval("setup"+formulaName);
+	setupFn();
+	queueFrame();
+});
+setValue(formulaInput,formulaName);
+addSingleElement("General","Formula",formulaInput)
+
+// CONSIDER: It would be neat to prevent a re-raytrace when an irrelevant control is changed.
+// We should only trigger heavy events when needed.
+// Currently there are three categories:
+//   - Causes a re-raytrace
+//   - Cause re-lighting (render but don't rescan hitpoints - i think that might need to be refactored out)
+//   - Cause no change to image
+// OK made a weak attempt with -1.  We could use -2 for "no raytrace, just
+// re-light".  Except that this number overrides some postChangeFn s which are
+// needed!  ;f
+
+addControl("General","Down-sample","scaleDown",initOffscreenBuffer,-2,4,"slow","low-res");
+addControl("General","Zoom Speed","zoomSpeed",-1,1.0,5.5); // float 5.5 forces floating range slider
+addControl("General","Animate","animate",function(){ queueFrame(); });
+addControl("General","Max Framerate","targetFPS",-1,0.016,120); // ,"low","high");
+addControl("General","Show Info","showInfo",-1);
+addControl("General","Show Progress","showProgress",-1);
+addControl("General","Max old images stored","maxOldImages",null,0,25,"low mem","lots of mem");
+// addControl("General","Exploration","accelMax",null,0.002,0.020,"boring","crazy");
+// addControl("General","Dampening","positionDampening",null,0.5,1.0,"tame","wild");
+// addControl("Animation","Manual Zoom Speed","wheelZoomSpeed",null,1.0,5.5);
+addControl("Camera","Rotation","rotation",null,-Math.PI,Math.PI); // ,"low","high");
+addControl("Camera","Elevation","elevation",null,-Math.PI/2,Math.PI/2); // ,"low","high");
+addControl("Camera","Width","wid",function(){ initDerivatives(); },0.001,0.100);
+addControl("Camera","Depth","dep",null,1.0,30.0,"short","gaps");
+addControl("Camera","FOV","fov",null,5,88);
+addControl("Camera","Distance from object","distanceFromObject",null,0.1,30.0);
+addControl("Camera","Down-sample Previews","scaleDownDots",-1,0,5,"slow","grainy");
+addControl("Camera","Rotate about camera","rotateAboutCamera",-1);
+addControl("Calculation","Iterations","maxIters",null,2,16,"blob","fractal");
+addControl("Calculation","Sample Steps","steps",null,2,400,"gaps","SLOW!");
+addControl("Calculation","Step Exponent","stepExponent",null,1,10000,"even","near");
+addControl("Calculation","Step Back","stepBack",null,0,5.0,"gaps","slow");
+addControl("Calculation","Search Confidence","searchConfidence",null,0.02,0.7,"slow","gaps");
+addControl("Calculation","Use distance estimate","useDistanceEstimation",null);
+addControl("Mandelbox","Scale","scale",null,1.0,60,"","");
+addControl("Mandelbox","Fixed Radius","fixedRadius",null,0.1,2,"","");
+addControl("Mandelbox","Minimum Radius","minRadius",null,0.1,2,"","");
+addControl("Mandelbox","Bailout","bailout",function(){ bailoutSquared=bailout*bailout; },0.5,40,"gaps","slow");
+addControl("Mandelbox","Show Orbits","showOrbits",-1);
+addControl("Rendering","Progressive","progressiveRendering",null);
+addControl("Rendering","Roughness","smallest",null,0.0002,0.024,"smooth","layered");
+addControl("Rendering","Contrast","overExposure",null,0.1,30,"low","high");
+addControl("Rendering","Draw stripes inside solid","drawCheckersWhenInside",null);
+addControl("Rendering","Light rotates with camera","lightRotatesWithCamera");
+addControl("Rendering","Specular Highlight","specularHighlighting");
+addControl("Rendering","Darken with distance","fadeWithDistance");
+addControl("Rendering","Coloring Method","tgladColoringMethod",null,0,3,"horrible","hideous");
+
+//// We must not hide the tabs until tabset is done checking their sizes!
+tabset.checkCorrectWidth();
+controlDiv.style.display = 'none';
+
+
+
+// TODO: New inefficiencies.  Creation of tgladColors which may already be allocated.
+//         tglad only needs 3d vectors, Julia needs 4d.
+//         Some of the code uses 4d vectors for the tglad search algorithm.
+//         A fork could make the outer functions faster (but not the iterator).
+// DONE: It doesn't make a lot of sense for depth to be symmetrical about the centre (scene focus).  Really we want more depth at the back, less at the front.
+
+// Improvements to search algorithm?
+// DONE: Increase step distance exponentially if we don't find anything near the camera.
+
+// TODOs:
+// Realtime free-flying ... :)
+// Mousewheel zoom should happen about focal point, not "centre"!
+// Make fov independent from wid.
+// The camera should not have a front plane that clips the fractal.  We should project straight from the eye, so we are either inside the fractal, or we are not!
+// Cleanup in general.
+// Undo any of the ugly "optimisations" which didn't actually increaase speed.
+// I'm not so sure that Depth should shrink when we zoom.  I end up decreasing it when zoomed out, and increasing it when zoomed in.  :P  Perhaps better to keep it fixed at some max (size of entire fractal).
+// TESTING: mousemove should be registered on window or body, so that user can continue dragging outside the canvas; but the drag activity should only activate if started *inside* the canvas.
+// Rotate about camera focal point, not about target object.  Certainly when we are inside the box, rotation about anything other than the camera can be problematic (land us inside the fractal).  Consider the classic case: when we have zoomed up to a wall.  Now we are facing it, and want to turn away.  A good rotation point might be *just less* than halfway between camera focal point and the target point.  We could spin 180 around that point and still be slightly in front of the wall.
+// Occasionally we click to zoom, but we end up inside the fractal!  The problem is our elevation, rotation, and distance from object.  Since we had line of sight to the target object before we moved, we can adjust our orientation so the camera will lie on that line of sight.  (That will only fail when we try to move through a false gap neglected by the scanner stepping.)
+// TODO: Get rid of wid.  Replace it with minDepth (closest plane to camera).  This could shrink as we zoom (within reason).
+// TODO: Improve speed using distance estimation: http://www.fractalforums.com/3d-fractal-generation/a-mandelbox-distance-estimate-formula/
+// Refactor drawTimer!=null and its converse into renderIsInProgress().
+// TODO: Multiple zoom-outs with the wheel are problematic because each zoom starts a new renderPreviewFrom which is slow!  (Chrome drops any wheel events occuring during the preview rendering.)
+
+// CONSIDER:
+// It is difficult to show the shells of a 3d shape (the way we uually color a 2d Mandelbrot) but we could do it by simple slicing a plane out of the 3d shape, rendering all the points on it, whether they diverge or not.
+// The user could request a plane sweep, whereby points would be removed from the render in a nearest-first fashion.  This would let the user judge depths from the motion.  It won't help with occlusion issues though - we haven't sampled the points behind!
+// Another way to hint angles (not depths really) is to move the lighsource about after depths are calculated.
+
+// BUGs;
+// Auto-pause can prevent the first frame from rendering!
+
+// Handled: After dragging to move camera, user may be tempted to click to zoom in before the fresh frame has rendered, but then they may hit a missing or old hitPoint, so it should be disabled.  With progressive rendering, we might be able to find a nearby hitPoint.  For non-progressive rendering, we could check traverseI.
+// FIXED: Progressive rendering has broken the ETA.  (We just need a better calculation for how far through we are, and how much remains.)
+// DONE: Progressive renderer (low-res preview then fill in details)
+// DONE: Thread-yielding renderer.  (Allow interaction with the controls while rendering.)
+// DONE: Better navigation.  (drag to turn / zoom out / move without zooming)
+// FIXED: If we perform a camera-drag whilst a new frame is rendering, we lose points from left to right (their depths have been calculated but not their canvasCol).  Possible solutions: keep a second copy of hitPoints until the frame is finished rendering, or calculate canvasCol as we calculate depths, not after.
+// Mostly FIXED: The user may be tempted to click-to-zoom on a progressive render, but if they do there is a good chance they will hit a pixel with no hitPoint or an old hitPoint!
+// BUG TODO: Slower computers *really need* shorter chunks and a higher scaledown for previews.
+
+// Adaptive techniques.  To find the neccessary resolution to correctly display
+// the image, the algorithm could keep increasing the resolution of the
+// parameters until the result stops changing.
+
+
+// BUG: The cooldown must be large, because the chunk renderer locks out events for a long time,
+// so we can't detect user idle time less than chunk time.  :-(
+
+function UserActivityMonitor(_cooldown) {
+
+	var userWasRecentlyActive = false;
+	var activityCooldownTimer = null;
+	var cooldown = ( _cooldown>0 ? _cooldown : 5000 );
+
+	function clearActiveStatus() {
+		if (activityCooldownTimer) {
+			clearTimeout(activityCooldownTimer);
+			activityCooldownTimer = null;
+		}
+		userWasRecentlyActive = false;
+	}
+	this.clearActiveStatus = clearActiveStatus;
+
+	function registerUserActivity() {
+		userWasRecentlyActive = true;
+		if (activityCooldownTimer == null) {
+			clearTimeout(activityCooldownTimer);
+		}
+		activityCooldownTimer = setTimeout(clearActiveStatus,cooldown);
+	}
+	this.registerUserActivity = registerUserActivity;
+
+	function wasUserRecentlyActive() {
+		return userWasRecentlyActive;
+	}
+	this.wasUserRecentlyActive = wasUserRecentlyActive;
+
+	return this;
+};
+
+var userActivityMonitor = new UserActivityMonitor();
+
+hookEvent(canvas,"mouseover",function(){ userActivityMonitor.registerUserActivity(); });
+hookEvent(controlDiv,"mouseover",function(){ userActivityMonitor.registerUserActivity(); });
+
+
+</script>
+<script>
+	var helpNode = document.getElementById("help");
+	var controlButton = document.getElementsByTagName("button")[0];
+	hookEvent(controlButton,'mouseover',function(){
+		helpNode.style.display = '';
+	});
+	hookEvent(controlButton,'mouseout',function(){
+		helpNode.style.display = 'none';
+	});
+</script>
+<!--
+vim: ft=javascript
+-->
+</body>

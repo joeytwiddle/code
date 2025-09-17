@@ -1,0 +1,654 @@
+<html>
+<head><title>4D Julia</title></head>
+<body>
+<!-- <script type="text/javascript" src="http://hwi.ath.cx/code/other/gm_scripts/fastjslogger/fastjslogger.user.js"></script> -->
+<div style="position: fixed; bottom: 40px; right: 80px;">4D Julia renderer 
+<script type="text/javascript">
+
+
+
+// 4d julia slice from d-axis by joeytwiddle
+// Ported from a old C prog I used to run on a 486 under DOS :)
+
+
+
+/* Options */
+
+var scaleDown = 2;      // 2 animates nicely, 1 is prettier, 0 is slow!
+var maxIters  = 8;      // 10 contains some details, 8 makes more recognisable shapes if steps is as low as 10
+var bailout   = 2.0;    // Should be 2.0!  Below 1.9 we start to clip the shape.
+var steps     = 10;     // How finely to search space (depth) for hit.  Must be high (slow) to catch thin walls.
+var smallest  = 0.002;  // How finely to refine hit
+smallest = 0.006;       // a cute amount of noise for a slightly faster framerate
+// smallest = 0.016;    // faster
+smallest = 0.006;       // a cute amount of noise for a slightly faster framerate
+if (scaleDown == 1)
+	smallest = 0.003;    // low noise
+if (scaleDown == 0)
+	smallest = 0.001;    // no noise
+var cameraBailout = 1.7;// Should be 2.0!  1.7 sometimes clips the shell but rarely the julia itself
+
+// TODO: Auto-increase some of above parameters if framerate is high enough
+
+var showInfo = (document.location.href.indexOf("-dev.html")>=0);
+
+
+var canvas = (
+		document.getElementsByTagName("canvas").length>0
+		&& document.getElementsByTagName("canvas")[0]
+	) || document.body.appendChild(document.createElement("canvas"));
+
+// make dimensions always a factor of 16 (runs faster)
+var take = 0.6; var leave = 0.4;
+canvas.width  = Math.floor(window.innerWidth*take /16)*16;
+canvas.height = Math.floor(window.innerHeight*take /16)*16;
+canvas.style.position = 'fixed';
+canvas.style.left = window.innerWidth*leave/2;
+canvas.style.top = window.innerHeight*leave/2/2;
+
+var ctx = canvas.getContext("2d");
+
+
+
+/* Library functions */
+
+function floatrnd(low,high) {
+	return low + Math.random() * (high - low);
+}
+
+// r may be a and/or b in quat_add, quat_sub and quat_scale
+function quat_add(a,b,r) {
+	// if (!r) r=[];
+	r[0] = a[0] + b[0];
+	r[1] = a[1] + b[1];
+	r[2] = a[2] + b[2];
+	r[3] = a[3] + b[3];
+	return r;
+}
+
+function quat_sub(a,b,r) {
+	// if (!r) r=[];
+	r[0] = a[0] - b[0];
+	r[1] = a[1] - b[1];
+	r[2] = a[2] - b[2];
+	r[3] = a[3] - b[3];
+	return r;
+}
+
+// r may NOT be a or b in quat_mult!
+function quat_mult(a,b,r) {
+	// if (!r) r=[];
+	r[0] = a[0]*b[0] - a[1]*b[1] - a[2]*b[2] - a[3]*b[3];
+	r[1] = a[0]*b[1] + a[1]*b[0] + a[2]*b[3] - a[3]*b[2];
+	r[2] = a[0]*b[2] + a[2]*b[0] - a[1]*b[3] + a[3]*b[1];
+	r[3] = a[0]*b[3] + a[3]*b[0] + a[1]*b[2] - a[2]*b[1];
+	return r;
+}
+
+function quat_scale(a,s,r) {
+	// if (!r) r=[];
+	r[0] = a[0]*s;
+	r[1] = a[1]*s;
+	r[2] = a[2]*s;
+	r[3] = a[3]*s;
+	return r;
+}
+
+function quat_mod(a) {
+	return Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2] + a[3]*a[3]);
+}
+
+function rotate3d_about_x(v,ang,r) {
+	// if (!r) r = [];
+	r[0] = v[0];
+	r[1] = Math.cos(ang)*v[1] + Math.sin(ang)*v[2];
+	r[2] = Math.cos(ang)*v[2] - Math.sin(ang)*v[1];
+	return r;
+}
+
+function rotate3d_about_y(v,ang,r) {
+	// if (!r) r = [];
+	r[0] = Math.cos(ang)*v[0] + Math.sin(ang)*v[2];
+	r[1] = v[1];
+	r[2] = Math.cos(ang)*v[2] - Math.sin(ang)*v[0];
+	return r;
+}
+
+
+
+/* Julia */
+
+var c = [-0.488193901,0.572800587,0,0];
+var ca,cb,cc,cd;
+
+var z = [];
+var tmpz = [];
+function julia4d_get_count(startz) {
+	// return quat_mod(startz) < 0.7 ? 0 : 1;
+	var k = maxIters;
+	var over = false;
+	// var z = startz.slice(0);
+	var za = startz[0];
+	var zb = startz[1];
+	var zc = startz[2];
+	var zd = startz[3];
+	var tmpza; // ,tmpzb,tmpzc,tmpzd;
+	var modSquared;
+	var zaa = za*za;
+	var zbb = zb*zb;
+	var zcc = zc*zc;
+	var zdd = zd*zd;
+	do {
+		// z = quat_add(quat_mult(z,z,tmpz),c,z);
+		// When I inlined this calculation I found some of the terms cancelled :)
+		tmpza = zaa - zbb - zcc - zdd;
+		zb = 2 * za*zb + cb;
+		zc = 2 * za*zc + cc;
+		zd = 2 * za*zd + cd;
+		za = tmpza + ca;
+		// zb = tmpzb + cb;
+		// zc = tmpzc + cc;
+		// zd = tmpzd + cd;
+		// mod = quat_mod(z);
+		zaa = za*za;
+		zbb = zb*zb;
+		zcc = zc*zc;
+		zdd = zd*zd;
+		// mod = Math.sqrt(zaa + zbb + zcc + zdd);
+		modSquared = zaa + zbb + zcc + zdd;
+		if (modSquared > bailoutSquared) {
+			return (maxIters - k);
+		}
+		// if (isNaN(mod)) {
+			// console.log("julia4d_get_count NaNed on "+(maxIters-k)+"th iteration!");
+			// return (maxIters - k);
+		// }
+	} while (k--);
+	return 0;   // maxxed out
+	// NOTE: bailing out on the first iteration will ALSO return 0!  But this creates the cute looking bubble, so I kept it that way.
+}
+
+/*
+// Recursive binary search
+var t = [];
+function searchline(front,back) {
+	var mid = []; // Need a fresh mid object, because it will soon be a front or back
+	t = quat_sub(back,front,t);
+	// console.log("Searching "+front+" to "+back+" size "+quat_mod(t));
+	if (quat_mod(t) < smallest)
+		return back;
+	mid = quat_scale(quat_add(front,back,tmpz),0.5,mid);
+	if (julia4d_get_count(mid) == 0)
+		return searchline(front,mid);
+	else
+		return searchline(mid,back);
+}
+*/
+
+// Non-recursive binary search
+var t = [];
+function searchline(front,back) {
+	var mid = []; // Need a fresh mid object, because it will soon be a front or back
+	var dist = quat_mod(quat_sub(back,front,t));
+	var old;
+	// console.log("Searching "+front+" to "+back+" size "+quat_mod(t));
+	while (dist > smallest) {
+		mid = quat_scale(quat_add(front,back,tmpz),0.5,mid);
+		if (julia4d_get_count(mid) == 0) {
+			old = back; back = mid; mid = old;
+		} else {
+			old = front; front = mid; mid = old;
+		}
+		dist /= 2;
+	}
+	return back;
+}
+
+var near = [];
+var far = [];
+function getDistance(i,j) {
+
+	var last,next,res;
+
+	// Shoot ray into image
+	/*
+	near = [left+2.0*wid*i/width,_top+2.0*hei*j/height,front]; // 3d var
+	far  = [near[0]*1.9,near[1]*1.9,back];
+	*/
+	near[0] = left+2.0*wid*i/width;
+	near[1] = _top+2.0*hei*j/height
+	near[2] = front; // 3d var
+	far[0] = near[0]*1.9;
+	far[1] = near[1]*1.9
+	far[2] = back;
+	/* tmpnear = rotate_3d(tmpnear,[0,1,0],rotation);
+		tmpfar  = rotate_3d(tmpfar,[0,1,0],rotation);
+		tmpnear = rotate_3d(tmpnear,[1,0,0],elevation);
+		tmpfar  = rotate_3d(tmpfar,[1,0,0],elevation); */
+	near = rotate3d_about_y(rotate3d_about_x(near,elevation,tmpz),rotation,near);
+	far  = rotate3d_about_y(rotate3d_about_x(far,elevation,tmpz),rotation,far);
+	near[3] = dslice; // Now 4d
+	far[3] = dslice;
+	/*
+	 * Doing this caused the julia to squish against the camera twice!
+	near[3] = near[1]; near[1] = dslice;
+	far[3] = far[1]; far[1] = dslice;
+	*/
+	// last = quat_sub(near,quat_sub(far,near));
+	last = near.slice(0);
+	next = near.slice(0);
+	// console.log("Near: "+near+" Far: "+far);
+	var delta = quat_scale(quat_sub(far,near,tmpz),1/steps,[]);
+	// The wasInside check allows us to move the camera further back, and avoid squashing the julia against the screen
+	var wasInside = (julia4d_get_count(near) == 0);
+
+	// Fragile heuristic: lines which go nowhere near the set
+	if (quat_mod(quat_scale(quat_add(near,far,tmpz),0.5,[])) > cameraBailout)
+		return 0.0;
+
+	// TODO: All our rays start from the front (camera) plane.  But this is inefficient: some of those (not near the middle of the image) could start later, where the ray line intersects the 0-probability shell (radius 2).  i.e. near = first_intersection_of_near_far_with_sphere.  This would also drop the need for wasInside, although that was never really necessary ;)
+
+	for (var k=0;k<=steps;k++) {
+		var dk = k/steps;
+		// next = quat_add(quat_mult(near,[(1.0-dk),0,0,0],tmpz),quat_mult(far,[dk,0,0,0]),next);
+		next = quat_add(next,delta,next);
+		// console.log("Next: "+next);
+		if (wasInside) {
+			wasInside = (julia4d_get_count(next) == 0);
+		} else
+		if (julia4d_get_count(next) == 0) {
+			// return quat_mod(quat_sub(next,near,tmpz));
+			//// Now that we have hit the set, step back a little before scanning, perhaps we stepped over something earlier!
+			// last = quat_add(near,quat_scale(quat_sub(last,near,last),0.75,last),last);
+			res = searchline(last,next);
+			// return res[2];
+			return quat_mod(quat_sub(res,near,tmpz));
+			// return 255*(1.0-(res[2]-front)/(forget-front));
+			// TODO: draw to screen rend->pos[i][j]=res.c;
+		}
+		last[0] = next[0];
+		last[1] = next[1];
+		last[2] = next[2];
+		last[3] = next[3];
+	}
+
+	return 0.0;
+}
+
+
+
+/* Offscreen buffer */
+
+var width;
+var height;
+var canvasImage;
+var offscreenCanvas;
+var offscreenContext;
+var offscreenImage;
+var data;
+var depth;
+var lightnessScale;
+
+function initOffscreenBuffer() {
+	width = Math.floor(canvas.width >> scaleDown);
+	height = Math.floor(canvas.height >> scaleDown);
+	canvasImage = ctx.getImageData(0,0,canvas.width,canvas.height);
+	offscreenCanvas = document.createElement("canvas");
+	offscreenCanvas.width = width;
+	offscreenCanvas.height = height;
+	offscreenContext = offscreenCanvas.getContext("2d");
+	offscreenImage = offscreenContext.getImageData(0,0,width,height);
+	data = offscreenImage.data;
+	lightnessScale = 128*64 >> scaleDown;
+	// TODO: This does not update the V of MVC! :P
+	depth = [];
+	for (var i=0;i<width;i++) {
+		depth[i] = [];
+	}
+}
+
+initOffscreenBuffer();
+
+
+
+/* Motion, camera and renderer */
+
+var vel   = [0,0,0,0]; // velocity
+var accel = [0,0,0,0]; // acceleration
+accel = [floatrnd(-.025,.025),floatrnd(-.025,.025),floatrnd(-.025,.025),floatrnd(-.025,.025)];
+var accelMax = 0.006;
+var positionDampening = 0.85;
+// var accelMax = 0.008;
+// var positionDampening = 0.8;
+
+var centre = {x:0,y:0};
+var wid = 1.5;
+var hei = wid * canvas.height/canvas.width;
+var left   = centre.x - wid;
+var right  = centre.x + wid;
+var _top   = centre.y - hei;
+var bottom = centre.y + hei;
+var front  = -1.4;
+var back   = +1.4;
+var forget = 0.8;
+var dslice,rotation,elevation;
+var bailoutSquared = bailout*bailout;
+
+var paused = false;
+
+var frameCount,frameStartTime;
+function resetFPS() {
+	frameCount = 0;
+	frameStartTime = new Date().getTime();
+}
+resetFPS();
+
+function drawFrame() {
+
+	setTimeout(drawFrame,0.04*1000);
+
+	if (paused)
+		return;
+
+	var startTime = new Date().getTime();
+	elevation = Math.PI/12;
+	dslice = 0.45*Math.sin(startTime / 79000);
+
+	//// Oscillating path
+	// var t = new Date().getTime();
+	// accel = quat_add(accel, [ 0.001*Math.sin(t/1900), 0.001*Math.sin(t/2300), 0.001*Math.sin(t/4300), 0.001*Math.sin(t/8300) ], accel);
+
+	//// Random acceleration
+	rotation = -Math.PI/3.0 + Math.PI/8.0*startTime/6000;
+	accel = quat_add(quat_scale(accel,0.9,tmpz),[floatrnd(-accelMax,+accelMax),floatrnd(-accelMax,+accelMax),floatrnd(-accelMax,+accelMax),floatrnd(-accelMax,+accelMax)],accel);
+	vel = quat_add(quat_scale(vel,0.9,tmpz),accel,vel);
+	c = quat_add(quat_scale(c,positionDampening,tmpz),vel,c);
+	ca = c[0];
+	cb = c[1];
+	cc = c[2];
+	cd = c[3];
+
+	// console.log("c="+c+" dslice="+dslice);
+
+	// for (var pixel=0,ptr=0; pixel<width*height; pixel+=1,ptr+=4) {
+		// var i = pixel % width;
+		// var j = (pixel / width)|0;
+
+	// if (Math.random()<0.05) {
+	// if (frameCount%48 == 0) {
+
+	for (var i=0;i<width;i++) {
+		for (var j=0;j<height;j++) {
+			depth[i][j] = getDistance(i,j);
+		}
+	}
+
+	var ptr = 0;
+	for (var j=0;j<height;j++) {
+		for (var i=0;i<width;i++) {
+			if (i==0 || j==0 /*|| i==width-1 || j==width-1*/) {
+			} else {
+				// var lightness = 290 - depth[i][j]*138;
+				var xdelta = depth[i][j] - depth[i-1][j];
+				var ydelta = depth[i][j] - depth[i][j-1];
+				var lightness = (148 - lightnessScale*(xdelta + ydelta)) | 0;
+				/* if (lightness > 255)
+					lightness = 255;
+				if (lightness < 0)
+					lightness = 0; */
+				data[ptr]   = lightness;
+				data[ptr+1] = lightness;
+				data[ptr+2] = lightness;
+				/*
+				var distness = 1.25-depth[i][j]/2;
+				if (distness<0) distness=0;
+				if (distness>1) distness=1;
+				data[ptr]   = lightness*distness;
+				data[ptr+1] = lightness*distness;
+				// data[ptr+2] = lightness;
+				data[ptr+2] = lightness*distness;
+				*/
+				// data[ptr+1] = lightness*11/12;
+				// data[ptr+2] = lightness*4/5;
+				data[ptr+3] = 255;
+			}
+			ptr+=4;
+		}
+	}
+
+	var endTime = new Date().getTime();
+	// console.log("took " + (endTime-startTime)/1000 + " seconds.");
+
+	offscreenContext.putImageData(offscreenImage,0,0);
+	ctx.drawImage(offscreenCanvas,0,0,offscreenCanvas.width,offscreenCanvas.height,0,0,canvas.width,canvas.height);
+
+	/* This is slow!
+	var canvasData = canvasImage.data;
+	var ptr = 0;
+	for (var j=0;j<canvas.height;j++) {
+		for (var i=0;i<canvas.width;i++) {
+			// var k = (i*offscreenCanvas.width / canvas.width)|0;
+			// var l = (j*offscreenCanvas.height / canvas.height)|0;
+			var k = i >> scaleDown;
+			var l = j >> scaleDown;
+			var offPtr = 4*(k + l*offscreenCanvas.width);
+			// var offPtr = (((ptr >> (scaleDown*2))/4)|0)*4;
+			var val = data[offPtr];
+			// if (j<20 && i<20)
+				// console.log(i,j,k,l,offPtr,val);
+			canvasData[ptr] = val;
+			canvasData[ptr+1] = val;
+			canvasData[ptr+2] = val;
+			canvasData[ptr+3] = 255;
+			ptr += 4;
+		}
+	}
+	ctx.putImageData(canvasImage,0,0);
+	*/
+
+	// }
+
+	frameCount++;
+	if (showInfo) {
+		var timeElapsed = new Date().getTime() - frameStartTime;
+		var fps = frameCount / timeElapsed * 1000;
+		ctx.fillStyle = 'black';
+		ctx.fillText(""+((fps*1000)|0)/1000+" fps",20,20);
+		ctx.fillText("c = ["+c+"] dslice = "+dslice,20,canvas.height - 10);
+	}
+
+}
+
+setTimeout(drawFrame,1);
+
+
+
+/* Events */
+
+window.onkeyup = function(evt){
+	if (evt.keyCode == 27) {
+		drawFrame = function(){ console.log("Stopped by Escape."); };
+	}
+	if (evt.keyCode == 32)
+		paused = !paused;
+};
+
+// BUG: pausing breaks FPS count!
+var pausingTimer = null;
+window.onblur = function(evt) {
+	if (pausingTimer) {
+		clearTimeout(pausingTimer);
+		pausingTimer = null;
+	}
+	paused = true;
+};
+window.onfocus = function(evt) {
+	// paused = false;
+	//// Often when refocusing the window I want to reload, now start drawing a new frame!
+	pausingTimer = setTimeout(function(){ paused=false; },700);
+};
+
+
+
+</script>
+by joeytwiddle
+<!-- <small><i>by joeytwiddle</i></small> -->
+</div>
+
+
+
+<!-- /* Controls */ -->
+
+<style type="text/css">
+	button {
+		font-size: 10pt;
+	}
+	.controlBlock {
+		position: fixed;
+		left: 10px;
+		bottom: 10px;
+	}
+	#controls {
+		font-size: 10pt;
+	}
+</style>
+<div class="controlBlock">
+<table id="controls" style="display: none"></table>
+<button onclick="document.getElementById('controls').style.display = ( document.getElementById('controls').style.display=='none' ? '' : 'none' ); this.textContent = ( document.getElementById('controls').style.display=='none' ? '^' : 'v' )+'';">^</button>
+</div>
+<script type="text/javascript">
+
+// Modify the provided function to fire once only, some time *after* being called.
+function afterIdle(idleTime,fnToCall) {
+	var timer = null;
+	return function() {
+		if (timer)
+			clearTimeout(timer);
+		// timer = setTimeout(fnToCall,idleTime);
+		//// fnToCall may be expecting the same environment we received
+		var that = this, args = arguments;
+		timer = setTimeout(function(){ fnToCall.apply(that,args); },idleTime);
+	};
+}
+
+// These wrappers work around the glitches in input.value
+// i.e. they work on checkboxes and ...
+function getValue(input) {
+	if (input.type == "checkbox")
+		return input.checked;
+	else
+		return input.value;
+}
+function setValue(input,newValue) {
+	if (input.type == "checkbox")
+		input.checked = newValue;
+	else
+		input.value = newValue;
+}
+
+var options = this;
+function addControl(label,varName,postChangeFn,min,max,minDesc,maxDesc) {
+	var input = document.createElement("input");
+	var otherInput;
+
+	var currentValue = options[varName]; // eval(varName);
+	console.log(varName+"="+currentValue+" (type "+typeof currentValue+")");
+
+	var step;
+	if (typeof currentValue == 'number') {
+		input.type = "number";
+		input.size = "4";
+		input.min = min;
+		input.max = max;
+		// Floating point inputs don't work without a step value!
+		if (Math.floor(min)==min && Math.floor(max)==max) {
+			// Integer range assumed
+			// BUG: Dev might want floating step for range 0,1 or -1,+1 or 0,2
+			step = 1;
+		} else {
+			step = (max - min)/25;
+		}
+		input.step = step;
+	} else if (typeof currentValue == 'boolean') {
+		input.type = "checkbox";
+	} else {
+		input.type = "text";
+	}
+	setValue(input,currentValue);
+
+	function update() {
+		var newValue = getValue(this);
+		options[varName] = newValue;
+		// Call provided function if it exists
+		if (postChangeFn)
+			postChangeFn();
+		resetFPS(); // We always call this one
+		// Update any other related inputs
+		setValue(input,newValue);
+		if (otherInput)
+			setValue(otherInput,newValue);
+	}
+	// Delay updates a little, in case the user is making multiple clicks, or string-editing a number
+	// (This is desirable for number+/- editors, but not so much the range sliders.)
+	var updateWhenIdle = afterIdle(500,update);
+	// input.onchange = update;   // Does not fire when clicking number++ !
+	input.onkeyup = updateWhenIdle;
+	input.onmouseup = updateWhenIdle;
+
+	var controlTable = document.getElementById("controls");
+	var tr = document.createElement("tr");
+
+	var td = document.createElement("td");
+	td.appendChild(document.createTextNode(label+":"));
+	tr.appendChild(td);
+
+	td = document.createElement("td");
+	td.appendChild(input);
+	tr.appendChild(td);
+
+	if (typeof currentValue == 'number') {
+		td = document.createElement("td");
+		td.align='right';
+		td.appendChild(document.createTextNode("("+minDesc+")"));
+		tr.appendChild(td);
+		td = document.createElement("td");
+		td.appendChild(document.createTextNode(min));
+		tr.appendChild(td);
+		otherInput = document.createElement("input");
+		otherInput.type = "range";
+		otherInput.min = min;
+		otherInput.max = max;
+		otherInput.step = step;
+		setValue(otherInput,currentValue);
+		otherInput.onchange = update;
+		// otherInput.onkeyup = update;
+		// otherInput.onmouseup = update;
+		td = document.createElement("td");
+		td.appendChild(otherInput);
+		tr.appendChild(td);
+		td = document.createElement("td");
+		td.appendChild(document.createTextNode(max));
+		tr.appendChild(td);
+		td = document.createElement("td");
+		td.align='left';
+		td.appendChild(document.createTextNode("("+maxDesc+")"));
+		tr.appendChild(td);
+	}
+
+	controlTable.appendChild(tr);
+}
+
+addControl("Show info","showInfo",null);
+addControl("Down-sample","scaleDown",initOffscreenBuffer,0,4,"SLOW!","low-res");
+smallest *= 5000;
+addControl("Roughness","smallest",function(){smallest /= 5000;},1,120,"smooth","layered");
+smallest /= 5000;
+addControl("Iterations","maxIters",null,2,16,"blob","detailed");
+addControl("Sample steps","steps",null,2,100,"gaps","SLOW!");
+//// lightnessScale is actually automatically adjusted in initOffscreenBuffer!  Better to update lightnessScale's "driver".
+// addControl("Lighting","lightnessScale",null,lightnessScale/4,lightnessScale*2,"softer","sharper");
+// addControl("Exploration","accelMax",null,0.002,0.020,"boring","crazy");
+// addControl("Dampening","positionDampening",null,0.5,1.0,"tame","wild");
+
+</script>
+</body>
