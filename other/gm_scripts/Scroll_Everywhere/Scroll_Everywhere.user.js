@@ -11,7 +11,7 @@
 // @include         *
 // @grant           GM_addStyle
 // @run-at          document-body
-// @version         0.3p
+// @version         0.3q
 // @license         MIT
 // ==/UserScript==
 
@@ -61,7 +61,7 @@ if (window.top === window.self) {
     cursorStyle = "grab"; // cursor style on scroll
     middleIsStart = true; // don't jump when the mouse starts moving
     relativeScrolling = false; // scroll the page relative to where we are now
-    scaleX = 3; // how fast to scroll with relative scrolling
+    scaleX = 3; // how fast to scroll with relative scrolling (disable to scroll full page in one gesture)
     scaleY = 3;
     power = 3; // when moving the mouse faster, how quickly should it speed up?
     // END
@@ -293,7 +293,10 @@ function scroll(e) {
         getScrollWidth() - getClientWidth(),
         e.clientX);
     var newY = fScrollY(
-        window.innerHeight - scrollBarWidth,
+        // Applying this `- scrollBarWidth` when there is no bottom scroll bar, means we cannot scroll to the top of the page!
+        // It would be better if we would only do this subtraction, if we detect that a bottom scrollbar really exists.
+        // For now, we will assume there isn't one, which is usually the case.
+        window.innerHeight /* - scrollBarWidth */,
         getScrollHeight() - getClientHeight(),
         e.clientY);
     doScrollTo(elementToScroll, newX, newY);
@@ -305,6 +308,9 @@ function doScrollTo(elem, x, y) {
     elem.scrollTo(x, y);
     // For React Native elements
     elem.scrollTo({ x: x, y: y, animated: false });
+    // Sometimes this is needed, but it can result in a smooth scroll
+    // (The case I found that needed it was when elem === documentElement)
+    elem.scrollTop = y;
     if (elem === document.documentElement) {
         document.body.scrollTo(x, y);
         document.body.scrollTo({ x: x, y: y, animated: false });
