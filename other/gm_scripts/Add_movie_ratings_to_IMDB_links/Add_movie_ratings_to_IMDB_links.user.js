@@ -2,9 +2,9 @@
 // @name         Add movie ratings to IMDB links [adopted]
 // @description  Adds movie ratings and number of voters to links on IMDB. Modified version of http://userscripts.org/scripts/show/96884
 // @author       StackOverflow community (especially Brock Adams)
-// @version      2015-11-24-41-joeytwiddle
+// @version      2015-11-24-42-joeytwiddle
 // @license      MIT
-// @match        *://www.imdb.com/*
+// @match        *://*.imdb.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
@@ -12,6 +12,9 @@
 // @derived-from https://greasyfork.org/en/scripts/2033-add-imdb-rating-votes-next-to-all-imdb-movie-series-links-improved
 // ==/UserScript==
 // Special Thanks to Brock Adams for this script: http://stackoverflow.com/questions/23974801/gm-xmlhttprequest-data-is-being-placed-in-the-wrong-places/23992742
+
+// TODO: Maybe even better than OMDB API: https://greasyfork.org/en/scripts/41040-add-movie-ratings-to-imdb-links-adopted/discussions/114562
+// TODO: If not, add OMDB API
 
 var maxLinksAtATime     = 100;   //-- Pages can have 100's of links to fetch. Don't spam server or browser.
 var skipEpisodes        = true;  //-- I only want to see ratings for movies or TV shows, not TV episodes.
@@ -22,7 +25,10 @@ var useLightBackground  = false; //-- If you prefer the site to have a light gre
 var showGetMoreRatings  = false; //-- Turn this on if the "See more" button stops pulling down ratings
 
 if (useLightBackground) {
-    GM_addStyle('.ipc-page-background { background: #e3e2dd !important; color: black !important; }');
+    // The selector for title pages doesn't work well on other pages, for example:
+    // https://www.imdb.com/search/title/?genres=sci-fi&keywords=anime&sort=year,desc
+    const targetSelector = document.location.pathname.startsWith('/title/') ? '.ipc-page-background' : '.ipc-page-wrapper'
+    GM_addStyle(`${targetSelector} { background: #e3e2dd !important; color: black !important; }`);
     // You could also try #262626 for a dark grey but not black background
 }
 
