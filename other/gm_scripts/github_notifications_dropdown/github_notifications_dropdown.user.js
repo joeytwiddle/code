@@ -3,8 +3,8 @@
 // @namespace      joeytwiddle
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
-// @copyright      2014-2022, Paul "Joey" Clark (http://neuralyte.org/~joey)
-// @version        2.0.4
+// @copyright      2014-2025, Paul "Joey" Clark (http://github.com/joeytwiddle)
+// @version        2.0.5
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -117,7 +117,7 @@ function onNotificationButtonClicked(evt) {
 function fetchNotifications(notificationPagesToTry) {
 	var currentAttempt = notificationPagesToTry.shift();
 	var title = currentAttempt.title;
-	var targetPage = 'https://github.com' + currentAttempt.path;
+	var targetPage = 'https://' + document.location.host + '/' + currentAttempt.path;
 	var morePagesToTry = notificationPagesToTry.length > 0;
 
 	notificationButtonContainer.css({
