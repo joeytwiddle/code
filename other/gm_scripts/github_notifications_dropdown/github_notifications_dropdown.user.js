@@ -197,6 +197,7 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 		  /* padding: 2px 16px; */
 		  /* box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.15); */
 		  box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.2);
+		  /* Note that GitHub tooltips use: --borderRadius-medium: 0.375rem; */
 		  border-radius: 12px;
 		  /* max-height: 90%; */
 		  /* If the body is shorter than the dropdown, the body will expand to let it fit, but only just.  This will ensure a little bit of extra space is available for the shadow and a small gap. */
@@ -217,7 +218,7 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 		  padding: 5px;
 		  text-align: center;
 		  background-color: ${dropdownBackgroundColor};
-		  border-bottom-left-radius: 3px; border-bottom-right-radius: 3px;
+		  border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
 		}
 		.notifications-dropdown-see-all:hover {
 		  background-color: #4078C0 !important;
@@ -265,6 +266,7 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 		}
 		.notifications-dropdown .notifications-list {
 		  float: initial;
+		  border-radius: 12px;
 		}
 		/* No longer an issue:
 		 * There was a rule on the user profile page that applies to the notification ticks (which are usually never seen on that page).  The rule matches: body.page-profile .box-header .tooltipped
