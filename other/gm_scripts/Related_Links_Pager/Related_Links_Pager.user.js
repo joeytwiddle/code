@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.4.15
+// @version        1.5.0
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -41,6 +41,7 @@ var maximumGroupSize   = 250;         // Some webservers restrict long URLs, res
 var groupLinksByClass    = true;      // May do a better job of separating unrelated links which the scripts thinks are related because they have the same depth. This is automatically disabled on Google search results, because Google often adds random classes which make this feature unhelpful.
 var useTagsInXPath = true;
 var useClassnamesInXPath = false;     // This adds classnames all the way down the XPath.  (groupLinksByClass only looks at the classnames on the link itself)
+var useClassInsteadOfXPath = false;   // If XPath isn't working (e.g. because related links are sometimes at different depths) then just use the class of the link to match.  This may find far too many matches.
 // CONSIDER TODO: A better compromise for all sites might be groupLinksWhichShareAtLeastOneClass.  This would reject links which do not share any classes with the focused link.
 var ignoreLinksWithoutText = false;   // We used to ignore these because thumbnails often have no text, but are followed by an identical link with text.  But now we have a more comprehensive strategy for that.
 
@@ -97,7 +98,10 @@ var verbose = false;    // Extra logging for debugging
 var isGoogleSearchResultsPage = !!document.location.href.match(/google.*(search|q=)/);
 
 if (isGoogleSearchResultsPage) {
-  groupLinksByClass = false;          // Most Google results have class "l" but any previously visited have "l vst".  Also, for later links on the page, the .g element may have a bunch of other classes on it, although the first 1 or 2 results don't.
+  // December 2023: Most Google results have class "l" but any previously visited have "l vst".  Also, for later links on the page, the .g element may have a bunch of other classes on it, although the first 1 or 2 results don't.
+  //groupLinksByClass = false;
+  // December 2025: `.vst` seems to have gone now.  But the first link is sometimes at a different depth from the other results.  The later results sit inside a <div> with no class to help detect it.  This is a quick solution:
+  useClassInsteadOfXPath = true;
 }
 
 var ensureFirstGoogleResultIsRelated = isGoogleSearchResultsPage;
@@ -490,6 +494,10 @@ function runRelatedLinksPager() {
   //   http://www.redhat.com/archives/taroon-list/2007-August/thread.html
 
   function getGroupSignature(link) {
+    if (useClassInsteadOfXPath) {
+      return link.className;
+    }
+
     if (!link.cachedGroupSignature) {
       // We remove offsets like [4] from the unique xpath to get a more general path signature.
       var xpath = getXPath(link).replace(/\[[0-9]*\]/g, '');
