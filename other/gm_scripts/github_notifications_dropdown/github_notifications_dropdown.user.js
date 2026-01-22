@@ -3,8 +3,8 @@
 // @namespace      joeytwiddle
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
-// @copyright      2014-2025, Paul "Joey" Clark (http://github.com/joeytwiddle)
-// @version        2.0.5
+// @copyright      2014-2025, Paul "Joey" Clark (https://github.com/joeytwiddle)
+// @version        2.0.6
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -178,8 +178,10 @@ function receiveNotificationsPage(targetPage, title, data, textStatus, jqXHR) {
 	notificationsList.append(seeAll);
 
 	var arrowSize = 10;
-	//var dropdownBackgroundColor = 'var(--color-notifications-row-bg) !important';
-	var dropdownBackgroundColor = '#f8f8f8';
+	//var dropdownBackgroundColor = 'var(--bgColor-default, var(--color-canvas-default))';
+	var dropdownBackgroundColor = 'var(--color-notifications-row-bg) !important';
+	// Cream instead of white. Note: Will not work in dark mode!
+	//var dropdownBackgroundColor = '#f8f8f8';
 	var unreadBackgroundColor = dropdownBackgroundColor;
 	//var readOrDoneBackgroundColor = 'var(--color-canvas-subtle) !important';
 	//var readOrDoneBackgroundColor = '#f0f3f6';
