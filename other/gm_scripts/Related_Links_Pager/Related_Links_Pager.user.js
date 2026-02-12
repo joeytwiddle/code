@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.5.1
+// @version        1.5.2
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -201,12 +201,14 @@ var ignoreItalicsInXPath = true;
 // events attached to a parent.  Is it possible to override/prevent them with
 // an event listener we add later?)
 
-
 // Do not run in iframes
 if (self !== window.top) {
   return;
 }
 
+// Runtime variables
+
+var checkSPANavTimers = []
 
 // Library functions and polyfills
 
@@ -733,9 +735,11 @@ function runRelatedLinksPager() {
             var siblings = JSON.parse(grabbedList);
             createRelatedLinksPager(siblings);
             checkSPANavTimers.forEach(timer => clearTimeout(timer));
+            checkSPANavTimers.length = 0;
           }
         };
-        const checkSPANavTimers = [
+        checkSPANavTimers.forEach(timer => clearTimeout(timer));
+        checkSPANavTimers = [
           setTimeout(checkSiblings, delayBeforeRunning),
           setTimeout(checkSiblings, delayBeforeRunning * 2),
           setTimeout(checkSiblings, delayBeforeRunning * 4),
