@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.5.0
+// @version        1.5.1
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -652,7 +652,7 @@ function runRelatedLinksPager() {
   function checkClick(evt) {
     // var elem = evt.target || evt.sourceElement;
     var elem = seekLinkInAncestry(evt.target || evt.sourceElement);
-    // GM_log("Intercepted click event on "+getXPath(elem));
+    if (verbose) GM_log("Intercepted click event on "+getXPath(elem));
 
     // Do not interfere with Ctrl-click or Shift-click or right-click (usually open-in-new-window/tab)
     if ((evt.ctrlKey && !enableOnCtrlClick) || (evt.shiftKey && !enableOnShiftClick) || (evt.button > 0 && !enableOnRightClick)) {
@@ -666,7 +666,7 @@ function runRelatedLinksPager() {
         return;
       }
 
-      // GM_log("User clicked on link: "+link.href);
+      //if (verbose) GM_log("User clicked on link: "+link.href);
       // Collect other links matching this one:
       var linksInGroup = collectLinksInSameGroupAs(link);
       // Convert from links to records:
@@ -723,26 +723,34 @@ function runRelatedLinksPager() {
         var checkSiblings = function() {
           var locationNow = document.location.href;
           if (locationNow === locationBefore) {
-            GM_log("[RLP] Not build new pager from last click because no navigation occurred");
-            // We could also clear the list
+            if (verbose) GM_log("[RLP] No SPA navigation detected (yet)");
+            // But we might try again
             return;
           }
           var newList = grabListAndMaybeClearIt();
           if (newList) {
+            if (verbose) GM_log("[RLP] SPA navigation detected");
             var siblings = JSON.parse(grabbedList);
             createRelatedLinksPager(siblings);
+            checkSPANavTimers.forEach(timer => clearTimeout(timer));
           }
         };
-        setTimeout(checkSiblings, delayBeforeRunning);
+        const checkSPANavTimers = [
+          setTimeout(checkSiblings, delayBeforeRunning),
+          setTimeout(checkSiblings, delayBeforeRunning * 2),
+          setTimeout(checkSiblings, delayBeforeRunning * 4),
+          setTimeout(checkSiblings, delayBeforeRunning * 8),
+          setTimeout(checkSiblings, delayBeforeRunning * 16),
+        ];
       }
 
       if (canPassPacketByGM(link, siblings)) {
-        // GM_log("[RLP] Saving siblings_data");
+        // if (verbose) GM_log("[RLP] Saving siblings_data");
         if (clearDataTimer) {
           clearTimeout(clearDataTimer);
         }
         GM_setValue("siblings_data", siblings);
-        // GM_log("[RLP] Saving done");
+        // if (verbose) GM_log("[RLP] Saving done");
         return; // Let the event occur naturally, if we do load a new page the packet will be picked up.
       }
 
