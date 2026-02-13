@@ -2,11 +2,11 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.2.5
+// @version        1.2.6
 // @include        *
 // @license        ISC
 // @run-at         document-start
-// @grant          none
+// @grant          GM_addStyle
 // ==/UserScript==
 
 // jQuery might be present
@@ -62,6 +62,20 @@ function keypressListener(evt) {
 		window.history.forward();
 	}
 	*/
+
+	// Backtick goes Back
+	// But you might want to consider a global system shortcut for this, because:
+	// 1. On websites when input/textarea detection fails, typing ``` will take you back three times!
+	// 2. ~window.history.back() is not as good as the browser's real back button, which handles extra stuff such as scroll position.~ (Actually I have no evidence of this! I was testing Chrome on GitHub notifications, and even the browser's back button was poor at restroying scroll posiion!)
+	if (evt.key === '`' && window.history.length > 0) {
+		// If other listeners (in the browser or on the page) might act on this keystroke, it's probably less confusing if we just skip them.
+		evt.preventDefault();
+		evt.stopPropagation();
+		//
+		// If the transition is slow, it's nice to show the user that their keystroke was registered, and action was taken.
+		animateBackMotion();
+		window.history.back();
+	}
 
 	// macOS style (Cmd-BraceLeft / Cmd-BraceRight)
 	// Not needed in Firefox, because Firefox responds to these by default
@@ -164,4 +178,28 @@ function dequeue() {
 	} else {
 		running = false;
 	}
+}
+
+function animateBackMotion() {
+	// BUG: If you go back and then forwards again, sometimes the browser will restore the fade, and it will not be cleared!
+	GM_addStyle(`
+		.going-back {
+			transition: all 1000ms ease-out;
+			opacity: 0 !important;
+		}
+	`);
+	document.body.classList.add('going-back');
+	// For SPAs, we will need to clear the animation at some point!
+	const startTime = Date.now();
+	const startUrl = document.location.href;
+	let timer;
+	const maybeClearBackAnimation = () => {
+		// CONSIDER: This will often trigger too early, e.g. the URL changes long before the page content changes. Not sure of a good solution though.
+		// For the moment, I have changed `||` to `&&`
+		if (document.location.href !== startUrl && Date.now() >= startTime + 1000) {
+			clearInterval(timer);
+			document.body.classList.remove('going-back');
+		}
+	};
+	timer = setInterval(maybeClearBackAnimation, 50);
 }
