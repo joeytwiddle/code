@@ -2,11 +2,11 @@
 // @name           More Keybinds
 // @namespace      MK
 // @description    Adds some extra keystrokes to Firefox.
-// @version        1.2.6
+// @version        1.2.7
 // @include        *
 // @license        ISC
 // @run-at         document-start
-// @grant          GM_addStyle
+// @grant          none
 // ==/UserScript==
 
 // jQuery might be present
@@ -180,26 +180,32 @@ function dequeue() {
 	}
 }
 
+var styleAlreadyAdded = false;
 function animateBackMotion() {
-	// BUG: If you go back and then forwards again, sometimes the browser will restore the fade, and it will not be cleared!
-	GM_addStyle(`
-		.going-back {
-			transition: all 1000ms ease-out;
-			opacity: 0 !important;
-		}
-	`);
-	document.body.classList.add('going-back');
+	// This JS approach avoids any repeat when going forwards
+	const backAnimation = document.body.animate([
+		{ opacity: 1 },
+		{ opacity: 0 },
+		{ opacity: 0 },
+		{ opacity: 0 },
+		{ opacity: 1 }
+	], {
+		duration: 4000,
+		easing: 'ease-out'
+	});
+
 	// For SPAs, we will need to clear the animation at some point!
 	const startTime = Date.now();
 	const startUrl = document.location.href;
-	let timer;
-	const maybeClearBackAnimation = () => {
-		// CONSIDER: This will often trigger too early, e.g. the URL changes long before the page content changes. Not sure of a good solution though.
-		// For the moment, I have changed `||` to `&&`
-		if (document.location.href !== startUrl && Date.now() >= startTime + 1000) {
-			clearInterval(timer);
-			document.body.classList.remove('going-back');
-		}
-	};
-	timer = setInterval(maybeClearBackAnimation, 50);
+
+	const observer = new MutationObserver((mutationsList, observer) => {
+		//console.log(`Mutation detected after ${Date.now() - startTime}ms, so stopping animation.`);
+		backAnimation.finish();
+		observer.disconnect();
+	});
+
+	observer.observe(document.body, {
+		childList: true,
+		subtree: true,
+	});
 }
