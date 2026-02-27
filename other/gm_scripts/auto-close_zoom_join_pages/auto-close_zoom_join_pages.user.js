@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-close Zoom join pages
 // @namespace    http://tampermonkey.net/
-// @version      2025-10-30
+// @version      2026-02-27
 // @description  Closes a Zoom join page after a few minutes, so you don't have to manually close it after the call
 // @author       joeytwiddle
 // @license      ISC
@@ -32,7 +32,7 @@
             }, 60 * 1000);
 
             // Advertise that this script is running
-            const existingTextElement = $('#zoom-ui-frame h2');
+            const existingTextElement = $('#zoom-ui-frame h2, #zoom-ui-frame h3');
             const ourTextElement = document.createElement('h2');
             ourTextElement.textContent = '(This page will auto-close soon)';
             ourTextElement.style.opacity = '0.6';
