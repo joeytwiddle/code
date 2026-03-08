@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.5.2
+// @version        1.5.3
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -19,6 +19,8 @@
 // @grant          GM_log
 // @grant          GM_setValue
 // @grant          GM_getValue
+// @downloadURL https://update.greasyfork.org/scripts/7672/Related%20Links%20Pager.user.js
+// @updateURL https://update.greasyfork.org/scripts/7672/Related%20Links%20Pager.meta.js
 // ==/UserScript==
 
 // Google redirection can block #siblings from being carried to the target page.  If that happens, this script may help: http://userscripts.org/scripts/show/121261#Straight_Google
@@ -522,6 +524,14 @@ function runRelatedLinksPager() {
     return link.cachedGroupSignature;
   }
 
+  function normalizeClassName(className) {
+    // Hide the classes that this script adds
+    className = className.replace(/ *(bRLP-selected-link|RLP-link-in-group)\b/, '')
+    // If you use the Hover Zoom+ extension, this can add a class which disrupts the searching
+    className = className.replace(/ *\bhoverZoomLink\b/, '');
+    return className;
+  }
+
   function collectLinksInSameGroupAs(clickedLink) {
     // We remove the numbers from the XPath
     var seekXPath = getGroupSignature(clickedLink);
@@ -533,10 +543,10 @@ function runRelatedLinksPager() {
     // But if we have adjusted their classNames then that will break the groupLinksByClass feature!
     // To work around that, we adjust the className of the clicked link to match those of the other links in the group.
     // (An alternative might be to keep the list of links in the group cached, rather than rebuilding it.)
-    var classToSeek = clickedLink.className.replace(/\bRLP-selected-link\b/, 'RLP-link-in-group');
+    var classToSeek = normalizeClassName(clickedLink.className);
     for (var i = 0; i < links.length; i++) {
       var link = links[i];
-      if (groupLinksByClass && link.className !== classToSeek) {
+      if (groupLinksByClass && normalizeClassName(link.className) !== classToSeek) {
         continue;
       }
       var xpath = getGroupSignature(link);
@@ -562,7 +572,7 @@ function runRelatedLinksPager() {
     }
     if (verbose) {
       //GM_log("Got " + collected.length + " matching siblings: for " + clickedLink.outerHTML + " with xpath " + seekXPath);
-      GM_log("Found " + collected.length + " matches for " + seekXPath);
+      GM_log("Found " + collected.length + " matches for " + seekXPath + " (" + classToSeek + ")");
     }
     return collected;
   }
