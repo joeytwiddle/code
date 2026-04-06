@@ -3,6 +3,7 @@
 // @namespace    local.igdb-game-hover-tooltip
 // @version      1.0.0
 // @description  On hover, look up a game title via IGDB and show rating, summary, and related info in a tooltip (Humble choice cards and plain links supported).
+// @license      ISC
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
@@ -17,6 +18,7 @@
 	'use strict';
 
 	/** Twitch / IGDB app credentials — rotate in the dev console if this file is ever shared or committed publicly. */
+	// If this doesn't work for you, get your own account here: https://api-docs.igdb.com/#account-creation
 	var CLIENT_ID = 'yykw3oww4um4fq81z5dfpmae5qwj4n';
 	var CLIENT_SECRET = 'sbq2hgahyqcyvrmlzeh70jqbg7ln3j';
 
