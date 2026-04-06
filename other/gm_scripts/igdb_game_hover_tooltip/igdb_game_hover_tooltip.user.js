@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    local.igdb-game-hover-tooltip
-// @version      1.1.0
+// @version      1.2.1
 // @description  On hover, look up a game title via IGDB and show rating, summary, and related info in a tooltip (Humble choice cards and plain links supported).
 // @license      ISC
 // @match        *://*/*
@@ -25,12 +25,15 @@
 	var TOKEN_KEY = 'igdb_gm_hover_token_v1';
 	var CACHE_PREFIX = 'igdb_gm_hover_cache_v2:';
 	var HOVER_DELAY_MS = 180;
+	/** Time to leave the source and reach the tooltip before it closes (crossing empty space). */
+	var CLOSE_GRACE_MS = 900;
 	var SUMMARY_MAX_CHARS = 420;
 
 	var hoverState = {
 		root: null,
 		title: null,
 		enterTimer: null,
+		closeTimer: null,
 		seq: 0,
 	};
 
@@ -97,6 +100,10 @@
 			clearTimeout(hoverState.enterTimer);
 			hoverState.enterTimer = null;
 		}
+		if (hoverState.closeTimer) {
+			clearTimeout(hoverState.closeTimer);
+			hoverState.closeTimer = null;
+		}
 	}
 
 	function hideTooltip() {
@@ -108,7 +115,21 @@
 			tooltipEl.style.display = 'none';
 			tooltipEl.innerHTML = '';
 		}
-		document.removeEventListener('mousemove', onMouseMove, true);
+	}
+
+	function cancelCloseTimer() {
+		if (hoverState.closeTimer) {
+			clearTimeout(hoverState.closeTimer);
+			hoverState.closeTimer = null;
+		}
+	}
+
+	function scheduleHideTooltip() {
+		cancelCloseTimer();
+		hoverState.closeTimer = setTimeout(function () {
+			hoverState.closeTimer = null;
+			hideTooltip();
+		}, CLOSE_GRACE_MS);
 	}
 
 	function ensureTooltip() {
@@ -122,15 +143,10 @@
 
 	var lastPointer = { x: 0, y: 0 };
 
-	function onMouseMove(ev) {
-		lastPointer.x = ev.clientX;
-		lastPointer.y = ev.clientY;
-		positionTooltip(lastPointer.x, lastPointer.y);
-	}
-
 	function positionTooltip(x, y) {
 		if (!tooltipEl || tooltipEl.style.display === 'none') return;
 		var pad = 14;
+		var margin = 8;
 		var vw = window.innerWidth;
 		var vh = window.innerHeight;
 		tooltipEl.style.left = '0';
@@ -138,10 +154,12 @@
 		var rect = tooltipEl.getBoundingClientRect();
 		var w = rect.width;
 		var h = rect.height;
-		var left = x + pad;
+		// Past the horizontal midpoint: anchor to the left of the pointer so the panel stays on-screen.
+		var left =
+			x > vw / 2 ? x - w - pad : x + pad;
 		var top = y + pad;
-		if (left + w > vw - 8) left = Math.max(8, vw - w - 8);
-		if (top + h > vh - 8) top = Math.max(8, y - h - pad);
+		left = Math.max(margin, Math.min(left, vw - w - margin));
+		if (top + h > vh - margin) top = Math.max(margin, y - h - pad);
 		tooltipEl.style.left = left + 'px';
 		tooltipEl.style.top = top + 'px';
 	}
@@ -152,7 +170,6 @@
 		el.innerHTML =
 			'<div class="igdb-gm-inner"><div class="igdb-gm-loading">IGDB…</div></div>';
 		positionTooltip(lastPointer.x, lastPointer.y);
-		document.addEventListener('mousemove', onMouseMove, true);
 	}
 
 	function showTooltipHtml(html) {
@@ -160,7 +177,6 @@
 		el.style.display = 'block';
 		el.innerHTML = html;
 		positionTooltip(lastPointer.x, lastPointer.y);
-		document.addEventListener('mousemove', onMouseMove, true);
 	}
 
 	function getAccessToken(cb) {
@@ -521,6 +537,13 @@
 	function onDocumentMouseOver(ev) {
 		lastPointer.x = ev.clientX;
 		lastPointer.y = ev.clientY;
+
+		if (tooltipEl && tooltipEl.style.display !== 'none') {
+			var overRoot = hoverState.root && hoverState.root.contains(ev.target);
+			var overTip = tooltipEl.contains(ev.target);
+			if (overRoot || overTip) cancelCloseTimer();
+		}
+
 		var title = getGameTitleFromElement(ev.target);
 		if (!title) return;
 		var root = findHoverRoot(ev.target, title);
@@ -537,10 +560,13 @@
 	}
 
 	function onDocumentMouseOut(ev) {
-		if (!hoverState.root) return;
+		if (!tooltipEl || tooltipEl.style.display === 'none') return;
 		var to = ev.relatedTarget;
-		if (to && hoverState.root.contains(to)) return;
-		hideTooltip();
+		if (to) {
+			if (hoverState.root && hoverState.root.contains(to)) return;
+			if (tooltipEl.contains(to)) return;
+		}
+		scheduleHideTooltip();
 	}
 
 	GM_addStyle(`
@@ -558,9 +584,9 @@
 	border: 1px solid rgba(255,255,255,0.12);
 	border-radius: 10px;
 	box-shadow: 0 12px 40px rgba(0,0,0,0.45);
-	pointer-events: none;
+	pointer-events: auto;
 }
-#igdb-gm-hover-tooltip a { pointer-events: auto; color: #8cb4ff; }
+#igdb-gm-hover-tooltip a { color: #8cb4ff; }
 .igdb-gm-inner { display: flex; gap: 12px; padding: 12px 14px; align-items: flex-start; }
 .igdb-gm-cover {
 	flex: 0 0 auto;
