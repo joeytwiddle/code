@@ -2,7 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @version        1.5.3
+// @version        1.5.4
 // @license        AGPL-3.0-or-later
 // @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
@@ -499,7 +499,7 @@ function runRelatedLinksPager() {
 
   function getGroupSignature(link) {
     if (useClassInsteadOfXPath) {
-      return link.className;
+      return normalizeClassName(link.className);
     }
 
     if (!link.cachedGroupSignature) {
@@ -526,7 +526,8 @@ function runRelatedLinksPager() {
 
   function normalizeClassName(className) {
     // Hide the classes that this script adds
-    className = className.replace(/ *(bRLP-selected-link|RLP-link-in-group)\b/, '')
+    className = className.replace(/ *\bRLP-selected-link\b/, '')
+    className = className.replace(/ *\bRLP-link-in-group\b/, '')
     // If you use the Hover Zoom+ extension, this can add a class which disrupts the searching
     className = className.replace(/ *\bhoverZoomLink\b/, '');
     return className;
