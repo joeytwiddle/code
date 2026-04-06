@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    local.igdb-game-hover-tooltip
-// @version      1.0.0
+// @version      1.1.0
 // @description  On hover, look up a game title via IGDB and show rating, summary, and related info in a tooltip (Humble choice cards and plain links supported).
 // @license      ISC
 // @match        *://*/*
@@ -23,7 +23,7 @@
 	var CLIENT_SECRET = 'sbq2hgahyqcyvrmlzeh70jqbg7ln3j';
 
 	var TOKEN_KEY = 'igdb_gm_hover_token_v1';
-	var CACHE_PREFIX = 'igdb_gm_hover_cache:';
+	var CACHE_PREFIX = 'igdb_gm_hover_cache_v2:';
 	var HOVER_DELAY_MS = 180;
 	var SUMMARY_MAX_CHARS = 420;
 
@@ -265,7 +265,8 @@
 			'"; fields name,slug,summary,storyline,first_release_date,' +
 			'aggregated_rating,aggregated_rating_count,total_rating,total_rating_count,' +
 			'url,cover.url,genres.name,platforms.name,game_modes.name,' +
-			'involved_companies.company.name,involved_companies.developer,involved_companies.publisher;' +
+			'involved_companies.company.name,involved_companies.developer,involved_companies.publisher,' +
+			'external_games.uid,external_games.url,external_games.external_game_source.name;' +
 			' limit 1;'
 		);
 	}
@@ -277,6 +278,91 @@
 			if (ic[role] && ic.company && ic.company.name) return ic.company.name;
 		}
 		return '';
+	}
+
+	function pickExternalBySourceName(list, sourceName) {
+		if (!list || !list.length) return null;
+		var i, eg;
+		for (i = 0; i < list.length; i++) {
+			eg = list[i];
+			if (eg.external_game_source && eg.external_game_source.name === sourceName) return eg;
+		}
+		return null;
+	}
+
+	function outboundLink(label, href) {
+		return (
+			'<a class="igdb-gm-link" href="' +
+			escapeHtml(href) +
+			'" target="_blank" rel="noopener noreferrer">' +
+			escapeHtml(label) +
+			'</a>'
+		);
+	}
+
+	/**
+	 * Outbound searches / stores to judge whether to install (YouTube, aggregators, Steam reviews, Linux).
+	 */
+	function buildReviewLinksHtml(displayName, externalGames) {
+		var name = displayName || '';
+		var chunks = [];
+
+		var ytReviews =
+			'https://www.youtube.com/results?search_query=' +
+			encodeURIComponent('review game ' + name);
+		chunks.push(outboundLink('YouTube: review search', ytReviews));
+
+		var ytBuy =
+			'https://www.youtube.com/results?search_query=' +
+			encodeURIComponent(name + ' before you buy');
+		chunks.push(outboundLink('YouTube: before you buy', ytBuy));
+
+		var mc =
+			'https://www.metacritic.com/search/' + encodeURIComponent(name) + '/?category=game';
+		chunks.push(outboundLink('Metacritic search', mc));
+
+		var oc =
+			'https://duckduckgo.com/?q=' +
+			encodeURIComponent(name + ' game site:opencritic.com');
+		chunks.push(outboundLink('OpenCritic (via DDG)', oc));
+
+		var proton = 'https://www.protondb.com/search?q=' + encodeURIComponent(name);
+		chunks.push(outboundLink('ProtonDB (Linux)', proton));
+
+		var steam = pickExternalBySourceName(externalGames, 'Steam');
+		if (steam) {
+			var steamDigits = String(steam.uid || '').replace(/\D/g, '');
+			var storeUrl =
+				steam.url ||
+				(steamDigits ? 'https://store.steampowered.com/app/' + steamDigits + '/' : '');
+			if (storeUrl) {
+				chunks.unshift(outboundLink('Steam store', storeUrl));
+				if (steamDigits) {
+					chunks.splice(
+						1,
+						0,
+						outboundLink(
+							'Steam user reviews',
+							'https://steamcommunity.com/app/' + steamDigits + '/reviews/'
+						)
+					);
+				}
+			}
+		}
+
+		var gog = pickExternalBySourceName(externalGames, 'GOG');
+		if (gog && gog.url) chunks.push(outboundLink('GOG store', gog.url));
+
+		var epic = pickExternalBySourceName(externalGames, 'Epic Game Store');
+		if (epic && epic.url) chunks.push(outboundLink('Epic store', epic.url));
+
+		return (
+			'<div class="igdb-gm-links">' +
+			'<div class="igdb-gm-links-h">Decide to install</div>' +
+			'<div class="igdb-gm-linkrow">' +
+			chunks.join('<span class="igdb-gm-sep"> · </span>') +
+			'</div></div>'
+		);
 	}
 
 	function cacheGet(key) {
@@ -376,9 +462,10 @@
 				  escapeHtml(blurb) +
 				  '</p></div>'
 				: '') +
+			buildReviewLinksHtml(game.name || '', game.external_games) +
 			'<div class="igdb-gm-footer">' +
 			igdbLink +
-			'<span class="igdb-gm-note">Summary text is IGDB’s own blurb (not a press review).</span>' +
+			'<span class="igdb-gm-note">IGDB summary is editorial blurbs; scores blend critics/users.</span>' +
 			'</div>' +
 			'</div></div>'
 		);
@@ -491,6 +578,10 @@
 .igdb-gm-summary { margin-top: 8px; font-size: 12px; color: #ddd; }
 .igdb-gm-summary p { margin: 4px 0 0; }
 .igdb-gm-ttb { font-size: 11px; color: #9cdcfe; margin-top: 6px; }
+.igdb-gm-links { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); }
+.igdb-gm-links-h { font-size: 11px; font-weight: 600; color: #bbb; margin-bottom: 6px; }
+.igdb-gm-linkrow { font-size: 11px; line-height: 1.55; color: #999; }
+.igdb-gm-sep { color: #555; user-select: none; }
 .igdb-gm-footer { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 10px; color: #666; }
 .igdb-gm-loading { padding: 20px 28px; color: #aaa; }
 .igdb-gm-error { display: block; padding: 12px 14px; color: #f88; }
