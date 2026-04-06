@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    local.igdb-game-hover-tooltip
-// @version      1.2.1
+// @version      1.3.0
 // @description  On hover, look up a game title via IGDB and show rating, summary, and related info in a tooltip (Humble choice cards and plain links supported).
 // @license      ISC
 // @match        *://*/*
@@ -17,7 +17,7 @@
 (function () {
 	'use strict';
 
-	/** Twitch / IGDB app credentials — rotate in the dev console if this file is ever shared or committed publicly. */
+	// Twitch / IGDB API credentials
 	// If this doesn't work for you, get your own account here: https://api-docs.igdb.com/#account-creation
 	var CLIENT_ID = 'yykw3oww4um4fq81z5dfpmae5qwj4n';
 	var CLIENT_SECRET = 'sbq2hgahyqcyvrmlzeh70jqbg7ln3j';
@@ -26,12 +26,15 @@
 	var CACHE_PREFIX = 'igdb_gm_hover_cache_v2:';
 	var HOVER_DELAY_MS = 180;
 	/** Time to leave the source and reach the tooltip before it closes (crossing empty space). */
-	var CLOSE_GRACE_MS = 900;
+	var CLOSE_GRACE_MS = 180;
 	var SUMMARY_MAX_CHARS = 420;
 
 	var hoverState = {
 		root: null,
 		title: null,
+		/** Same game = same .content-choice node (Humble-style) or same game <a>. */
+		activeContentChoice: null,
+		activeAnchor: null,
 		enterTimer: null,
 		closeTimer: null,
 		seq: 0,
@@ -39,6 +42,7 @@
 
 	var tooltipEl = null;
 	var cacheMem = Object.create(null);
+	var pointerTrackingBound = false;
 
 	function escapeHtml(s) {
 		if (s == null || s === '') return '';
@@ -55,10 +59,19 @@
 	}
 
 	/**
-	 * Humble-style choice cards: .content-choice-title
-	 * Otherwise nearest anchor text or its title="" attribute.
+	 * Humble-style choice cards: innermost .content-choice, then .content-choice-title
+	 * (avoids a parent wrapper that contains several titles returning the wrong game).
+	 * Otherwise walk up for legacy markup; then nearest anchor text / title="".
 	 */
 	function getGameTitleFromElement(start) {
+		var cc = start.closest && start.closest('.content-choice');
+		if (cc) {
+			var ct0 = cc.querySelector('.content-choice-title');
+			if (ct0) {
+				var t0 = normalizeTitleText(ct0.textContent || '');
+				if (t0) return t0;
+			}
+		}
 		var el = start;
 		var i;
 		for (i = 0; i < 12 && el; i++, el = el.parentElement) {
@@ -91,8 +104,65 @@
 		var cc = start.closest && start.closest('.content-choice');
 		if (cc && cc.querySelector('.content-choice-title')) return cc;
 		var a = start.closest && start.closest('a');
-		if (a && getGameTitleFromElement(a) === title) return a;
+		if (a && normalizeTitleText(getGameTitleFromElement(a) || '') === normalizeTitleText(title || ''))
+			return a;
 		return start;
+	}
+
+	function setActiveGameIdentityFromRoot(root) {
+		hoverState.activeContentChoice = null;
+		hoverState.activeAnchor = null;
+		if (!root || root.nodeType !== 1) return;
+		var cc =
+			root.matches && root.matches('.content-choice')
+				? root
+				: root.closest && root.closest('.content-choice');
+		if (cc) {
+			hoverState.activeContentChoice = cc;
+			return;
+		}
+		var a =
+			root.matches && root.matches('a')
+				? root
+				: root.closest && root.closest('a');
+		if (a) hoverState.activeAnchor = a;
+	}
+
+	/** Same physical game tile: exact .content-choice or exact <a> we armed from. */
+	function pointerStillOnSameGame(node) {
+		if (!node || node.nodeType !== 1) return false;
+		if (hoverState.activeContentChoice) {
+			var cc = node.closest && node.closest('.content-choice');
+			return !!cc && cc === hoverState.activeContentChoice;
+		}
+		if (hoverState.activeAnchor) {
+			var a = node.closest && node.closest('a');
+			return !!a && a === hoverState.activeAnchor;
+		}
+		if (!hoverState.root || hoverState.title == null || hoverState.title === '') return false;
+		if (!hoverState.root.contains(node)) return false;
+		var t = getGameTitleFromElement(node);
+		if (!t) return false;
+		return normalizeTitleText(t) === normalizeTitleText(hoverState.title);
+	}
+
+	/** True when the pointer is on a different choice card or different game link. */
+	function isDifferentGameTarget(node) {
+		if (!node || node.nodeType !== 1) return false;
+		if (hoverState.activeContentChoice) {
+			var cc = node.closest && node.closest('.content-choice');
+			return !!cc && cc !== hoverState.activeContentChoice;
+		}
+		if (hoverState.activeAnchor) {
+			var a = node.closest && node.closest('a');
+			return !!a && a !== hoverState.activeAnchor;
+		}
+		var t = getGameTitleFromElement(node);
+		return !!(
+			t &&
+			hoverState.title &&
+			normalizeTitleText(t) !== normalizeTitleText(hoverState.title)
+		);
 	}
 
 	function clearTimers() {
@@ -106,10 +176,51 @@
 		}
 	}
 
+	function bindTooltipPointerTracking() {
+		if (pointerTrackingBound) return;
+		document.addEventListener('mousemove', onPointerMoveWhileTooltipVisible, true);
+		document.addEventListener('pointermove', onPointerMoveWhileTooltipVisible, true);
+		pointerTrackingBound = true;
+	}
+
+	function unbindTooltipPointerTracking() {
+		if (!pointerTrackingBound) return;
+		document.removeEventListener('mousemove', onPointerMoveWhileTooltipVisible, true);
+		document.removeEventListener('pointermove', onPointerMoveWhileTooltipVisible, true);
+		pointerTrackingBound = false;
+	}
+
+	/** True if (x,y) is over the tooltip or still over the same .content-choice / game <a> we opened from. */
+	function pointerPositionKeepsTooltipOpen(x, y) {
+		if (!tooltipEl || tooltipEl.style.display === 'none') return false;
+		var tip = tooltipEl.getBoundingClientRect();
+		if (x >= tip.left && x <= tip.right && y >= tip.top && y <= tip.bottom) return true;
+		var hit = document.elementFromPoint(x, y);
+		return pointerStillOnSameGame(hit);
+	}
+
+	/**
+	 * Any move off the opened source and off the tooltip should arm close — do not use
+	 * getGameTitleFromElement here (ancestors often “see” unrelated game titles on the page).
+	 */
+	function onPointerMoveWhileTooltipVisible(ev) {
+		if (!tooltipEl || tooltipEl.style.display === 'none' || !hoverState.root) return;
+		var x = ev.clientX;
+		var y = ev.clientY;
+		if (pointerPositionKeepsTooltipOpen(x, y)) {
+			cancelCloseTimer();
+			return;
+		}
+		scheduleHideTooltip(false);
+	}
+
 	function hideTooltip() {
 		clearTimers();
+		unbindTooltipPointerTracking();
 		hoverState.root = null;
 		hoverState.title = null;
+		hoverState.activeContentChoice = null;
+		hoverState.activeAnchor = null;
 		hoverState.seq++;
 		if (tooltipEl) {
 			tooltipEl.style.display = 'none';
@@ -124,11 +235,38 @@
 		}
 	}
 
-	function scheduleHideTooltip() {
+	function armDelayedHover(root, title) {
+		var t = title;
+		var r = root;
+		hoverState.root = root;
+		hoverState.title = title;
+		setActiveGameIdentityFromRoot(root);
+		if (hoverState.enterTimer) {
+			clearTimeout(hoverState.enterTimer);
+			hoverState.enterTimer = null;
+		}
+		hoverState.enterTimer = setTimeout(function () {
+			hoverState.enterTimer = null;
+			if (hoverState.root !== r || hoverState.title !== t) return;
+			beginHover(t);
+		}, HOVER_DELAY_MS);
+	}
+
+	/**
+	 * @param {boolean} [restart=true] If false and a close timer is already running, leave it (avoids
+	 * extending the grace forever while scrubbing over blank UI).
+	 */
+	function scheduleHideTooltip(restart) {
+		if (restart === false && hoverState.closeTimer != null) return;
 		cancelCloseTimer();
 		hoverState.closeTimer = setTimeout(function () {
 			hoverState.closeTimer = null;
 			hideTooltip();
+			/*
+			 * Do not re-arm from here: getGameTitleFromElement often matches unrelated nodes
+			 * (first title under a large ancestor), which reopened the tooltip immediately.
+			 * A new hover is picked up by mouseover on the next game.
+			 */
 		}, CLOSE_GRACE_MS);
 	}
 
@@ -170,6 +308,7 @@
 		el.innerHTML =
 			'<div class="igdb-gm-inner"><div class="igdb-gm-loading">IGDB…</div></div>';
 		positionTooltip(lastPointer.x, lastPointer.y);
+		bindTooltipPointerTracking();
 	}
 
 	function showTooltipHtml(html) {
@@ -177,6 +316,7 @@
 		el.style.display = 'block';
 		el.innerHTML = html;
 		positionTooltip(lastPointer.x, lastPointer.y);
+		bindTooltipPointerTracking();
 	}
 
 	function getAccessToken(cb) {
@@ -539,32 +679,49 @@
 		lastPointer.y = ev.clientY;
 
 		if (tooltipEl && tooltipEl.style.display !== 'none') {
-			var overRoot = hoverState.root && hoverState.root.contains(ev.target);
-			var overTip = tooltipEl.contains(ev.target);
-			if (overRoot || overTip) cancelCloseTimer();
+			if (tooltipEl.contains(ev.target)) {
+				cancelCloseTimer();
+				return;
+			}
+			if (pointerStillOnSameGame(ev.target)) cancelCloseTimer();
 		}
 
 		var title = getGameTitleFromElement(ev.target);
-		if (!title) return;
+		if (!title) {
+			if (
+				tooltipEl &&
+				tooltipEl.style.display !== 'none' &&
+				!tooltipEl.contains(ev.target) &&
+				!pointerStillOnSameGame(ev.target)
+			) {
+				scheduleHideTooltip(false);
+			}
+			return;
+		}
 		var root = findHoverRoot(ev.target, title);
 		if (hoverState.root === root) return;
+		/*
+		 * Grace: ignore other games while the close timer runs — unless the pointer is on a
+		 * different .content-choice or different game <a>, then switch immediately.
+		 */
+		if (
+			tooltipEl &&
+			tooltipEl.style.display !== 'none' &&
+			hoverState.closeTimer != null &&
+			!isDifferentGameTarget(ev.target)
+		) {
+			return;
+		}
 		hideTooltip();
-		hoverState.root = root;
-		hoverState.title = title;
-		var t = title;
-		hoverState.enterTimer = setTimeout(function () {
-			hoverState.enterTimer = null;
-			if (hoverState.root !== root || hoverState.title !== t) return;
-			beginHover(t);
-		}, HOVER_DELAY_MS);
+		armDelayedHover(root, title);
 	}
 
 	function onDocumentMouseOut(ev) {
 		if (!tooltipEl || tooltipEl.style.display === 'none') return;
 		var to = ev.relatedTarget;
 		if (to) {
-			if (hoverState.root && hoverState.root.contains(to)) return;
 			if (tooltipEl.contains(to)) return;
+			if (pointerStillOnSameGame(to)) return;
 		}
 		scheduleHideTooltip();
 	}
