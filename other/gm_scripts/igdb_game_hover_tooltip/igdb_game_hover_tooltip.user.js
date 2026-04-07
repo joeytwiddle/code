@@ -727,49 +727,49 @@
 	}
 
 	GM_addStyle(`
-#igdb-gm-hover-tooltip {
-	position: fixed;
-	z-index: 2147483647;
-	max-width: 420px;
-	max-height: min(78vh, 640px);
-	overflow: auto;
-	padding: 0;
-	margin: 0;
-	font: 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
-	color: #eee;
-	background: rgba(20, 22, 28, 0.96);
-	border: 1px solid rgba(255,255,255,0.12);
-	border-radius: 10px;
-	box-shadow: 0 12px 40px rgba(0,0,0,0.45);
-	pointer-events: auto;
-}
-#igdb-gm-hover-tooltip a { color: #8cb4ff; }
-.igdb-gm-inner { display: flex; gap: 12px; padding: 12px 14px; align-items: flex-start; }
-.igdb-gm-cover {
-	flex: 0 0 auto;
-	border-radius: 6px;
-	object-fit: cover;
-	max-height: 160px;
-}
-.igdb-gm-main { flex: 1; min-width: 0; }
-.igdb-gm-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; color: #fff; }
-.igdb-gm-ratings { margin-bottom: 6px; color: #b8d487; font-size: 12px; }
-.igdb-gm-meta { font-size: 11px; color: #aaa; display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 4px; }
-.igdb-gm-platforms { font-size: 11px; color: #ccc; margin-bottom: 4px; }
-.igdb-gm-muted { font-size: 11px; color: #888; margin-bottom: 4px; }
-.igdb-gm-dev, .igdb-gm-pub { font-size: 11px; color: #bbb; }
-.igdb-gm-summary { margin-top: 8px; font-size: 12px; color: #ddd; }
-.igdb-gm-summary p { margin: 4px 0 0; }
-.igdb-gm-ttb { font-size: 11px; color: #9cdcfe; margin-top: 6px; }
-.igdb-gm-links { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); }
-.igdb-gm-links-h { font-size: 11px; font-weight: 600; color: #bbb; margin-bottom: 6px; }
-.igdb-gm-linkrow { font-size: 11px; line-height: 1.55; color: #999; }
-.igdb-gm-sep { color: #555; user-select: none; }
-.igdb-gm-footer { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 10px; color: #666; }
-.igdb-gm-loading { padding: 20px 28px; color: #aaa; }
-.igdb-gm-error { display: block; padding: 12px 14px; color: #f88; }
-.igdb-gm-error p { margin: 8px 0 0; color: #ccc; font-size: 12px; }
-`);
+		#igdb-gm-hover-tooltip {
+			position: fixed;
+			z-index: 2147483647;
+			max-width: 420px;
+			max-height: min(78vh, 640px);
+			overflow: auto;
+			padding: 0;
+			margin: 0;
+			font: 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+			color: #eee;
+			background: rgba(20, 22, 28, 0.96);
+			border: 1px solid rgba(255,255,255,0.12);
+			border-radius: 10px;
+			box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+			pointer-events: auto;
+		}
+		#igdb-gm-hover-tooltip a { color: #8cb4ff; }
+		.igdb-gm-inner { display: flex; gap: 12px; padding: 12px 14px; align-items: flex-start; }
+		.igdb-gm-cover {
+			flex: 0 0 auto;
+			border-radius: 6px;
+			object-fit: cover;
+			max-height: 160px;
+		}
+		.igdb-gm-main { flex: 1; min-width: 0; }
+		.igdb-gm-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; color: #fff; }
+		.igdb-gm-ratings { margin-bottom: 6px; color: #b8d487; font-size: 12px; }
+		.igdb-gm-meta { font-size: 11px; color: #aaa; display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 4px; }
+		.igdb-gm-platforms { font-size: 11px; color: #ccc; margin-bottom: 4px; }
+		.igdb-gm-muted { font-size: 11px; color: #888; margin-bottom: 4px; }
+		.igdb-gm-dev, .igdb-gm-pub { font-size: 11px; color: #bbb; }
+		.igdb-gm-summary { margin-top: 8px; font-size: 12px; color: #ddd; }
+		.igdb-gm-summary p { margin: 4px 0 0; }
+		.igdb-gm-ttb { font-size: 11px; color: #9cdcfe; margin-top: 6px; }
+		.igdb-gm-links { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); }
+		.igdb-gm-links-h { font-size: 11px; font-weight: 600; color: #bbb; margin-bottom: 6px; }
+		.igdb-gm-linkrow { font-size: 11px; line-height: 1.55; color: #999; }
+		.igdb-gm-sep { color: #555; user-select: none; }
+		.igdb-gm-footer { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 10px; color: #666; }
+		.igdb-gm-loading { padding: 20px 28px; color: #aaa; }
+		.igdb-gm-error { display: block; padding: 12px 14px; color: #f88; }
+		.igdb-gm-error p { margin: 8px 0 0; color: #ccc; font-size: 12px; }
+	`);
 
 	document.addEventListener('mouseover', onDocumentMouseOver, true);
 	document.addEventListener('mouseout', onDocumentMouseOut, true);
