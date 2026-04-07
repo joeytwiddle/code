@@ -737,7 +737,7 @@
 			margin: 0;
 			font: 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
 			color: #eee;
-			background: rgba(20, 22, 28, 0.96);
+			background: rgba(20, 22, 28, 1);
 			border: 1px solid rgba(255,255,255,0.12);
 			border-radius: 10px;
 			box-shadow: 0 12px 40px rgba(0,0,0,0.45);
