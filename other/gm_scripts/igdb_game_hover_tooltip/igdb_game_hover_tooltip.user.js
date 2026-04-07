@@ -1,10 +1,85 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    local.igdb-game-hover-tooltip
-// @version      1.3.0
+// @version      1.4.0
 // @description  On hover, look up a game title via IGDB and show rating, summary, and related info in a tooltip (Humble choice cards and plain links supported).
 // @license      ISC
-// @match        *://*/*
+// @match        *://*.humblebundle.com/*
+// @match        *://*.steampowered.com/*
+// @match        *://*.store.steampowered.com/*
+// @match        *://*.gog.com/*
+// @match        *://*.epicgames.com/*
+// @match        *://*.nintendo.com/*
+// @match        *://*.playstation.com/*
+// @match        *://*.xbox.com/*
+// @match        *://*.metacritic.com/*
+// @match        *://*.opencritic.com/*
+// @match        *://*.ign.com/*
+// @match        *://*.gamespot.com/*
+// @match        *://*.pcgamer.com/*
+// @match        *://*.rockpapershotgun.com/*
+// @match        *://*.polygon.com/*
+// @match        *://*.kotaku.com/*
+// @match        *://*.gamefaqs.gamespot.com/*
+// @match        *://*.giantbomb.com/*
+// @match        *://*.pcgamingwiki.com/*
+// @match        *://*.protondb.com/*
+// @match        *://*.lutris.net/*
+// @match        *://*.itch.io/*
+// @match        *://*.indiegameplus.com/*
+// @match        *://*.gamepass.com/*
+// @match        *://*.ubisoft.com/*
+// @match        *://*.ea.com/*
+// @match        *://*.battle.net/*
+// @match        *://*.greenmangaming.com/*
+// @match        *://*.fanatical.com/*
+// @match        *://*.humblegames.com/*
+// @match        *://*.g2a.com/*
+// @match        *://*.kinguin.net/*
+// @match        *://*.gamersgate.com/*
+// @match        *://*.gamesplanet.com/*
+// @match        *://*.bundlestars.com/*
+// @match        *://*.chrono.gg/*
+// @match        *://*.indiegala.com/*
+// @match        *://*.steamdb.info/*
+// @match        *://*.isthereanydeal.com/*
+// @match        *://*.gg.deals/*
+// @match        *://*.cheapshark.com/*
+// @match        *://*.bargainbin.org/*
+// @match        *://*.gamesradar.com/*
+// @match        *://*.eurogamer.net/*
+// @match        *://*.vg247.com/*
+// @match        *://*.destructoid.com/*
+// @match        *://*.pcmag.com/*
+// @match        *://*.techradar.com/*
+// @match        *://*.tomshardware.com/*
+// @match        *://*.windowscentral.com/*
+// @match        *://*.androidcentral.com/*
+// @match        *://*.imdb.com/*
+// @match        *://*.rawg.io/*
+// @match        *://*.howlongtobeat.com/*
+// @match        *://*.steamcommunity.com/*
+// @match        *://*.reddit.com/r/gaming/*
+// @match        *://*.gamerankings.com/*
+// @match        *://*.neogaf.com/*
+// @match        *://*.resetera.com/*
+// @match        *://*.gameinformer.com/*
+// @match        *://*.gamesindustry.biz/*
+// @match        *://*.venturebeat.com/*
+// @match        *://*.arstechnica.com/*
+// @match        *://*.wired.com/*
+// @match        *://*.theverge.com/*
+// @match        *://*.engadget.com/*
+// @match        *://*.digitaltrends.com/*
+// @match        *://*.makeuseof.com/*
+// @match        *://*.lifewire.com/*
+// @match        *://*.howtogeek.com/*
+// @match        *://*.pcgamesn.com/*
+// @match        *://*.gameskinny.com/*
+// @match        *://*.segmentnext.com/*
+// @match        *://*.twinfinite.net/*
+// @match        *://*.gamingbolt.com/*
+// @match        *://*.shacknews.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -58,28 +133,32 @@
 			.trim();
 	}
 
+	var isHumbleBundle = /humblebundle\.com/i.test(location.hostname);
+
 	/**
 	 * Humble-style choice cards: innermost .content-choice, then .content-choice-title
 	 * (avoids a parent wrapper that contains several titles returning the wrong game).
 	 * Otherwise walk up for legacy markup; then nearest anchor text / title="".
 	 */
 	function getGameTitleFromElement(start) {
-		var cc = start.closest && start.closest('.content-choice');
-		if (cc) {
-			var ct0 = cc.querySelector('.content-choice-title');
-			if (ct0) {
-				var t0 = normalizeTitleText(ct0.textContent || '');
-				if (t0) return t0;
+		if (isHumbleBundle) {
+			var cc = start.closest && start.closest('.content-choice');
+			if (cc) {
+				var ct0 = cc.querySelector('.content-choice-title');
+				if (ct0) {
+					var t0 = normalizeTitleText(ct0.textContent || '');
+					if (t0) return t0;
+				}
 			}
-		}
-		var el = start;
-		var i;
-		for (i = 0; i < 12 && el; i++, el = el.parentElement) {
-			if (!el || !el.querySelector) continue;
-			var ct = el.querySelector('.content-choice-title');
-			if (ct) {
-				var t = normalizeTitleText(ct.textContent || '');
-				if (t) return t;
+			var el = start;
+			var i;
+			for (i = 0; i < 12 && el; i++, el = el.parentElement) {
+				if (!el || !el.querySelector) continue;
+				var ct = el.querySelector('.content-choice-title');
+				if (ct) {
+					var t = normalizeTitleText(ct.textContent || '');
+					if (t) return t;
+				}
 			}
 		}
 		var a = start.closest && start.closest('a');
@@ -91,6 +170,10 @@
 				}
 			}
 		}
+		// Steam store
+		const imgElem = a && a.querySelector('img[alt]');
+		if (imgElem && imgElem.alt) return imgElem.alt;
+		//
 		if (a && a.tagName === 'A') {
 			var linkText = normalizeTitleText(a.textContent || '');
 			if (linkText && linkText.length <= 220 && !/^https?:\/\//i.test(linkText)) return linkText;
@@ -101,11 +184,14 @@
 	}
 
 	function findHoverRoot(start, title) {
-		var cc = start.closest && start.closest('.content-choice');
-		if (cc && cc.querySelector('.content-choice-title')) return cc;
+		if (isHumbleBundle) {
+			var cc = start.closest && start.closest('.content-choice');
+			if (cc && cc.querySelector('.content-choice-title')) return cc;
+		}
 		var a = start.closest && start.closest('a');
-		if (a && normalizeTitleText(getGameTitleFromElement(a) || '') === normalizeTitleText(title || ''))
+		if (a && normalizeTitleText(getGameTitleFromElement(a) || '') === normalizeTitleText(title || '')) {
 			return a;
+		}
 		return start;
 	}
 
@@ -113,13 +199,15 @@
 		hoverState.activeContentChoice = null;
 		hoverState.activeAnchor = null;
 		if (!root || root.nodeType !== 1) return;
-		var cc =
-			root.matches && root.matches('.content-choice')
-				? root
-				: root.closest && root.closest('.content-choice');
-		if (cc) {
-			hoverState.activeContentChoice = cc;
-			return;
+		if (isHumbleBundle) {
+			var cc =
+				root.matches && root.matches('.content-choice')
+					? root
+					: root.closest && root.closest('.content-choice');
+			if (cc) {
+				hoverState.activeContentChoice = cc;
+				return;
+			}
 		}
 		var a =
 			root.matches && root.matches('a')
@@ -131,7 +219,7 @@
 	/** Same physical game tile: exact .content-choice or exact <a> we armed from. */
 	function pointerStillOnSameGame(node) {
 		if (!node || node.nodeType !== 1) return false;
-		if (hoverState.activeContentChoice) {
+		if (isHumbleBundle && hoverState.activeContentChoice) {
 			var cc = node.closest && node.closest('.content-choice');
 			return !!cc && cc === hoverState.activeContentChoice;
 		}
@@ -149,7 +237,7 @@
 	/** True when the pointer is on a different choice card or different game link. */
 	function isDifferentGameTarget(node) {
 		if (!node || node.nodeType !== 1) return false;
-		if (hoverState.activeContentChoice) {
+		if (isHumbleBundle && hoverState.activeContentChoice) {
 			var cc = node.closest && node.closest('.content-choice');
 			return !!cc && cc !== hoverState.activeContentChoice;
 		}
@@ -545,9 +633,9 @@
 
 	function renderGameHtml(game, ttb) {
 		var cover = coverUrl(game.cover);
-		var genres = (game.genres || []).map(function (g) { return g.name; }).filter(Boolean);
-		var plats = (game.platforms || []).map(function (p) { return p.name; }).filter(Boolean);
-		var modes = (game.game_modes || []).map(function (m) { return m.name; }).filter(Boolean);
+		var genres = (game.genres || []).map(g => g.name).filter(Boolean);
+		var plats = (game.platforms || []).map(p => p.name).filter(Boolean);
+		var modes = (game.game_modes || []).map(m => m.name).filter(Boolean);
 
 		var dev = pickInvolved(game.involved_companies, 'developer');
 		var pub = pickInvolved(game.involved_companies, 'publisher');
@@ -593,7 +681,7 @@
 			'</div>' +
 			(ratings.length
 				? '<div class="igdb-gm-ratings">' +
-				  ratings.map(function (r) { return '<div>' + escapeHtml(r) + '</div>'; }).join('') +
+				  ratings.map((r) => '<div>' + escapeHtml(r) + '</div>').join('') +
 				  '</div>'
 				: '<div class="igdb-gm-muted">No IGDB score yet.</div>') +
 			'<div class="igdb-gm-meta">' +
