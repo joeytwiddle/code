@@ -596,7 +596,7 @@
       q +
       '"; fields name,slug,summary,storyline,first_release_date,' +
       "aggregated_rating,aggregated_rating_count,total_rating,total_rating_count," +
-      "url,cover.url,genres.name,platforms.name,game_modes.name," +
+      "url,cover.url,genres.name,platforms.name,game_modes.name,keywords.name,themes.name," +
       "involved_companies.company.name,involved_companies.developer,involved_companies.publisher," +
       "external_games.uid,external_games.url,external_games.external_game_source.name;" +
       " limit 1;"
@@ -733,6 +733,8 @@
     var genres = (game.genres || []).map((g) => g.name).filter(Boolean);
     var plats = (game.platforms || []).map((p) => p.name).filter(Boolean);
     var modes = (game.game_modes || []).map((m) => m.name).filter(Boolean);
+    var keywords = (game.keywords || []).map((k) => k.name).filter(Boolean);
+    var themes = (game.themes || []).map((t) => t.name).filter(Boolean);
 
     var dev = pickInvolved(game.involved_companies, "developer");
     var pub = pickInvolved(game.involved_companies, "publisher");
@@ -804,6 +806,16 @@
       (modes.length
         ? '<div class="igdb-gm-muted">' +
           escapeHtml(modes.join(", ")) +
+          "</div>"
+        : "") +
+      (themes.length
+        ? '<div class="igdb-gm-muted">Themes: ' +
+          escapeHtml(themes.slice(0, 5).join(", ")) +
+          "</div>"
+        : "") +
+      (keywords.length
+        ? '<div class="igdb-gm-muted">Keywords: ' +
+          escapeHtml(keywords.slice(0, 6).join(", ")) +
           "</div>"
         : "") +
       (dev
