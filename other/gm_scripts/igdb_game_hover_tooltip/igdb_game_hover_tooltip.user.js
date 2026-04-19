@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
-// @namespace    local.igdb-game-hover-tooltip
-// @version      1.4.1
-// @description  On hover, look up a game title via IGDB and show rating, summary, and related info in a tooltip (Humble choice cards and plain links supported).
+// @namespace    igdb-game-hover-tooltip
+// @version      1.4.2
+// @description  On game sites, hover over a game to display a tooltip with the game's rating, summary, and related info
 // @license      ISC
 // @match        *://*.humblebundle.com/*
 // @match        *://*.steampowered.com/*
@@ -553,16 +553,6 @@
 		var name = displayName || '';
 		var chunks = [];
 
-		var ytReviews =
-			'https://www.youtube.com/results?search_query=' +
-			encodeURIComponent('review game ' + name);
-		chunks.push(outboundLink('YouTube: review search', ytReviews));
-
-		var ytBuy =
-			'https://www.youtube.com/results?search_query=' +
-			encodeURIComponent(name + ' before you buy');
-		chunks.push(outboundLink('YouTube: before you buy', ytBuy));
-
 		var mc =
 			'https://www.metacritic.com/search/' + encodeURIComponent(name) + '/?category=game';
 		chunks.push(outboundLink('Metacritic search', mc));
@@ -601,6 +591,16 @@
 
 		var epic = pickExternalBySourceName(externalGames, 'Epic Game Store');
 		if (epic && epic.url) chunks.push(outboundLink('Epic store', epic.url));
+
+		var ytReviews =
+			'https://www.youtube.com/results?search_query=' +
+			encodeURIComponent('review game ' + name);
+		chunks.push(outboundLink('YouTube: review search', ytReviews));
+
+		var ytBuy =
+			'https://www.youtube.com/results?search_query=' +
+			encodeURIComponent(name + ' before you buy');
+		chunks.push(outboundLink('YouTube: before you buy', ytBuy));
 
 		return (
 			'<div class="igdb-gm-links">' +
