@@ -451,8 +451,8 @@
 				url: 'https://api.igdb.com/v4' + path,
 				headers: {
 					'Client-ID': CLIENT_ID,
-					Authorization: 'Bearer ' + token,
-					Accept: 'application/json',
+					'Authorization': 'Bearer ' + token,
+					'Accept': 'application/json',
 					'Content-Type': 'text/plain',
 				},
 				data: body,
