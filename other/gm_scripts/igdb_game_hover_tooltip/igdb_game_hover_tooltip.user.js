@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    local.igdb-game-hover-tooltip
-// @version      1.4.0
+// @version      1.4.1
 // @description  On hover, look up a game title via IGDB and show rating, summary, and related info in a tooltip (Humble choice cards and plain links supported).
 // @license      ISC
 // @match        *://*.humblebundle.com/*
@@ -130,7 +130,9 @@
 		return String(s)
 			.replace(/\s+/g, ' ')
 			.replace(/[\u2018\u2019]/g, "'")
-			.trim();
+			.trim()
+			// For Steam thumbnails
+			.replace(/'s screenshot [0-9]*/, '');
 	}
 
 	var isHumbleBundle = /humblebundle\.com/i.test(location.hostname);
@@ -172,7 +174,7 @@
 		}
 		// Steam store
 		const imgElem = a && a.querySelector('img[alt]');
-		if (imgElem && imgElem.alt) return imgElem.alt;
+		if (imgElem && imgElem.alt) return normalizeTitleText(imgElem.alt);
 		//
 		if (a && a.tagName === 'A') {
 			var linkText = normalizeTitleText(a.textContent || '');
