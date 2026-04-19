@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    igdb-game-hover-tooltip
-// @version      1.4.3
+// @version      1.4.4
 // @description  On game sites, hover over a game to display a tooltip with the game's rating, summary, and related info
 // @license      ISC
 // @match        *://*.humblebundle.com/*
@@ -179,10 +179,38 @@
         }
       }
     }
-    // Steam store
+
+    // Steam store image thumbnails
     const imgElem = a && a.querySelector("img[alt]");
     if (imgElem && imgElem.alt) return normalizeTitleText(imgElem.alt);
-    //
+
+    // Steam store search results
+    if (
+      a &&
+      a.href &&
+      /store\.steampowered\.com\/app\/(\d+)(?:\/[^?]*)?/i.test(a.href)
+    ) {
+      const match = a.href.match(
+        /store\.steampowered\.com\/app\/(\d+)(?:\/[^?]*)?/i,
+      );
+      if (match) {
+        // Try to find title from nearby text elements
+        const titleElem = a.querySelector(".title, .search_name");
+        if (titleElem) {
+          return normalizeTitleText(titleElem.textContent || "");
+        }
+        // Fallback: extract title from URL path
+        if (match[2]) {
+          const pathTitle = decodeURIComponent(match[2])
+            .replace(/[_-]/g, " ")
+            .trim();
+          if (pathTitle) return pathTitle;
+        }
+        // Final fallback: use app ID
+        return "Steam App " + match[1];
+      }
+    }
+
     if (a && a.tagName === "A") {
       var linkText = normalizeTitleText(a.textContent || "");
       if (linkText && linkText.length <= 220 && !/^https?:\/\//i.test(linkText))
