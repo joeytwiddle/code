@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    igdb-game-hover-tooltip
-// @version      1.4.2
+// @version      1.4.3
 // @description  On game sites, hover over a game to display a tooltip with the game's rating, summary, and related info
 // @license      ISC
 // @match        *://*.humblebundle.com/*
@@ -116,8 +116,9 @@
   };
 
   var tooltipEl = null;
-  var cacheMem = Object.create(null);
+  var cacheMem = {};
   var pointerTrackingBound = false;
+  var suppressedTitles = {};
 
   function escapeHtml(s) {
     if (s == null || s === "") return "";
@@ -434,6 +435,24 @@
     var el = ensureTooltip();
     el.style.display = "block";
     el.innerHTML = html;
+
+    // Add close button functionality
+    var closeBtn = el.querySelector(".igdb-gm-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Suppress this title for 10 seconds
+        if (hoverState.title) {
+          var normalizedTitle = normalizeTitleText(hoverState.title);
+          suppressedTitles[normalizedTitle] = Date.now() + 15 * 1000; // 15 seconds
+        }
+
+        hideTooltip();
+      });
+    }
+
     positionTooltip(lastPointer.x, lastPointer.y);
     bindTooltipPointerTracking();
   }
@@ -724,6 +743,7 @@
 
     return (
       '<div class="igdb-gm-inner">' +
+      '<div class="igdb-gm-close-wrapper"><button class="igdb-gm-close" title="Close and suppress for 10s">×</button></div>' +
       (cover
         ? '<img class="igdb-gm-cover" src="' +
           escapeHtml(cover) +
@@ -850,6 +870,16 @@
       }
       return;
     }
+
+    // Check if this title is suppressed
+    var normalizedTitle = normalizeTitleText(title);
+    if (
+      suppressedTitles[normalizedTitle] &&
+      suppressedTitles[normalizedTitle] > Date.now()
+    ) {
+      return;
+    }
+
     var root = findHoverRoot(ev.target, title);
     if (hoverState.root === root) return;
     /*
@@ -921,6 +951,36 @@
 		.igdb-gm-loading { padding: 20px 28px; color: #aaa; }
 		.igdb-gm-error { display: block; padding: 12px 14px; color: #f88; }
 		.igdb-gm-error p { margin: 8px 0 0; color: #ccc; font-size: 12px; }
+		.igdb-gm-close-wrapper {
+			float: right;
+		}
+		.igdb-gm-close {
+			position: absolute;
+			top: 8px;
+			right: 8px;
+			width: 20px;
+			height: 20px;
+			border: none;
+			background: rgba(255,255,255,0.1);
+			color: #ccc;
+			border-radius: 50%;
+			cursor: pointer;
+			font-size: 14px;
+			font-weight: bold;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s ease;
+			z-index: 1;
+		}
+		.igdb-gm-close:hover {
+			background: rgba(255,255,255,0.2);
+			color: #fff;
+		}
+		.igdb-gm-close:active {
+			background: rgba(255,255,255,0.3);
+			transform: scale(0.95);
+		}
 	`);
 
   document.addEventListener("mouseover", onDocumentMouseOver, true);
