@@ -159,7 +159,7 @@ NL="\\
 
 			mkdir -p /tmp/jsh-joey/utpcache
 			CACHE_FILE=/tmp/jsh-joey/utpcache/"$IP".last
-			CACHED_COPY=` cat "$CACHE_FILE" `
+			CACHED_COPY=` cat "$CACHE_FILE" 2>/dev/null `
 
 			QSTAT_OUTPUT=` qstat -default uns -retry 6 -interval 4 -timeout 24 -P "$IP" 2>&1 | dos2unix | drop 1 `
 
