@@ -104,8 +104,10 @@
   /** Time to leave the source and reach the tooltip before it closes (crossing empty space). */
   var CLOSE_GRACE_MS = 180;
   var SUMMARY_MAX_CHARS = 420;
-
-  var DEBUG = false; // Set to true to enable function call logging
+  /** Keep tooltip open until click outside. Useful for inspecting elements and CSS. */
+  var KEEP_OPEN_UNTIL_CLICK = false;
+  // Set to true to enable function call logging
+  var DEBUG = false;
 
   var hoverState = {
     root: null,
@@ -402,6 +404,12 @@
   function onPointerMoveWhileTooltipVisible(ev) {
     if (!tooltipEl || tooltipEl.style.display === "none" || !hoverState.root)
       return;
+
+    // If KEEP_OPEN_UNTIL_CLICK is enabled, don't close on mouse move
+    if (KEEP_OPEN_UNTIL_CLICK) {
+      return;
+    }
+
     var x = ev.clientX;
     var y = ev.clientY;
     if (pointerPositionKeepsTooltipOpen(x, y)) {
@@ -422,6 +430,15 @@
     if (tooltipEl) {
       tooltipEl.style.display = "none";
       tooltipEl.innerHTML = "";
+    }
+
+    // Remove click outside listener if KEEP_OPEN_UNTIL_CLICK is enabled
+    if (KEEP_OPEN_UNTIL_CLICK) {
+      // Remove all click outside listeners (cleanup any that might remain)
+      var listeners = document.querySelectorAll("[data-tooltip-listener]");
+      listeners.forEach(function (el) {
+        el.removeAttribute("data-tooltip-listener");
+      });
     }
   }
 
@@ -528,6 +545,22 @@
 
         hideTooltip();
       });
+    }
+
+    // Add click outside listener if KEEP_OPEN_UNTIL_CLICK is enabled
+    if (KEEP_OPEN_UNTIL_CLICK) {
+      function onClickOutside(e) {
+        if (
+          !tooltipEl.contains(e.target) &&
+          !pointerStillOnSameGame(e.target)
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          hideTooltip();
+          document.removeEventListener("click", onClickOutside, true);
+        }
+      }
+      document.addEventListener("click", onClickOutside, true);
     }
 
     positionTooltip(lastPointer.x, lastPointer.y);
@@ -959,6 +992,7 @@
     var title = getGameTitleFromElement(ev.target);
     if (!title) {
       if (
+        !KEEP_OPEN_UNTIL_CLICK &&
         tooltipEl &&
         tooltipEl.style.display !== "none" &&
         !tooltipEl.contains(ev.target) &&
@@ -1003,6 +1037,7 @@
       if (tooltipEl.contains(to)) return;
       if (pointerStillOnSameGame(to)) return;
     }
+    if (KEEP_OPEN_UNTIL_CLICK) return;
     scheduleHideTooltip();
   }
 
