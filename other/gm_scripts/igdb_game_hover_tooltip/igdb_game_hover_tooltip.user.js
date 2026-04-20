@@ -105,6 +105,8 @@
   var CLOSE_GRACE_MS = 180;
   var SUMMARY_MAX_CHARS = 420;
 
+  var DEBUG = false; // Set to true to enable function call logging
+
   var hoverState = {
     root: null,
     title: null,
@@ -120,6 +122,12 @@
   var cacheMem = {};
   var pointerTrackingBound = false;
   var suppressedTitles = {};
+
+  function debugLog(funcName, args) {
+    if (DEBUG) {
+      console.log(`[IGDB Tooltip] ${funcName}(`, args, `)`);
+    }
+  }
 
   function escapeHtml(s) {
     if (s == null || s === "") return "";
@@ -149,7 +157,11 @@
    * Otherwise walk up for legacy markup; then nearest anchor text / title="".
    */
   function getGameTitleFromElement(start) {
-    console.log("isTwitch:", isTwitch);
+    debugLog("getGameTitleFromElement", {
+      element: start.tagName,
+      className: start.className,
+    });
+
     if (isTwitch) {
       // Check for elements with title attributes, but skip if in StreamTitle container
       var elemWithTitle = start.closest && start.closest("[title]");
@@ -160,6 +172,9 @@
         (elemWithTitle.closest("[data-test-selector=StreamTitle]") ||
           elemWithTitle.closest("[data-test-selector=TitleAndChannel]"));
       if (isStreamTitle) {
+        debugLog("getGameTitleFromElement", {
+          skipped: "StreamTitle container found",
+        });
         return null;
       }
       if (elemWithTitle) {
@@ -493,6 +508,7 @@
   }
 
   function showTooltipHtml(html) {
+    debugLog("showTooltipHtml", { htmlLength: html.length });
     var el = ensureTooltip();
     el.style.display = "block";
     el.innerHTML = html;
@@ -762,6 +778,14 @@
   }
 
   function renderGameHtml(game, ttb) {
+    debugLog("renderGameHtml", {
+      gameName: game.name,
+      hasGenres: !!(game.genres && game.genres.length),
+      hasThemes: !!(game.themes && game.themes.length),
+      hasKeywords: !!(game.keywords && game.keywords.length),
+      hasTags: !!(game.tags && game.tags.length),
+    });
+
     var cover = coverUrl(game.cover);
     var genres = (game.genres || []).map((g) => g.name).filter(Boolean);
     var plats = (game.platforms || []).map((p) => p.name).filter(Boolean);
@@ -901,6 +925,7 @@
   }
 
   function beginHover(title) {
+    debugLog("beginHover", { title });
     var mySeq = ++hoverState.seq;
     showTooltipLoading();
     fetchGameBundle(title, mySeq, function (err, game, ttb) {
