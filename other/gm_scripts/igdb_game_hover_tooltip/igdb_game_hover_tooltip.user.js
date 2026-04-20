@@ -80,6 +80,7 @@
 // @match        *://*.twinfinite.net/*
 // @match        *://*.gamingbolt.com/*
 // @match        *://*.shacknews.com/*
+// @match        *://*.twitch.tv/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -135,10 +136,12 @@
         .trim()
         // For Steam thumbnails
         .replace(/'s screenshot [0-9]*/, "")
+        .replace(/ Demo/, "")
     );
   }
 
   var isHumbleBundle = /humblebundle\.com/i.test(location.hostname);
+  var isTwitch = /twitch\.tv/i.test(location.hostname);
 
   /**
    * Humble-style choice cards: innermost .content-choice, then .content-choice-title
@@ -146,6 +149,36 @@
    * Otherwise walk up for legacy markup; then nearest anchor text / title="".
    */
   function getGameTitleFromElement(start) {
+    console.log("isTwitch:", isTwitch);
+    if (isTwitch) {
+      // Check for elements with title attributes, but skip if in StreamTitle container
+      var elemWithTitle = start.closest && start.closest("[title]");
+      // Skip if inside SteamTitle container
+      var isStreamTitle =
+        elemWithTitle &&
+        elemWithTitle.closest &&
+        (elemWithTitle.closest("[data-test-selector=StreamTitle]") ||
+          elemWithTitle.closest("[data-test-selector=TitleAndChannel]"));
+      if (isStreamTitle) {
+        return null;
+      }
+      if (elemWithTitle) {
+        var title = elemWithTitle.getAttribute("title");
+        if (title && normalizeTitleText(title)) {
+          return normalizeTitleText(title);
+        }
+      }
+      var isGameLink =
+        start.closest && start.closest("[data-test-selector=GameLink]");
+      var gameLinkTitle =
+        isGameLink && normalizeTitleText(gameLinkTitle.textContent());
+      if (gameLinkTitle) {
+        return gameLinkTitle;
+      }
+
+      return null; // Don't detect anything else on Twitch
+    }
+
     if (isHumbleBundle) {
       var cc = start.closest && start.closest(".content-choice");
       if (cc) {
