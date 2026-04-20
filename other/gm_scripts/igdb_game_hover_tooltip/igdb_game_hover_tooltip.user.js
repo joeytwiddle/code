@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    igdb-game-hover-tooltip
-// @version      1.4.4
+// @version      1.4.8
 // @description  On game sites, hover over a game to display a tooltip with the game's rating, summary, and related info
 // @license      ISC
 // @match        *://*.humblebundle.com/*
@@ -898,6 +898,7 @@
           escapeHtml(blurb) +
           "</div></div>"
         : "") +
+      "<hr />" +
       '<div class="igdb-gm-flavor">' +
       (genres.length
         ? "<div><strong>Genres:</strong> " +
@@ -921,11 +922,12 @@
         : "") +
       ttbLine +
       "</div>" +
+      "<hr />" +
       buildReviewLinksHtml(game.name || "", game.external_games) +
       '<div class="igdb-gm-footer">' +
       igdbLink +
       "</div>" +
-      "</div></div>"
+      "</hr></div>"
     );
   }
 
@@ -1083,6 +1085,7 @@
 		.igdb-gm-loading { padding: 20px 28px; color: #aaa; }
 		.igdb-gm-error { display: block; padding: 12px 14px; color: #f88; }
 		.igdb-gm-error p { margin: 8px 0 0; color: #ccc; font-size: 12px; }
+		.igdb-gm-inner hr { margin: 8px; border: 1px solid #4444; }
 		.igdb-gm-close-wrapper {
 			float: right;
 		}
