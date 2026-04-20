@@ -732,7 +732,7 @@
 
     return (
       '<div class="igdb-gm-links">' +
-      '<div class="igdb-gm-links-h">Decide to install</div>' +
+      '<div class="igdb-gm-links-h"><strong>Links</strong></div>' +
       '<div class="igdb-gm-linkrow">' +
       chunks.join('<span class="igdb-gm-sep"> · </span>') +
       "</div></div>"
@@ -791,17 +791,14 @@
 
     var ttbLine = "";
     if (ttb && ttb.normally) {
-      var hrs = Math.round((ttb.normally / 3600) * 10) / 10;
-      ttbLine =
-        '<div class="igdb-gm-ttb">Typical time to beat (HowLongToBeat via IGDB): ~' +
-        hrs +
-        " h</div>";
+      var hrs = Math.round(ttb.normally / 60 / 60);
+      ttbLine = "<div><strong>Time to beat:</strong> ~" + hrs + " h</div>";
     }
 
     var igdbLink = game.url
       ? '<a class="igdb-gm-link" href="' +
         escapeHtml(game.url) +
-        '" target="_blank" rel="noopener noreferrer">Open on IGDB</a>'
+        '" target="_blank" rel="noopener noreferrer">IGDB</a>'
       : "";
 
     return (
@@ -827,46 +824,49 @@
           escapeHtml(formatDate(game.first_release_date)) +
           "</span>"
         : "") +
-      (genres.length
-        ? "<span>" + escapeHtml(genres.slice(0, 4).join(", ")) + "</span>"
-        : "") +
       "</div>" +
-      (plats.length
-        ? '<div class="igdb-gm-platforms">' +
-          escapeHtml(plats.slice(0, 8).join(" · ")) +
-          "</div>"
-        : "") +
-      (modes.length
-        ? '<div class="igdb-gm-muted">' +
-          escapeHtml(modes.join(", ")) +
-          "</div>"
-        : "") +
-      (themes.length
-        ? '<div class="igdb-gm-muted">Themes: ' +
-          escapeHtml(themes.slice(0, 5).join(", ")) +
-          "</div>"
-        : "") +
-      (keywords.length
-        ? '<div class="igdb-gm-muted">Keywords: ' +
-          escapeHtml(keywords.slice(0, 6).join(", ")) +
-          "</div>"
-        : "") +
       (dev
         ? '<div class="igdb-gm-dev">Developer: ' + escapeHtml(dev) + "</div>"
         : "") +
       (pub && pub !== dev
         ? '<div class="igdb-gm-pub">Publisher: ' + escapeHtml(pub) + "</div>"
         : "") +
-      ttbLine +
-      (blurb
-        ? '<div class="igdb-gm-summary"><strong>Summary</strong><p>' +
-          escapeHtml(blurb) +
-          "</p></div>"
+      (plats.length
+        ? '<div class="igdb-gm-platforms">' +
+          escapeHtml(plats.slice(0, 8).join(" · ")) +
+          "</div>"
         : "") +
+      (blurb
+        ? '<div class="igdb-gm-summary"><strong>Summary</strong><div>' +
+          escapeHtml(blurb) +
+          "</div></div>"
+        : "") +
+      '<div class="igdb-gm-flavor">' +
+      (genres.length
+        ? "<div><strong>Genres:</strong> " +
+          escapeHtml(genres.slice(0, 4).join(", ")) +
+          "</div>"
+        : "") +
+      (modes.length
+        ? "<div><strong>Modes:</strong> " +
+          escapeHtml(modes.join(", ")) +
+          "</div>"
+        : "") +
+      (themes.length
+        ? "<div><strong>Themes:</strong> " +
+          escapeHtml(themes.slice(0, 5).join(", ")) +
+          "</div>"
+        : "") +
+      (keywords.length
+        ? "<div><strong>Keywords:</strong> " +
+          escapeHtml(keywords.slice(0, 6).join(", ")) +
+          "</div>"
+        : "") +
+      ttbLine +
+      "</div>" +
       buildReviewLinksHtml(game.name || "", game.external_games) +
       '<div class="igdb-gm-footer">' +
       igdbLink +
-      '<span class="igdb-gm-note">IGDB summary is editorial blurbs; scores blend critics/users.</span>' +
       "</div>" +
       "</div></div>"
     );
@@ -1010,14 +1010,13 @@
 		.igdb-gm-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; color: #fff; }
 		.igdb-gm-ratings { margin-bottom: 6px; color: #b8d487; font-size: 12px; }
 		.igdb-gm-meta { font-size: 11px; color: #aaa; display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 4px; }
-		.igdb-gm-platforms { font-size: 11px; color: #ccc; margin-bottom: 4px; }
+		.igdb-gm-dev, .igdb-gm-pub { font-size: 11px; color: #aaa; }
+		.igdb-gm-platforms { font-size: 11px; color: #aaa; margin-bottom: 4px; }
 		.igdb-gm-muted { font-size: 11px; color: #888; margin-bottom: 4px; }
-		.igdb-gm-dev, .igdb-gm-pub { font-size: 11px; color: #bbb; }
+		.igdb-gm-flavor { font-size: 12px; color: #ddd; margin-bottom: 4px; }
 		.igdb-gm-summary { margin-top: 8px; font-size: 12px; color: #ddd; }
-		.igdb-gm-summary p { margin: 4px 0 0; }
-		.igdb-gm-ttb { font-size: 11px; color: #9cdcfe; margin-top: 6px; }
-		.igdb-gm-links { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); }
-		.igdb-gm-links-h { font-size: 11px; font-weight: 600; color: #bbb; margin-bottom: 6px; }
+		.igdb-gm-summary div { margin: 4px 0 0; }
+		.igdb-gm-links-h { font-size: 12px; font-weight: 600; color: #ddd; margin-bottom: 6px; }
 		.igdb-gm-linkrow { font-size: 11px; line-height: 1.55; color: #999; }
 		.igdb-gm-sep { color: #555; user-select: none; }
 		.igdb-gm-footer { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 10px; color: #666; }
