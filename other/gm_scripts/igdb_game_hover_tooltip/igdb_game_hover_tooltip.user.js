@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    igdb-game-hover-tooltip
-// @version      1.4.8
+// @version      1.4.9
 // @description  On game sites, hover over a game to display a tooltip with the game's rating, summary, and related info
 // @license      ISC
 // @match        *://*.humblebundle.com/*
@@ -152,6 +152,7 @@
 
   var isHumbleBundle = /humblebundle\.com/i.test(location.hostname);
   var isTwitch = /twitch\.tv/i.test(location.hostname);
+  var isImdb = /imdb\.com/i.test(location.hostname);
 
   /**
    * Humble-style choice cards: innermost .content-choice, then .content-choice-title
@@ -216,6 +217,7 @@
         }
       }
     }
+
     var a = start.closest && start.closest("a");
     if (!a) {
       for (
@@ -227,6 +229,19 @@
           a = el;
           break;
         }
+      }
+    }
+
+    if (isImdb) {
+      // If the link does not match /title/ then quit
+      if (!a?.href?.match(/\/title\//)) {
+        return null;
+      }
+      // If the container doesn't contain an element with textContent "Video Game" then quit
+      var nearbyElements = a.parentElement.querySelectorAll("*");
+      var isVideoGame = Array.from(nearbyElements).some(el => el.textContent?.trim() === "Video Game");
+      if (!isVideoGame) {
+        return;
       }
     }
 
