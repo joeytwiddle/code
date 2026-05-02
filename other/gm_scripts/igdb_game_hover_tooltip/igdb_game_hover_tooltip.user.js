@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    igdb-game-hover-tooltip
-// @version      1.4.9
+// @version      1.4.10
 // @description  On game sites, hover over a game to display a tooltip with the game's rating, summary, and related info
 // @license      ISC
 // @match        *://*.humblebundle.com/*
@@ -205,6 +205,8 @@
           var t0 = normalizeTitleText(ct0.textContent || "");
           if (t0) return t0;
         }
+      } else {
+        return null;
       }
       var el = start;
       var i;
