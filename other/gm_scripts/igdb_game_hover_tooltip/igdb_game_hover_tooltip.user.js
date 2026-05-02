@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IGDB game hover tooltip
 // @namespace    igdb-game-hover-tooltip
-// @version      1.4.10
+// @version      1.4.11
 // @description  On game sites, hover over a game to display a tooltip with the game's rating, summary, and related info
 // @license      ISC
 // @match        *://*.humblebundle.com/*
@@ -744,8 +744,7 @@
 
     var mc =
       "https://www.metacritic.com/search/" +
-      encodeURIComponent(name) +
-      "/?category=game";
+      encodeURIComponent(name);
     chunks.push(outboundLink("Metacritic search", mc));
 
     var oc =
