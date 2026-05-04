@@ -1,3 +1,5 @@
+/* eslint-env commonjs */
+
 module.exports = {
   extends: [
     "eslint:recommended",
@@ -8,8 +10,10 @@ module.exports = {
     greasemonkey: true,
     es6: true,
   },
+  parser: '@babel/eslint-parser',
   parserOptions: {
     ecmaVersion: 6,
+    requireConfigFile: false,
   },
   plugins: [],
   rules: {
