@@ -668,8 +668,10 @@
   function formatRating(label, value, count) {
     if (value == null || value === "") return "";
     var n = typeof value === "number" ? Math.round(value * 10) / 10 : value;
-    var line = label + ": " + n + "/100";
+    //var line = label + ": " + n + "/100";
+    var line = "<label>" + escapeHtml(label) + ":</label> <value>" + n + "/100";
     if (count != null && count > 0) line += " (" + count + " votes)";
+    line += "</value>";
     return line;
   }
 
@@ -898,7 +900,7 @@
       "</div>" +
       (ratings.length
         ? '<div class="igdb-gm-ratings">' +
-          ratings.map((r) => "<div>" + escapeHtml(r) + "</div>").join("") +
+          ratings.map((r) => "<div>" + r + "</div>").join("") +
           "</div>"
         : '<div class="igdb-gm-muted">No IGDB score yet.</div>') +
       '<div class="igdb-gm-meta">' +
@@ -1096,7 +1098,8 @@
 		}
 		.igdb-gm-main { flex: 1; min-width: 0; }
 		.igdb-gm-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; color: #fff; }
-		.igdb-gm-ratings { margin-bottom: 6px; color: #b8d487; font-size: 12px; }
+		.igdb-gm-ratings { margin-bottom: 6px; font-size: 12px; }
+		.igdb-gm-ratings value { color: #b8d487; }
 		.igdb-gm-meta { font-size: 11px; color: #aaa; display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 4px; }
 		.igdb-gm-dev, .igdb-gm-pub { font-size: 11px; color: #aaa; }
 		.igdb-gm-platforms { font-size: 11px; color: #aaa; margin-bottom: 4px; }
