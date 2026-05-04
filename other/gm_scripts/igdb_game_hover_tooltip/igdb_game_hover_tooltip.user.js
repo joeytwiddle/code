@@ -90,6 +90,10 @@
 // @connect      images.igdb.com
 // ==/UserScript==
 
+/* eslint-env es2025 */
+/* eslint-disable no-empty */
+/* eslint-disable no-inner-declarations */
+
 (function () {
   "use strict";
 
@@ -280,8 +284,9 @@
 
     if (a && a.tagName === "A") {
       var linkText = normalizeTitleText(a.textContent || "");
-      if (linkText && linkText.length <= 220 && !/^https?:\/\//i.test(linkText))
+      if (linkText && linkText.length <= 220 && !/^https?:\/\//i.test(linkText)) {
         return linkText;
+      }
       var ta = a.getAttribute("title");
       if (ta && normalizeTitleText(ta)) return normalizeTitleText(ta);
     }
@@ -336,8 +341,9 @@
       var a = node.closest && node.closest("a");
       return !!a && a === hoverState.activeAnchor;
     }
-    if (!hoverState.root || hoverState.title == null || hoverState.title === "")
+    if (!hoverState.root || hoverState.title == null || hoverState.title === "") {
       return false;
+    }
     if (!hoverState.root.contains(node)) return false;
     var t = getGameTitleFromElement(node);
     if (!t) return false;
@@ -408,8 +414,9 @@
   function pointerPositionKeepsTooltipOpen(x, y) {
     if (!tooltipEl || tooltipEl.style.display === "none") return false;
     var tip = tooltipEl.getBoundingClientRect();
-    if (x >= tip.left && x <= tip.right && y >= tip.top && y <= tip.bottom)
+    if (x >= tip.left && x <= tip.right && y >= tip.top && y <= tip.bottom) {
       return true;
+    }
     var hit = document.elementFromPoint(x, y);
     return pointerStillOnSameGame(hit);
   }
@@ -419,8 +426,9 @@
    * getGameTitleFromElement here (ancestors often “see” unrelated game titles on the page).
    */
   function onPointerMoveWhileTooltipVisible(ev) {
-    if (!tooltipEl || tooltipEl.style.display === "none" || !hoverState.root)
+    if (!tooltipEl || tooltipEl.style.display === "none" || !hoverState.root) {
       return;
+    }
 
     // If KEEP_OPEN_UNTIL_CLICK is enabled, don't close on mouse move
     if (KEEP_OPEN_UNTIL_CLICK) {
@@ -603,8 +611,9 @@
         encodeURIComponent(CLIENT_SECRET) +
         "&grant_type=client_credentials",
       onload: function (res) {
-        if (res.status !== 200)
+        if (res.status !== 200) {
           return cb(new Error("OAuth HTTP " + res.status));
+        }
         var j = JSON.parse(res.responseText);
         var expiresAt = Date.now() + j.expires_in * 1000 - 120000;
         GM_setValue(
@@ -627,8 +636,8 @@
         url: "https://api.igdb.com/v4" + path,
         headers: {
           "Client-ID": CLIENT_ID,
-          Authorization: "Bearer " + token,
-          Accept: "application/json",
+          "Authorization": "Bearer " + token,
+          "Accept": "application/json",
           "Content-Type": "text/plain",
         },
         data: body,
@@ -719,8 +728,9 @@
       if (
         eg.external_game_source &&
         eg.external_game_source.name === sourceName
-      )
+      ) {
         return eg;
+      }
     }
     return null;
   }
