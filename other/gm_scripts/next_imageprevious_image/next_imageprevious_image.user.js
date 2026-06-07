@@ -2,7 +2,7 @@
 // @name Next Image/Previous Image [adopted]
 // @author arty <me@arty.name>
 // @namespace http://arty.name/
-// @version 2.1.1
+// @version 2.2.0
 // @description  Quick scroll to next/previous image on a page with n/p buttons
 // @include *
 // ==/UserScript==
@@ -29,7 +29,7 @@
     // We force a rescan of the page's images every time, for dynamic pages.
     positions = [];
     if (positions.length === 0) {
-      var selector = 'img' + (document.location.hostname === 'www.dwitter.net' ? ', iframe' : '');
+      var selector = 'video, img' + (document.location.hostname === 'www.dwitter.net' ? ', iframe' : document.location.hostname === 'beta.dwitter.net' ? ', .card' : '');
       var elements = document.querySelectorAll(selector);
       for (var index = 0; index < elements.length; index++) {
         var image = elements[index];
