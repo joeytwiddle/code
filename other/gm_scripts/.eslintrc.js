@@ -122,6 +122,8 @@ module.exports = {
     "no-unreachable": 2,
     "no-unsafe-finally": 2,
     "no-unsafe-negation": 2,
+    // You can disable this if you like
+    //"no-unsafe-optional-chaining": 0,
     "no-unused-vars": [1, { vars: "all", args: "none" }],
     "no-useless-call": 2,
     "no-useless-computed-key": 2,
