@@ -52,8 +52,6 @@ var shiftNotificationShelfToTheBottom = false;
 // Extra functionality: When on a PR, add repo name to the start of the tab's title
 var addRepoNameToTitle = false;
 
-var hideQuodAIWarning = true;
-
 // ==/Options==
 
 var mainNotificationsPath = '/notifications';
@@ -650,23 +648,4 @@ if (addRepoNameToTitle) {
     };
 
     setTimeout(setPrefix, 2 * 1000);
-}
-
-if (hideQuodAIWarning) {
-	setTimeout(() => {
-		var quodContainer = jQuery('#toci-container');
-		if (quodContainer[0] && quodContainer[0].textContent.match(/This file is currently not supported/)) {
-			// We cannot .hide() it because its own CSS overrides ours
-			// So we remove it
-			quodContainer.remove();
-			// But removing it breaks the layout, so we adjust that CSS as well!
-			// This doesn't quite match GitHub's default behaviour (which uses a max-width and large margins) but it will do for now.
-			GM_addStyle(`
-				#toci-wrapper {
-					display: grid;
-					grid-template-columns: 100%;
-				}
-			`);
-		}
-	}, 4000);
 }
