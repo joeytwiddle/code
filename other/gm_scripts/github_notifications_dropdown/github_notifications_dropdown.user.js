@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2025, Paul "Joey" Clark (https://github.com/joeytwiddle)
-// @version        2.0.6
+// @version        2.1.0
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -48,6 +48,9 @@ var notificationDotStyle = '';
 // It may look like this is getting in the way of the header, but it's actually not.  The .AppHeader just disappears when we scroll down.  But you can move it to the bottom, if you prefer.
 // TODO: An option to make .AppHeader sticky would be great...
 var shiftNotificationShelfToTheBottom = false;
+
+// Extra functionality: When on a PR, add repo name to the start of the tab's title
+var addRepoNameToTitle = false;
 
 var hideQuodAIWarning = true;
 
@@ -626,6 +629,27 @@ if (shiftNotificationShelfToTheBottom) {
 		  width: 100% !important;
 		}
 	`);
+}
+
+if (addRepoNameToTitle) {
+    const setPrefix = () => {
+        const { hostname, pathname } = window.location;
+        const isGitHubPage = hostname.includes("github");
+        const isPRPage = pathname.includes("/pull/");
+        if (isGitHubPage && isPRPage) {
+            const repoName = pathname.split("/")[2];
+            const prefix = `(${repoName})`;
+            if (!document.title.startsWith(prefix)) {
+                document.title = `${prefix} ${document.title}`;
+            }
+        }
+
+        // We also want to update the title if the user navigates to a different page (which often resets the title).
+        // There is no event we can listen for. We could monkey-patch pushState(). But a slow setTimeout() is simpler.
+        setTimeout(setPrefix, 60 * 1000);
+    };
+
+    setTimeout(setPrefix, 2 * 1000);
 }
 
 if (hideQuodAIWarning) {
