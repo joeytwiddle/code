@@ -4,7 +4,7 @@
 // @author         joeytwiddle
 // @contributors   SkyzohKey, Marti, darkred
 // @copyright      2014-2025, Paul "Joey" Clark (https://github.com/joeytwiddle)
-// @version        2.1.0
+// @version        2.1.1
 // @license        MIT
 // @description    When clicking the notifications icon, displays notifications in a dropdown pane, without leaving the current page.
 // @include        https://github.com/*
@@ -630,22 +630,22 @@ if (shiftNotificationShelfToTheBottom) {
 }
 
 if (addRepoNameToTitle) {
-    const setPrefix = () => {
-        const { hostname, pathname } = window.location;
-        const isGitHubPage = hostname.includes("github");
-        const isPRPage = pathname.includes("/pull/");
-        if (isGitHubPage && isPRPage) {
-            const repoName = pathname.split("/")[2];
-            const prefix = `(${repoName})`;
-            if (!document.title.startsWith(prefix)) {
-                document.title = `${prefix} ${document.title}`;
-            }
-        }
+	const setPrefix = () => {
+		const { hostname, pathname } = window.location;
+		const isGitHubPage = hostname.includes("github");
+		const isPRPage = pathname.includes("/pull/");
+		if (isGitHubPage && isPRPage) {
+			const repoName = pathname.split("/")[2];
+			const prefix = `(${repoName})`;
+			if (!document.title.startsWith(prefix)) {
+				document.title = `${prefix} ${document.title}`;
+			}
+		}
 
-        // We also want to update the title if the user navigates to a different page (which often resets the title).
-        // There is no event we can listen for. We could monkey-patch pushState(). But a slow setTimeout() is simpler.
-        setTimeout(setPrefix, 60 * 1000);
-    };
+		// We also want to update the title if the user navigates to a different page (which often resets the title).
+		// There is no event we can listen for. We could monkey-patch pushState(). But a slow setTimeout() is simpler.
+		setTimeout(setPrefix, 60 * 1000);
+	};
 
-    setTimeout(setPrefix, 2 * 1000);
+	setTimeout(setPrefix, 2 * 1000);
 }
