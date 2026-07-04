@@ -2,13 +2,13 @@
 // @name        AI Fonts
 // @namespace   Violentmonkey Scripts
 // @description Tweak the fonts used on Claude and ChatGPT chat pages
-// @version     1.0.2
+// @version     1.0.3
 // @author      joeytwiddle
 // @match       https://claude.ai/chat/*
 // @grant       GM_addStyle
 // ==/UserScript==
 
-var favouriteFontFamily = '"Montserrat", "Google Sans", "Inter", "Open Sans", "Liberation Sans", sans-serif';
+var favouriteFontFamily = '"Plus Jakarta Sans", "Montserrat", "Google Sans", "Inter", "Open Sans", "Liberation Sans", sans-serif';
 
 // ChatGPT uses their own font, perhaps they import it as "ui-sans-serif"
 //var chatGPTsDefaults = '"-apple-system-body", "ui-sans-serif", "-apple-system", "system-ui", "Segoe UI", "Helvetica", "Apple Color Emoji", "Arial", "sans-serif", "Segoe UI Emoji", "Segoe UI Symbol"';
@@ -21,6 +21,7 @@ linkElement.rel = 'stylesheet';
 //linkElement.href = 'https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Roboto+Flex:opsz,wght,XOPQ,XTRA,YOPQ,YTDE,YTFI,YTLC,YTUC@8..144,100..1000,96,468,79,-203,738,514,712&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap';
 linkElement.href = 'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap';
 //linkElement.href = 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap';
+linkElement.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap';
 document.head.appendChild(linkElement);
 
 GM_addStyle(`
